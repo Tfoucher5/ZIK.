@@ -278,8 +278,14 @@ async function addTrack(trackData) {
 async function deletePlaylist() {
   if (!editingPl) return;
   if (!confirm(`Supprimer "${editingPl.name}" ? Cette action est irréversible.`)) return;
+
+  // Supprimer les tracks en premier (évite la contrainte FK si pas de CASCADE)
+  const { error: tracksErr } = await sb.from('custom_playlist_tracks').delete().eq('playlist_id', editingPl.id);
+  if (tracksErr) { toast('Erreur suppression tracks : ' + tracksErr.message, 'error'); return; }
+
   const { error } = await sb.from('custom_playlists').delete().eq('id', editingPl.id);
-  if (error) { toast(error.message, 'error'); return; }
+  if (error) { toast('Erreur suppression playlist : ' + error.message, 'error'); return; }
+
   closeEditorModal();
   toast('Playlist supprimée.', 'success');
   await loadPlaylists();
@@ -374,14 +380,16 @@ async function importSpotify() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
     importPreviewTracks = data.tracks;
+    const truncNote = data.truncated ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">⚠️ Limité aux ${data.tracks.length} premiers titres (Spotify API — total : ${data.total})</p>` : '';
     prev.innerHTML = `
       <div class="import-preview-header">
         ${data.cover ? `<img class="import-preview-cover" src="${data.cover}" alt="">` : ''}
         <div>
           <div class="import-preview-name">${esc(data.name)}</div>
-          <div class="import-preview-count">${data.tracks.length} titres</div>
+          <div class="import-preview-count">${data.tracks.length} titres${data.truncated ? ` / ${data.total}` : ''}</div>
         </div>
       </div>
+      ${truncNote}
       <div class="import-actions">
         <button class="btn-accent sm" onclick="confirmImport('spotify')">Tout importer (${data.tracks.length} titres)</button>
         <button class="btn-ghost sm" onclick="document.getElementById('import-spotify-preview').innerHTML=''">Annuler</button>
