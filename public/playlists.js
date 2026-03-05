@@ -245,12 +245,17 @@ async function removeTrack(trackId) {
   updateEditorCount();
 }
 
+function normalize(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
 async function addTrack(trackData) {
-  // Éviter les doublons sur external_id
-  if (trackData.external_id && editorTracks.some(t => t.external_id === trackData.external_id)) {
-    toast('Ce titre est déjà dans la playlist.', 'error');
-    return false;
-  }
+  // Doublons : external_id ou (artist+title normalisés)
+  const extId = trackData.external_id;
+  const norm  = normalize(trackData.artist) + '|' + normalize(trackData.title);
+  const isDup = editorTracks.some(t =>
+    (extId && t.external_id === extId) ||
+    (normalize(t.artist) + '|' + normalize(t.title)) === norm
+  );
+  if (isDup) { toast('Ce titre est déjà dans la playlist.', 'error'); return false; }
   const { data, error } = await sb.from('custom_playlist_tracks').insert({
     playlist_id: editingPl.id,
     artist:      trackData.artist,
@@ -528,6 +533,28 @@ function bindEditor() {
   document.getElementById('modal-editor').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditorModal(); });
   document.getElementById('editPlaylistInfoBtn').addEventListener('click', () => openPlaylistModal(editingPl));
   document.getElementById('deletePlaylistBtn').addEventListener('click', deletePlaylist);
+  document.getElementById('launchRoomBtn').addEventListener('click', openRoomSettings);
+
+  // Room settings modal
+  document.getElementById('closeRoomSettingsModal').addEventListener('click', closeRoomSettings);
+  document.getElementById('cancelRoomSettings').addEventListener('click', closeRoomSettings);
+  document.getElementById('confirmRoomSettings').addEventListener('click', createRoom);
+  document.getElementById('modal-room-settings').addEventListener('click', e => { if (e.target === e.currentTarget) closeRoomSettings(); });
+
+  // Range labels
+  const mkRange = (id, valId, suffix = '') => {
+    const el  = document.getElementById(id);
+    const val = document.getElementById(valId);
+    el.addEventListener('input', () => { val.textContent = el.value + suffix; });
+  };
+  mkRange('rs-rounds',   'rs-rounds-val');
+  mkRange('rs-duration', 'rs-duration-val', 's');
+  mkRange('rs-break',    'rs-break-val',    's');
+
+  // Room code modal
+  document.getElementById('closeRoomCodeModal').addEventListener('click', () => { document.getElementById('modal-room-code').style.display = 'none'; });
+  document.getElementById('copyRoomCodeBtn').addEventListener('click', copyRoomLink);
+  document.getElementById('joinRoomNowBtn').addEventListener('click', joinRoomNow);
 
   // Tabs
   document.querySelectorAll('.etab').forEach(btn => {
@@ -553,6 +580,80 @@ function bindEditor() {
 
   // Manual
   document.getElementById('addManualBtn').addEventListener('click', addManual);
+}
+
+// ─── Room creation ────────────────────────────────────────────────────────────
+let _createdRoomCode = null;
+
+function openRoomSettings() {
+  if (!editingPl) return;
+  if (editorTracks.length < 3) { toast('Il faut au moins 3 titres dans la playlist.', 'error'); return; }
+
+  // Ajuster le max des manches au nb de titres
+  const maxEl = document.getElementById('rs-rounds');
+  maxEl.max = editorTracks.length;
+  maxEl.value = Math.min(10, editorTracks.length);
+  document.getElementById('rs-rounds-val').textContent = maxEl.value;
+  document.getElementById('rs-duration-val').textContent = document.getElementById('rs-duration').value + 's';
+  document.getElementById('rs-break-val').textContent    = document.getElementById('rs-break').value + 's';
+  document.getElementById('room-settings-pl-name').textContent = `Playlist : ${editingPl.emoji} ${editingPl.name} — ${editorTracks.length} titre${editorTracks.length !== 1 ? 's' : ''}`;
+  document.getElementById('room-settings-error').style.display = 'none';
+  document.getElementById('modal-room-settings').style.display = 'flex';
+}
+
+function closeRoomSettings() { document.getElementById('modal-room-settings').style.display = 'none'; }
+
+async function createRoom() {
+  const btn = document.getElementById('confirmRoomSettings');
+  const errEl = document.getElementById('room-settings-error');
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Création...';
+
+  try {
+    const r = await fetch('/api/rooms/custom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:          editingPl.name,
+        emoji:         editingPl.emoji,
+        tracks:        editorTracks,
+        maxRounds:     parseInt(document.getElementById('rs-rounds').value),
+        roundDuration: parseInt(document.getElementById('rs-duration').value),
+        breakDuration: parseInt(document.getElementById('rs-break').value),
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+
+    _createdRoomCode = data.code;
+    closeRoomSettings();
+    showRoomCode(data.code);
+  } catch (e) {
+    showErr(errEl, e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Créer la room';
+  }
+}
+
+function showRoomCode(code) {
+  const url = `${location.origin}/game.html?roomId=${code}`;
+  document.getElementById('room-code-display').textContent = code;
+  document.getElementById('room-share-url').textContent    = url;
+  document.getElementById('modal-room-code').style.display = 'flex';
+}
+
+function copyRoomLink() {
+  if (!_createdRoomCode) return;
+  const url = `${location.origin}/game.html?roomId=${_createdRoomCode}`;
+  navigator.clipboard.writeText(url).then(() => toast('Lien copié !', 'success')).catch(() => toast('Copie échouée', 'error'));
+}
+
+function joinRoomNow() {
+  if (!_createdRoomCode) return;
+  const name = currentUser?.profile?.username || currentUser?.email?.split('@')[0] || 'Joueur';
+  const uid  = currentUser?.id || '';
+  const p    = new URLSearchParams({ roomId: _createdRoomCode, username: name, userId: uid, isGuest: uid ? '0' : '1' });
+  window.location.href = `/game.html?${p}`;
 }
 
 // ─── Auth actions ─────────────────────────────────────────────────────────────

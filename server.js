@@ -66,6 +66,9 @@ async function fetchDeezerPlaylist(playlistId) {
 }
 
 async function loadPlaylist(roomId) {
+  // Custom rooms: tracks déjà en mémoire
+  if (customRooms[roomId]) return customRooms[roomId].tracks;
+
   if (playlistCache[roomId]?.length > 0) return playlistCache[roomId];
   const room = ROOMS[roomId];
   if (!room) return [];
@@ -171,7 +174,7 @@ async function getSpotifyToken() {
   if (_spotifyToken && Date.now() < _spotifyTokenExpiry) return _spotifyToken;
   const clientId     = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET manquants dans .env');
+  if (!clientId || !clientSecret) throw new Error('Spotify non configuré — ajoute SPOTIFY_CLIENT_ID et SPOTIFY_CLIENT_SECRET dans .env');
   const fetchFn = await getFetch();
   const res = await fetchFn('https://accounts.spotify.com/api/token', {
     method: 'POST',
@@ -182,7 +185,11 @@ async function getSpotifyToken() {
     body: 'grant_type=client_credentials',
     signal: AbortSignal.timeout(8000),
   });
-  if (!res.ok) throw new Error(`Spotify auth HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`Spotify token error ${res.status}:`, body);
+    throw new Error(`Identifiants Spotify invalides (HTTP ${res.status}). Vérifie SPOTIFY_CLIENT_ID et SPOTIFY_CLIENT_SECRET.`);
+  }
   const json = await res.json();
   _spotifyToken = json.access_token;
   _spotifyTokenExpiry = Date.now() + (json.expires_in - 60) * 1000;
@@ -196,11 +203,15 @@ app.get('/api/spotify/search', async (req, res) => {
   try {
     const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
-    const url     = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=20&market=FR`;
+    const url     = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=20`;
     const r = await fetchFn(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      console.error(`Spotify search error ${r.status}:`, body);
+      throw new Error(`Spotify API HTTP ${r.status} — ${body.slice(0, 120)}`);
+    }
     const data = await r.json();
-    res.json(data.tracks.items.map(t => ({
+    res.json((data.tracks?.items || []).map(t => ({
       external_id: t.id,
       source:      'spotify',
       artist:      t.artists.map(a => a.name).join(', '),
@@ -218,19 +229,31 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
   try {
     const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
-    const [plRes, tracksRes] = await Promise.all([
-      fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}?fields=name,images`, {
+
+    // Récup les métadonnées de la playlist
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}?fields=name,images`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+    });
+    if (!plRes.ok) throw new Error(`Playlist introuvable (HTTP ${plRes.status})`);
+    const pl = await plRes.json();
+
+    // Paginer les tracks (max 500)
+    let allItems = [];
+    let nextUrl  = `https://api.spotify.com/v1/playlists/${req.params.id}/tracks?limit=100&fields=next,items(track(id,name,artists,album,preview_url))`;
+    while (nextUrl && allItems.length < 500) {
+      const r = await fetchFn(nextUrl, {
         headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
-      }),
-      fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}/tracks?limit=100&market=FR&fields=items(track(id,name,artists,album,preview_url))`, {
-        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
-      }),
-    ]);
-    if (!plRes.ok)     throw new Error(`Playlist introuvable (HTTP ${plRes.status})`);
-    if (!tracksRes.ok) throw new Error(`Tracks inaccessibles (HTTP ${tracksRes.status})`);
-    const pl   = await plRes.json();
-    const trkD = await tracksRes.json();
-    const tracks = trkD.items
+      });
+      if (!r.ok) {
+        if (r.status === 403) throw new Error('Spotify a restreint l\'accès aux tracks de playlist en mode serveur (API Nov 2024). Utilise Deezer pour importer, ou la recherche titre par titre.');
+        throw new Error(`Tracks inaccessibles (HTTP ${r.status})`);
+      }
+      const page = await r.json();
+      allItems = allItems.concat(page.items || []);
+      nextUrl  = page.next || null;
+    }
+
+    const tracks = allItems
       .filter(i => i.track?.id)
       .map(i => ({
         external_id: i.track.id,
@@ -240,6 +263,7 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
         preview_url: i.track.preview_url || null,
         cover_url:   i.track.album.images[1]?.url || i.track.album.images[0]?.url || null,
       }));
+
     res.json({ name: pl.name, cover: pl.images[0]?.url || null, tracks });
   } catch (e) {
     res.status(502).json({ error: e.message });
@@ -271,18 +295,35 @@ app.get('/api/deezer/search', async (req, res) => {
   }
 });
 
-// ─── Deezer : importer une playlist ──────────────────────────────────────────
+// ─── Deezer : importer une playlist (avec pagination complète) ───────────────
 app.get('/api/deezer/playlist/:id', async (req, res) => {
   try {
     const fetchFn = await getFetch();
+    const headers = { 'User-Agent': 'ZIK-BlindTest/1.0' };
+
+    // Première page : récup métadonnées + premiers titres
     const r = await fetchFn(`https://api.deezer.com/playlist/${req.params.id}?limit=100`, {
-      headers: { 'User-Agent': 'ZIK-BlindTest/1.0' }, signal: AbortSignal.timeout(8000),
+      headers, signal: AbortSignal.timeout(10000),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     if (data.error) throw new Error(data.error.message || 'Playlist introuvable');
     if (!data.tracks?.data?.length) throw new Error('Playlist vide ou privée');
-    const tracks = data.tracks.data
+
+    let allTracks = [...data.tracks.data];
+    let nextUrl   = data.tracks.next || null;
+
+    // Paginer jusqu'à 500 titres
+    while (nextUrl && allTracks.length < 500) {
+      const nextR = await fetchFn(nextUrl, { headers, signal: AbortSignal.timeout(10000) });
+      if (!nextR.ok) break;
+      const nextData = await nextR.json();
+      if (nextData.error || !nextData.data?.length) break;
+      allTracks = allTracks.concat(nextData.data);
+      nextUrl   = nextData.next || null;
+    }
+
+    const tracks = allTracks
       .filter(t => t.readable !== false)
       .map(t => ({
         external_id: String(t.id),
@@ -292,6 +333,7 @@ app.get('/api/deezer/playlist/:id', async (req, res) => {
         preview_url: t.preview || null,
         cover_url:   t.album.cover_xl || t.album.cover_big || null,
       }));
+
     res.json({ name: data.title, cover: data.picture_xl || data.picture_big || null, tracks });
   } catch (e) {
     res.status(502).json({ error: e.message });
@@ -303,6 +345,60 @@ app.get('/api/spotify/status', (req, res) => {
   res.json({ configured: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) });
 });
 
+// ─── Custom rooms (éphémères, TTL 4h) ────────────────────────────────────────
+const customRooms = {}; // code -> { id, name, emoji, tracks, maxRounds, roundDuration, breakDuration }
+
+function genRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code;
+  do { code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(''); }
+  while (customRooms[code]);
+  return code;
+}
+
+app.post('/api/rooms/custom', async (req, res) => {
+  const { name, emoji, tracks, maxRounds = 10, roundDuration = 30, breakDuration = 7 } = req.body || {};
+  if (!name?.trim() || !Array.isArray(tracks) || tracks.length < 3) {
+    return res.status(400).json({ error: 'name et au moins 3 tracks requis' });
+  }
+  const code = genRoomCode();
+  const rd   = Math.min(Math.max(parseInt(roundDuration) || 30, 10), 60);
+  const bd   = Math.min(Math.max(parseInt(breakDuration)  || 7,  3),  15);
+  const mr   = Math.min(Math.max(parseInt(maxRounds)      || 10, 3), tracks.length);
+
+  customRooms[code] = {
+    id:            code,
+    name:          String(name).trim().slice(0, 60),
+    emoji:         emoji || '🎵',
+    tracks:        tracks.map(t => ({
+      artist:      String(t.artist || '').trim(),
+      title:       String(t.title  || '').trim(),
+      cleanTitle:  cleanString(t.title  || ''),
+      cleanArtist: cleanString(t.artist || ''),
+      cover:       t.cover_url || '',
+      preview_url: t.preview_url || null,
+    })).filter(t => t.artist && t.title),
+    maxRounds:     mr,
+    roundDuration: rd,
+    breakDuration: bd,
+  };
+
+  // TTL 4h
+  setTimeout(() => {
+    delete customRooms[code];
+    delete roomGames[code];
+  }, 4 * 60 * 60 * 1000);
+
+  console.log(`🎮 Custom room "${code}" créée — "${name}", ${tracks.length} titres, ${mr} manches`);
+  res.json({ code });
+});
+
+app.get('/api/rooms/custom/:code', (req, res) => {
+  const room = customRooms[req.params.code.toUpperCase()];
+  if (!room) return res.status(404).json({ error: 'Room introuvable ou expirée' });
+  res.json({ name: room.name, emoji: room.emoji, maxRounds: room.maxRounds, trackCount: room.tracks.length });
+});
+
 // ─── Game State per Room ──────────────────────────────────────────────────────
 // roomGames[roomId] = { players, socketToName, nameToSocket, game }
 const roomGames = {};
@@ -311,6 +407,7 @@ const CONFIG = { roundDuration: 30, breakDuration: 7 };
 
 function getOrCreateRoom(roomId) {
   if (!roomGames[roomId]) {
+    const cust = customRooms[roomId];
     roomGames[roomId] = {
       roomId,
       players: {},
@@ -319,7 +416,9 @@ function getOrCreateRoom(roomId) {
       game: {
         isActive: false,
         currentRound: 0,
-        maxRounds: ROOMS[roomId]?.maxRounds || 10,
+        maxRounds:     cust?.maxRounds     || ROOMS[roomId]?.maxRounds || 10,
+        roundDuration: cust?.roundDuration || CONFIG.roundDuration,
+        breakDuration: cust?.breakDuration || CONFIG.breakDuration,
         timer: 0,
         interval: null,
         currentTrack: null,
@@ -344,7 +443,7 @@ function getRoomIO(roomId) {
 io.on('connection', (socket) => {
 
   socket.on('join_room', async ({ roomId, username, userId, isGuest }) => {
-    if (!ROOMS[roomId]) return socket.emit('error', 'Room inconnue');
+    if (!ROOMS[roomId] && !customRooms[roomId]) return socket.emit('error', 'Room inconnue ou expirée');
     if (!username?.trim()) return socket.emit('error', 'Pseudo requis');
 
     username = username.trim();
@@ -379,7 +478,7 @@ io.on('connection', (socket) => {
     room.nameToSocket[username] = socket.id;
 
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
-    socket.emit('room_joined', { roomId, roomConfig: ROOMS[roomId] });
+    socket.emit('room_joined', { roomId, roomConfig: ROOMS[roomId] || { id: roomId, name: customRooms[roomId]?.name, emoji: customRooms[roomId]?.emoji } });
     socket.emit('init_history', room.game.history);
 
     if (room.game.isActive && room.game.lastRoundData) {
@@ -530,7 +629,7 @@ async function startNextRound(roomId) {
 
     game.isActive = true;
     game.startTime = Date.now();
-    game.timer = CONFIG.roundDuration;
+    game.timer = game.roundDuration;
     game.lastRoundData = {
       videoId: video.videoId,
       startSeconds: safeStart,
@@ -552,7 +651,7 @@ function startTimer(roomId) {
   clearInterval(game.interval);
   game.interval = setInterval(() => {
     game.timer--;
-    getRoomIO(roomId).emit('timer_update', { current: game.timer, max: CONFIG.roundDuration });
+    getRoomIO(roomId).emit('timer_update', { current: game.timer, max: game.roundDuration });
     if (game.timer <= 0) endRound(roomId, '⏱️ Temps écoulé !');
   }, 1000);
 }
@@ -593,7 +692,7 @@ function endRound(roomId, reason) {
     }
   });
 
-  setTimeout(() => startNextRound(roomId), CONFIG.breakDuration * 1000);
+  setTimeout(() => startNextRound(roomId), game.breakDuration * 1000);
 }
 
 // ─── Supabase : sauvegarder résultats ────────────────────────────────────────

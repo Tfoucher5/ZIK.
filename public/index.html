@@ -50,6 +50,16 @@
       <span id="total-online" class="pill"></span>
     </div>
     <div id="rooms-grid" class="rooms-grid"></div>
+
+    <!-- Rejoindre une room privée -->
+    <div class="private-room-join">
+      <span class="private-room-label">Rejoindre une room privée</span>
+      <div class="private-room-bar">
+        <input type="text" id="roomCodeInput" placeholder="Code à 6 lettres" maxlength="6" autocomplete="off" spellcheck="false">
+        <button class="btn-accent sm" id="joinByCodeBtn">Rejoindre →</button>
+      </div>
+      <p id="roomCodeError" class="private-room-err" style="display:none"></p>
+    </div>
   </section>
 
   <section class="section" id="leaderboards">

@@ -77,6 +77,13 @@ function bindUI() {
   document.getElementById('logoutBtn').onclick       = () => sb?.auth.signOut();
   document.getElementById('closeModal').onclick      = closeAuthModal;
 
+  // Rejoindre par code
+  document.getElementById('joinByCodeBtn').onclick = joinByCode;
+  document.getElementById('roomCodeInput').onkeypress = e => { if (e.key === 'Enter') joinByCode(); };
+  document.getElementById('roomCodeInput').oninput = e => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  };
+
   // Close overlay on backdrop click
   document.getElementById('auth-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAuthModal(); });
   document.getElementById('guest-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeGuestModal(); });
@@ -183,6 +190,28 @@ async function loadRooms() {
     grid.innerHTML = '<p style="color:var(--dim);padding:20px">Impossible de charger les rooms.</p>';
   }
   setTimeout(loadRooms, 30_000);
+}
+
+async function joinByCode() {
+  const code  = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+  const errEl = document.getElementById('roomCodeError');
+  errEl.style.display = 'none';
+
+  if (code.length < 4) { errEl.textContent = 'Code invalide.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('joinByCodeBtn');
+  btn.disabled = true; btn.textContent = '...';
+
+  try {
+    const r = await fetch(`/api/rooms/custom/${code}`);
+    if (!r.ok) throw new Error('Room introuvable ou expirée.');
+    joinRoom(code);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Rejoindre →';
+  }
 }
 
 function joinRoom(roomId) {

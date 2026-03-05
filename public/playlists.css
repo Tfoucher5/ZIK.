@@ -105,6 +105,22 @@
 /* ── Search bar ──────────────────────────────────────────────────────────────── */
 .search-bar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
 .search-bar input { flex: 1; min-width: 180px; }
+
+/* Standalone inputs (outside .field wrappers) */
+.search-bar input,
+.tab-pane .search-bar input {
+  padding: 10px 14px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: .88rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s, background .2s;
+}
+.search-bar input:focus { border-color: var(--accent); background: rgba(62,207,255,.04); }
+.search-bar input::placeholder { color: var(--dim); }
 .search-source-toggle { display: flex; gap: 4px; }
 .src-btn {
   background: var(--surface); border: 1px solid var(--border); color: var(--mid);
@@ -196,6 +212,32 @@
 .toast.success { border-color: rgba(74,222,128,.3); color: var(--success); }
 .toast.error   { border-color: rgba(239,68,68,.3);  color: #f87171; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ── Room launch modal ───────────────────────────────────────────────────────── */
+.room-settings { display: flex; flex-direction: column; gap: 14px; margin: 18px 0; }
+.room-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.room-setting-row label { font-size: .82rem; color: var(--mid); flex: 1; }
+.room-setting-row input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.room-setting-val {
+  font-size: .82rem; font-weight: 600; color: var(--accent);
+  min-width: 40px; text-align: right;
+}
+.room-code-box {
+  text-align: center; padding: 24px 0 8px;
+}
+.room-code-label { font-size: .75rem; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.room-code {
+  font-family: 'Bricolage Grotesque', monospace; font-size: 2.6rem; font-weight: 800;
+  letter-spacing: 6px; color: var(--accent);
+  background: rgba(62,207,255,.07); border: 1px solid rgba(62,207,255,.2);
+  border-radius: 14px; padding: 14px 24px; display: inline-block; margin-bottom: 14px;
+}
+.room-share-url {
+  font-size: .78rem; color: var(--dim); word-break: break-all;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; margin-bottom: 14px;
+}
+.room-code-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
