@@ -1,254 +1,279 @@
-const socket = io();
-let player, ytReady = false, pendingVideo = null;
-let personalProgress = { artist: false, title: false };
+'use strict';
 
-// ─── URL Params ───────────────────────────────────────────────────────────────
-const params = new URLSearchParams(window.location.search);
-const ROOM_ID  = params.get('roomId')   || 'pop';
-const USERNAME = params.get('username') || 'Joueur';
-const USER_ID  = params.get('userId')   || null;
-const IS_GUEST = params.get('isGuest') === '1';
+// ─── URL params ───────────────────────────────────────────────────────────────
+const P        = new URLSearchParams(location.search);
+const ROOM_ID  = P.get('roomId')   || 'pop';
+const USERNAME = P.get('username') || 'Joueur';
+const USER_ID  = P.get('userId')   || null;
+const IS_GUEST = P.get('isGuest') === '1';
 
 // ─── YouTube ──────────────────────────────────────────────────────────────────
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player('youtube-player', {
-    height: '0', width: '0',
+const socket = io();
+let ytPlayer, ytReady = false, pendingLoad = null;
+
+window.onYouTubeIframeAPIReady = () => {
+  ytPlayer = new YT.Player('yt-player', {
+    height: '1', width: '1',
     playerVars: { autoplay: 1, controls: 0, enablejsapi: 1 },
     events: {
-      onReady: (e) => {
+      onReady(e) {
         ytReady = true;
-        e.target.setVolume(parseInt(localStorage.getItem('bt_volume') ?? '50'));
-        if (pendingVideo) { loadVideo(pendingVideo.videoId, pendingVideo.startSeconds); pendingVideo = null; }
+        e.target.setVolume(savedVol());
+        if (pendingLoad) { loadVideo(pendingLoad.id, pendingLoad.start); pendingLoad = null; }
       },
-      onStateChange: (e) => {
-        if (e.data === YT.PlayerState.PLAYING) {
-          player.setVolume(parseInt(localStorage.getItem('bt_volume') ?? '50'));
-          player.unMute();
-        }
+      onStateChange(e) {
+        if (e.data === YT.PlayerState.PLAYING) { ytPlayer.setVolume(savedVol()); ytPlayer.unMute(); }
       }
     }
   });
-}
+};
 
 function loadVideo(videoId, startSeconds) {
-  if (!ytReady || !player) { pendingVideo = { videoId, startSeconds }; return; }
-  player.mute();
-  player.loadVideoById({ videoId, startSeconds });
+  if (!ytReady || !ytPlayer) { pendingLoad = { id: videoId, start: startSeconds }; return; }
+  ytPlayer.mute();
+  ytPlayer.loadVideoById({ videoId, startSeconds });
 }
+function stopVideo() { if (ytReady && ytPlayer) ytPlayer.stopVideo(); }
+function savedVol()  { return parseInt(localStorage.getItem('zik_vol') ?? '50'); }
 
-// ─── DOM Ready ────────────────────────────────────────────────────────────────
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const ui = {
+  roomLabel:   $('room-label'),
+  roundInfo:   $('round-info'),
+  timerBar:    $('timer-bar'),
+  playerList:  $('player-list'),
+  placeholder: $('cover-placeholder'),
+  coverImg:    $('cover-img'),
+  slotArtist:  $('slot-artist'),
+  slotTitle:   $('slot-title'),
+  feedback:    $('feedback'),
+  summary:     $('round-summary'),
+  reason:      $('summary-reason'),
+  finder:      $('summary-finder'),
+  errorMsg:    $('error-msg'),
+  startBtn:    $('startBtn'),
+  guessInput:  $('guessInput'),
+  histList:    $('history-list'),
+  gameover:    $('gameover'),
+  goScores:    $('go-scores'),
+  replayBtn:   $('replayBtn'),
+  volSlider:   $('volSlider'),
+};
+
+let personalFound = { artist: false, title: false };
+let feedTimer;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  const ui = {
-    roomName:    document.getElementById('room-name'),
-    round:       document.getElementById('round-info'),
-    placeholder: document.getElementById('album-placeholder'),
-    cover:       document.getElementById('reveal-cover'),
-    summary:     document.getElementById('round-summary'),
-    reason:      document.getElementById('round-reason'),
-    social:      document.getElementById('first-finder-msg'),
-    timer:       document.getElementById('timer-bar'),
-    players:     document.getElementById('player-list'),
-    guess:       document.getElementById('guessInput'),
-    start:       document.getElementById('startBtn'),
-    vol:         document.getElementById('volumeSlider'),
-    hist:        document.getElementById('history-list'),
-    feed:        document.getElementById('game-feedback'),
-    artistVal:   document.querySelector('#slot-artist .val'),
-    titleVal:    document.querySelector('#slot-title .val'),
-    artistSlot:  document.getElementById('slot-artist'),
-    titleSlot:   document.getElementById('slot-title'),
-    gameOver:    document.getElementById('game-over-screen'),
-    finalList:   document.getElementById('final-scores'),
-    errorMsg:    document.getElementById('error-msg'),
-    replayBtn:   document.getElementById('replayBtn'),
-  };
-
-  // Init volume
-  const vol = localStorage.getItem('bt_volume') ?? '50';
-  ui.vol.value = vol;
-  ui.vol.oninput = (e) => {
+  // Volume
+  ui.volSlider.value = savedVol();
+  ui.volSlider.oninput = e => {
     const v = parseInt(e.target.value);
-    if (player?.setVolume) player.setVolume(v);
-    localStorage.setItem('bt_volume', v);
+    if (ytPlayer?.setVolume) ytPlayer.setVolume(v);
+    localStorage.setItem('zik_vol', v);
   };
 
-  // Rejoindre la room
-  socket.emit('join_room', { roomId: ROOM_ID, username: USERNAME, userId: USER_ID, isGuest: IS_GUEST });
-
-  // ─── Handlers ─────────────────────────────────────────────────────────────
-  ui.start.onclick = () => {
-    socket.emit('request_new_game');
-    ui.start.disabled = true;
-    ui.start.textContent = 'Chargement...';
-  };
-
-  ui.replayBtn.onclick = () => {
-    socket.emit('request_new_game');
-    ui.replayBtn.disabled = true;
-    ui.gameOver.style.display = 'none';
-    ui.start.style.display = 'none';
-  };
-
-  ui.guess.onkeypress = (e) => {
+  // Guess input
+  ui.guessInput.onkeydown = e => {
     if (e.key === 'Enter') {
-      const val = ui.guess.value.trim();
+      const val = ui.guessInput.value.trim();
       if (val) socket.emit('submit_guess', val);
-      ui.guess.value = '';
+      ui.guessInput.value = '';
     }
   };
 
-  // ─── Socket Events ────────────────────────────────────────────────────────
+  // Buttons
+  ui.startBtn.onclick  = requestGame;
+  ui.replayBtn.onclick = requestGame;
 
-  socket.on('room_joined', ({ roomConfig }) => {
-    if (roomConfig) ui.roomName.textContent = `${roomConfig.emoji} ${roomConfig.name}`;
-    else ui.roomName.textContent = ROOM_ID.toUpperCase();
-  });
-
-  socket.on('update_players', (players) => {
-    ui.players.innerHTML = players
-      .sort((a, b) => b.score - a.score)
-      .map((p, i) => {
-        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-        return `<div class="p-card rank-${i+1}">
-          <span class="pname">${medal} ${escHtml(p.name)}</span>
-          <div class="pright">
-            <div style="display:flex;gap:2px">
-              <div class="pbadge ${p.foundArtist ? 'f' : ''}">A</div>
-              <div class="pbadge ${p.foundTitle ? 'f' : ''}">T</div>
-            </div>
-            <span class="pscore">${p.score}pt</span>
-          </div>
-        </div>`;
-      }).join('');
-  });
-
-  socket.on('init_history', () => { ui.hist.innerHTML = ''; });
-
-  socket.on('game_starting', () => {
-    ui.gameOver.style.display = 'none';
-    ui.start.style.display = 'none';
-  });
-
-  socket.on('start_round', (data) => {
-    personalProgress = { artist: false, title: false };
-    ui.round.textContent = `Manche ${data.round} / ${data.total}`;
-    ui.placeholder.style.display = 'flex';
-    ui.cover.style.display = 'none';
-    ui.cover.src = '';
-    ui.summary.style.display = 'none';
-    ui.gameOver.style.display = 'none';
-
-    ui.artistVal.textContent = '???'; ui.titleVal.textContent = '???';
-    ui.artistSlot.className = 'slot'; ui.titleSlot.className = 'slot';
-
-    ui.timer.style.width = '100%';
-    ui.timer.style.background = 'var(--accent)';
-    ui.timer.style.transition = 'none';
-    setTimeout(() => { ui.timer.style.transition = 'width 1s linear, background 0.5s'; }, 50);
-
-    ui.guess.disabled = false; ui.guess.value = ''; ui.guess.focus();
-    ui.start.style.display = 'none';
-    ui.start.disabled = false; ui.start.textContent = '🎮 LANCER LA PARTIE';
-    ui.feed.textContent = ''; ui.feed.className = '';
-
-    loadVideo(data.videoId, data.startSeconds);
-  });
-
-  socket.on('timer_update', (data) => {
-    const pct = (data.current / data.max) * 100;
-    ui.timer.style.width = `${pct}%`;
-    if (pct < 30)      ui.timer.style.background = 'var(--danger)';
-    else if (pct < 60) ui.timer.style.background = '#f59e0b';
-  });
-
-  let feedTimeout;
-  socket.on('feedback', (data) => {
-    ui.feed.textContent = data.msg;
-    ui.feed.className = '';
-    void ui.feed.offsetWidth;
-    ui.feed.className = `active ${data.type === 'miss' ? 'cold' : 'hot'}`;
-
-    if (data.type === 'success_artist') {
-      ui.artistVal.textContent = data.val;
-      ui.artistSlot.className = 'slot found';
-      personalProgress.artist = true;
-    }
-    if (data.type === 'success_title') {
-      ui.titleVal.textContent = data.val;
-      ui.titleSlot.className = 'slot found';
-      personalProgress.title = true;
-    }
-    clearTimeout(feedTimeout);
-    feedTimeout = setTimeout(() => ui.feed.classList.remove('active'), 2500);
-  });
-
-  socket.on('round_end', (data) => {
-    const parts = data.answer.split(' - ');
-    ui.artistVal.textContent = parts[0];
-    ui.titleVal.textContent  = parts.slice(1).join(' - ');
-    ui.artistSlot.className = `slot ${data.foundArtist ? 'found' : 'missed'}`;
-    ui.titleSlot.className  = `slot ${data.foundTitle  ? 'found' : 'missed'}`;
-
-    if (data.cover) {
-      ui.cover.src = data.cover;
-      ui.cover.style.display = 'block';
-      ui.placeholder.style.display = 'none';
-    }
-
-    ui.summary.style.display = 'block';
-    ui.reason.textContent = data.reason;
-    ui.social.textContent = data.totalFound > 0
-      ? `🏆 1er complet : ${data.firstFinder} — ${data.totalFound} joueur(s) ont tout trouvé`
-      : "❌ Personne n'a trouvé";
-
-    ui.guess.disabled = true;
-    ui.timer.style.width = '0%';
-    if (player && ytReady) player.stopVideo();
-
-    const item = document.createElement('div');
-    item.className = 'h-item';
-    item.innerHTML = `
-      ${data.cover ? `<img src="${data.cover}" alt="">` : ''}
-      <div class="h-info">
-        <div class="h-title">${escHtml(data.answer)}</div>
-        <div class="h-tags">
-          <span class="${data.foundArtist ? 'f' : ''}">A</span>
-          <span class="${data.foundTitle  ? 'f' : ''}">T</span>
-        </div>
-      </div>`;
-    ui.hist.prepend(item);
-  });
-
-  socket.on('game_over', (finalScores) => {
-    if (player && ytReady) player.stopVideo();
-    ui.guess.disabled = true;
-    ui.timer.style.width = '0%';
-    ui.summary.style.display = 'none';
-    ui.replayBtn.disabled = false;
-
-    ui.finalList.innerHTML = finalScores.map((p, i) => {
-      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-      const guestTag = p.isGuest ? ' <span style="font-size:.7rem;color:#5a6478">(invité)</span>' : '';
-      return `<div class="final-card rank-${i+1}">
-        <span class="final-rank">${medal}</span>
-        <span class="final-name">${escHtml(p.name)}${guestTag}</span>
-        <span class="final-score">${p.score} pts</span>
-      </div>`;
-    }).join('');
-
-    ui.gameOver.style.display = 'flex';
-  });
-
-  socket.on('server_error', (msg) => {
-    ui.errorMsg.textContent = msg;
-    ui.errorMsg.style.display = 'block';
-    setTimeout(() => ui.errorMsg.style.display = 'none', 4000);
-    ui.start.disabled = false;
-    ui.start.textContent = '🎮 LANCER LA PARTIE';
-    if (ui.replayBtn) { ui.replayBtn.disabled = false; }
-  });
+  // Join room
+  socket.emit('join_room', { roomId: ROOM_ID, username: USERNAME, userId: USER_ID, isGuest: IS_GUEST });
 });
 
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function requestGame() {
+  socket.emit('request_new_game');
+  ui.startBtn.disabled = true;
+  ui.startBtn.textContent = 'Chargement…';
+  if (ui.replayBtn) ui.replayBtn.disabled = true;
+}
+
+// ─── Socket events ────────────────────────────────────────────────────────────
+socket.on('room_joined', ({ roomConfig }) => {
+  if (roomConfig) ui.roomLabel.textContent = `${roomConfig.emoji} ${roomConfig.name}`;
+});
+
+socket.on('update_players', players => {
+  ui.playerList.innerHTML = players
+    .sort((a, b) => b.score - a.score)
+    .map((p, i) => {
+      const medals = ['🥇','🥈','🥉'];
+      const rank   = medals[i] || `#${i+1}`;
+      return `<div class="p-card rank-${i+1}">
+        <span class="p-name">${rank} ${esc(p.name)}</span>
+        <div class="p-right">
+          <div class="p-badge ${p.foundArtist ? 'f' : ''}">A</div>
+          <div class="p-badge ${p.foundTitle  ? 'f' : ''}">T</div>
+          <span class="p-score">${p.score}pt</span>
+        </div>
+      </div>`;
+    }).join('');
+});
+
+socket.on('init_history',  () => { ui.histList.innerHTML = ''; });
+socket.on('game_starting', () => {
+  ui.gameover.style.display = 'none';
+  ui.startBtn.style.display = 'none';
+});
+
+socket.on('start_round', data => {
+  personalFound = { artist: false, title: false };
+
+  ui.roundInfo.textContent = `Manche ${data.round} / ${data.total}`;
+
+  // Reset cover
+  ui.coverImg.style.display = 'none';
+  ui.coverImg.src = '';
+  ui.placeholder.style.display = 'flex';
+
+  // Reset slots
+  setSlot(ui.slotArtist, '???', null);
+  setSlot(ui.slotTitle,  '???', null);
+
+  // Reset UI
+  ui.summary.style.display = 'none';
+  ui.gameover.style.display = 'none';
+  clearFeedback();
+
+  // Timer
+  ui.timerBar.style.transition = 'none';
+  ui.timerBar.style.width = '100%';
+  ui.timerBar.style.background = 'var(--accent)';
+  requestAnimationFrame(() => {
+    ui.timerBar.style.transition = 'width 1s linear, background .4s';
+  });
+
+  // Input
+  ui.guessInput.disabled = false;
+  ui.guessInput.value = '';
+  ui.guessInput.focus();
+  ui.startBtn.style.display  = 'none';
+  ui.startBtn.disabled       = false;
+  ui.startBtn.textContent    = '🎮 Lancer la partie';
+
+  loadVideo(data.videoId, data.startSeconds);
+});
+
+socket.on('timer_update', ({ current, max }) => {
+  const pct = (current / max) * 100;
+  ui.timerBar.style.width = `${pct}%`;
+  ui.timerBar.style.background =
+    pct < 30 ? 'var(--danger)' :
+    pct < 60 ? '#f59e0b' : 'var(--accent)';
+});
+
+socket.on('feedback', data => {
+  if (data.type === 'success_artist') {
+    setSlot(ui.slotArtist, data.val, 'found');
+    personalFound.artist = true;
+  }
+  if (data.type === 'success_title') {
+    setSlot(ui.slotTitle, data.val, 'found');
+    personalFound.title = true;
+  }
+
+  const cls = data.type === 'miss'  ? 'cold' :
+              data.type === 'close' ? 'hot'  : 'good';
+  showFeedback(data.msg, cls);
+});
+
+socket.on('round_end', data => {
+  const [artist, ...rest] = data.answer.split(' - ');
+  const title = rest.join(' - ');
+
+  setSlot(ui.slotArtist, artist || data.answer, data.foundArtist ? 'found' : 'missed');
+  setSlot(ui.slotTitle,  title  || '—',          data.foundTitle  ? 'found' : 'missed');
+
+  if (data.cover) {
+    ui.coverImg.src = data.cover;
+    ui.coverImg.style.display = 'block';
+    ui.placeholder.style.display = 'none';
+  }
+
+  ui.summary.style.display = 'block';
+  ui.reason.textContent  = data.reason;
+  ui.finder.textContent  = data.totalFound > 0
+    ? `🏆 1er : ${data.firstFinder} — ${data.totalFound} joueur(s) ont tout trouvé`
+    : "❌ Personne n'a trouvé";
+
+  ui.guessInput.disabled = true;
+  ui.timerBar.style.transition = 'none';
+  ui.timerBar.style.width = '0%';
+  stopVideo();
+
+  // Add to history
+  const el = document.createElement('div');
+  el.className = 'h-item';
+  el.innerHTML = data.cover
+    ? `<img src="${esc(data.cover)}" alt="">`
+    : `<div class="h-no-img">♪</div>`;
+  el.innerHTML += `
+    <div class="h-info">
+      <div class="h-name">${esc(data.answer)}</div>
+      <div class="h-tags">
+        <span class="h-tag ${data.foundArtist ? 'f' : ''}">A</span>
+        <span class="h-tag ${data.foundTitle  ? 'f' : ''}">T</span>
+      </div>
+    </div>`;
+  ui.histList.prepend(el);
+  // No max-height limit — sidebar scrolls naturally
+});
+
+socket.on('game_over', scores => {
+  stopVideo();
+  ui.guessInput.disabled = true;
+  ui.timerBar.style.width = '0%';
+  ui.summary.style.display = 'none';
+
+  const medals = ['🥇','🥈','🥉'];
+  ui.goScores.innerHTML = scores.map((p, i) => `
+    <div class="go-row rank-${i+1}">
+      <span class="go-medal">${medals[i] || `#${i+1}`}</span>
+      <span class="go-name">${esc(p.name)}${p.isGuest ? ' <span style="font-size:.7rem;opacity:.5">(invité)</span>' : ''}</span>
+      <span class="go-score">${p.score} pts</span>
+    </div>`).join('');
+
+  ui.gameover.style.display = 'flex';
+  if (ui.replayBtn) { ui.replayBtn.disabled = false; ui.replayBtn.textContent = '🔄 Rejouer'; }
+});
+
+socket.on('server_error', msg => {
+  ui.errorMsg.textContent = msg;
+  ui.errorMsg.style.display = 'block';
+  setTimeout(() => ui.errorMsg.style.display = 'none', 4000);
+  ui.startBtn.disabled = false;
+  ui.startBtn.textContent = '🎮 Lancer la partie';
+  if (ui.replayBtn) ui.replayBtn.disabled = false;
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setSlot(el, text, state) {
+  el.className = 'slot' + (state ? ' ' + state : '');
+  el.querySelector('.slot-val').textContent = text;
+}
+
+function showFeedback(msg, cls) {
+  clearTimeout(feedTimer);
+  ui.feedback.textContent = msg;
+  ui.feedback.className = `show ${cls}`;
+  feedTimer = setTimeout(() => { ui.feedback.className = ''; }, 2600);
+}
+function clearFeedback() {
+  clearTimeout(feedTimer);
+  ui.feedback.className = '';
+  ui.feedback.textContent = '';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

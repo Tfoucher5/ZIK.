@@ -1,5 +1,5 @@
-// ─── Configuration des rooms ──────────────────────────────────────────────────
-// Chaque playlist_id = ID de playlist publique Deezer
+// ─── Configuration des rooms ZIK ─────────────────────────────────────────────
+// playlist_ids : liste ordonnée, le serveur essaie chacun jusqu'à en trouver un valide
 
 const ROOMS = {
   'hiphop': {
@@ -9,7 +9,9 @@ const ROOMS = {
     description: 'Classiques et hits du rap français',
     color: '#f59e0b',
     gradient: 'linear-gradient(135deg, #f59e0b22, #d9770622)',
-    playlist_id: '1963962142', // Rap FR hits
+    playlist_ids: [
+      '3272614282',  // Rap FR 100% (SDM, Damso, Ninho, PNL...)
+    ],
     maxRounds: 10,
   },
   'electro': {
@@ -19,7 +21,9 @@ const ROOMS = {
     description: 'House, techno, dance — fais vibrer les basses',
     color: '#06b6d4',
     gradient: 'linear-gradient(135deg, #06b6d422, #6366f122)',
-    playlist_id: '1313621735', // Electronic hits
+    playlist_ids: [
+      '1902101402',  // Electronic Hits (Deezer editor)
+    ],
     maxRounds: 10,
   },
   'pop': {
@@ -29,7 +33,9 @@ const ROOMS = {
     description: 'Les hits pop qui ont cartonné partout',
     color: '#ec4899',
     gradient: 'linear-gradient(135deg, #ec489922, #f4365622)',
-    playlist_id: '3155776842', // Pop hits
+    playlist_ids: [
+      '1565553361',  // Hits Cultes Pop Rock (The Doors → Coldplay)
+    ],
     maxRounds: 10,
   },
   'annees90': {
@@ -39,7 +45,9 @@ const ROOMS = {
     description: 'La nostalgie en mode blind test',
     color: '#a78bfa',
     gradient: 'linear-gradient(135deg, #a78bfa22, #ec489922)',
-    playlist_id: '1109278281', // 90s hits
+    playlist_ids: [
+      '1682663671',  // Soirée 90 (Deezer Editeurs France)
+    ],
     maxRounds: 10,
   },
   'rock': {
@@ -49,7 +57,9 @@ const ROOMS = {
     description: 'Des riffs, des solos, du volume',
     color: '#ef4444',
     gradient: 'linear-gradient(135deg, #ef444422, #dc262622)',
-    playlist_id: '1313621375', // Rock classics
+    playlist_ids: [
+      '8322150382',  // Top hits rock classique
+    ],
     maxRounds: 10,
   },
   'films': {
@@ -59,7 +69,9 @@ const ROOMS = {
     description: 'Les BO qui ont marqué le cinéma',
     color: '#fbbf24',
     gradient: 'linear-gradient(135deg, #fbbf2422, #f5973422)',
-    playlist_id: '1279192301', // Movie soundtracks
+    playlist_ids: [
+      '9435487222',  // Chansons films, séries TV, animé, jeux
+    ],
     maxRounds: 10,
   },
 };

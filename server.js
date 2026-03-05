@@ -11,6 +11,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// ⚠️ /config.js DOIT être avant express.static pour ne pas chercher un fichier physique
+app.get('/config.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.send(`window.ZIK_SUPABASE_URL=${JSON.stringify(process.env.SUPABASE_URL||'')};window.ZIK_SUPABASE_ANON_KEY=${JSON.stringify(process.env.SUPABASE_ANON_KEY||'')};`);
+});
+
 app.use(express.static('public'));
 app.use(express.json());
 
@@ -20,33 +27,88 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
+// ─── Fetch helper (compatible Node 16/17 et Node 18+) ────────────────────────
+let _fetch;
+async function getFetch() {
+  if (_fetch) return _fetch;
+  // Node 18+ a fetch natif
+  if (typeof globalThis.fetch === 'function') {
+    _fetch = globalThis.fetch;
+    return _fetch;
+  }
+  // Fallback node-fetch pour Node < 18
+  try {
+    const mod = await import('node-fetch');
+    _fetch = mod.default;
+    console.log('ℹ️  Utilisation de node-fetch');
+  } catch {
+    console.error('❌ node-fetch introuvable — lance: npm install node-fetch');
+    throw new Error('fetch indisponible');
+  }
+  return _fetch;
+}
+
 // ─── Playlists cache ──────────────────────────────────────────────────────────
 const playlistCache = {}; // roomId -> tracks[]
+
+async function fetchDeezerPlaylist(playlistId) {
+  const fetchFn = await getFetch();
+  const url = `https://api.deezer.com/playlist/${playlistId}?limit=100`;
+  const res = await fetchFn(url, {
+    headers: { 'User-Agent': 'ZIK-BlindTest/1.0' },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(`Deezer: ${data.error.message || JSON.stringify(data.error)}`);
+  if (!data.tracks?.data?.length) throw new Error('Playlist vide ou privée');
+  return data;
+}
 
 async function loadPlaylist(roomId) {
   if (playlistCache[roomId]?.length > 0) return playlistCache[roomId];
   const room = ROOMS[roomId];
   if (!room) return [];
-  try {
-    const res = await fetch(`https://api.deezer.com/playlist/${room.playlist_id}`);
-    const data = await res.json();
-    playlistCache[roomId] = data.tracks.data.map(t => ({
-      artist:      t.artist.name,
-      title:       t.title,
-      cleanTitle:  cleanString(t.title),
-      cleanArtist: cleanString(t.artist.name),
-      cover:       t.album.cover_xl,
-    }));
-    console.log(`✅ Room "${roomId}": ${playlistCache[roomId].length} titres`);
-    return playlistCache[roomId];
-  } catch (err) {
-    console.error(`❌ Deezer error for room ${roomId}:`, err.message);
-    return [];
+
+  const ids = room.playlist_ids || (room.playlist_id ? [room.playlist_id] : []);
+  if (!ids.length) { console.error(`❌ Room "${roomId}": aucun playlist_id configuré`); return []; }
+
+  for (const pid of ids) {
+    try {
+      const data = await fetchDeezerPlaylist(pid);
+      const tracks = data.tracks.data
+        .filter(t => t.readable !== false) // exclure titres non disponibles
+        .map(t => ({
+          artist:      t.artist.name,
+          title:       t.title,
+          cleanTitle:  cleanString(t.title),
+          cleanArtist: cleanString(t.artist.name),
+          cover:       t.album.cover_xl || t.album.cover_big || '',
+        }));
+
+      if (tracks.length < 5) throw new Error(`Seulement ${tracks.length} titres lisibles`);
+
+      playlistCache[roomId] = tracks;
+      console.log(`✅ Room "${roomId}" (playlist ${pid}): ${tracks.length} titres — "${data.title}"`);
+      return tracks;
+    } catch (err) {
+      console.warn(`⚠️  Room "${roomId}" playlist ${pid} KO: ${err.message}`);
+    }
   }
+
+  console.error(`❌ Room "${roomId}": toutes les playlists ont échoué`);
+  return [];
 }
 
-// Précharger toutes les playlists au démarrage
-Object.keys(ROOMS).forEach(id => loadPlaylist(id));
+// Précharger toutes les playlists au démarrage avec diagnostic
+async function preloadAllPlaylists() {
+  console.log('🔄 Préchargement des playlists Deezer...');
+  const results = await Promise.allSettled(Object.keys(ROOMS).map(id => loadPlaylist(id)));
+  const ok  = results.filter(r => r.status === 'fulfilled' && r.value?.length > 0).length;
+  const ko  = results.length - ok;
+  console.log(`📊 Playlists: ${ok}/${results.length} OK${ko ? ` — ${ko} en erreur` : ''}`);
+}
+preloadAllPlaylists();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function cleanString(str) {
@@ -448,4 +510,4 @@ function resetScores(room) {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 BT Project v2 → http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 ZIK → http://localhost:${PORT}`));
