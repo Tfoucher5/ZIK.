@@ -187,6 +187,14 @@ socket.on('feedback', data => {
   showFeedback(data.msg, cls);
 });
 
+socket.on('reveal_cover', ({ cover }) => {
+  if (cover && ui.coverImg.src !== cover) {
+    ui.coverImg.src = cover;
+    ui.coverImg.style.display = 'block';
+    ui.placeholder.style.display = 'none';
+  }
+});
+
 socket.on('round_end', data => {
   const [artist, ...rest] = data.answer.split(' - ');
   const title = rest.join(' - ');

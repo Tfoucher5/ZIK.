@@ -53,15 +53,33 @@ const playlistCache = {}; // roomId -> tracks[]
 
 async function fetchDeezerPlaylist(playlistId) {
   const fetchFn = await getFetch();
-  const url = `https://api.deezer.com/playlist/${playlistId}?limit=100`;
-  const res = await fetchFn(url, {
-    headers: { 'User-Agent': 'ZIK-BlindTest/1.0' },
-    signal: AbortSignal.timeout(8000),
+  const headers = { 'User-Agent': 'ZIK-BlindTest/1.0' };
+
+  // Première page
+  const res = await fetchFn(`https://api.deezer.com/playlist/${playlistId}?limit=100`, {
+    headers, signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   if (data.error) throw new Error(`Deezer: ${data.error.message || JSON.stringify(data.error)}`);
   if (!data.tracks?.data?.length) throw new Error('Playlist vide ou privée');
+
+  let allTracks = [...data.tracks.data];
+  const total   = data.tracks.total || allTracks.length;
+
+  // Pagination par index jusqu'à 1000 titres
+  while (allTracks.length < Math.min(total, 1000)) {
+    const index  = allTracks.length;
+    const nextR  = await fetchFn(`https://api.deezer.com/playlist/${playlistId}/tracks?index=${index}&limit=100`, {
+      headers, signal: AbortSignal.timeout(10000),
+    });
+    if (!nextR.ok) break;
+    const nextData = await nextR.json();
+    if (nextData.error || !nextData.data?.length) break;
+    allTracks = allTracks.concat(nextData.data);
+  }
+
+  data.tracks.data = allTracks;
   return data;
 }
 
@@ -116,7 +134,11 @@ preloadAllPlaylists();
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function cleanString(str) {
   if (!str) return '';
-  return str.replace(/ *\([^)]*\) */g, '').replace(/ *\[[^\]]*\] */g, '').trim().toLowerCase();
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // supprimer accents
+    .replace(/ *\([^)]*\) */g, '').replace(/ *\[[^\]]*\] */g, '')
+    .replace(/[''`]/g, "'").replace(/[-–—]/g, ' ')
+    .trim().toLowerCase();
 }
 
 function calcSpeedBonus(timeTaken) {
@@ -203,12 +225,15 @@ app.get('/api/spotify/search', async (req, res) => {
   try {
     const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
-    const url     = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=20`;
-    const r = await fetchFn(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
+    // Utiliser URLSearchParams pour éviter tout problème d'encodage
+    const params  = new URLSearchParams({ q, type: 'track', limit: '10' });
+    const r = await fetchFn(`https://api.spotify.com/v1/search?${params}`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+    });
     if (!r.ok) {
       const body = await r.text().catch(() => '');
       console.error(`Spotify search error ${r.status}:`, body);
-      throw new Error(`Spotify API HTTP ${r.status} — ${body.slice(0, 120)}`);
+      throw new Error(`Spotify API HTTP ${r.status} — ${body.slice(0, 200)}`);
     }
     const data = await r.json();
     res.json((data.tracks?.items || []).map(t => ({
@@ -225,33 +250,28 @@ app.get('/api/spotify/search', async (req, res) => {
 });
 
 // ─── Spotify : importer une playlist ─────────────────────────────────────────
+// Workaround pour la restriction API Spotify (nov 2024) : l'endpoint /tracks requiert
+// OAuth utilisateur, mais GET /playlists/{id} sans filtre fields intègre les 100 premiers
+// tracks et reste accessible avec Client Credentials pour les playlists publiques.
 app.get('/api/spotify/playlist/:id', async (req, res) => {
   try {
     const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
 
-    // Récup les métadonnées de la playlist
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}?fields=name,images`, {
-      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+    // Fetch playlist complète (inclut les 100 premiers tracks en embedded)
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
     });
-    if (!plRes.ok) throw new Error(`Playlist introuvable (HTTP ${plRes.status})`);
+    if (!plRes.ok) {
+      const body = await plRes.text().catch(() => '');
+      throw new Error(`Playlist introuvable (HTTP ${plRes.status}) — ${body.slice(0, 120)}`);
+    }
     const pl = await plRes.json();
 
-    // Paginer les tracks (max 500)
-    let allItems = [];
-    let nextUrl  = `https://api.spotify.com/v1/playlists/${req.params.id}/tracks?limit=100&fields=next,items(track(id,name,artists,album,preview_url))`;
-    while (nextUrl && allItems.length < 500) {
-      const r = await fetchFn(nextUrl, {
-        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
-      });
-      if (!r.ok) {
-        if (r.status === 403) throw new Error('Spotify a restreint l\'accès aux tracks de playlist en mode serveur (API Nov 2024). Utilise Deezer pour importer, ou la recherche titre par titre.');
-        throw new Error(`Tracks inaccessibles (HTTP ${r.status})`);
-      }
-      const page = await r.json();
-      allItems = allItems.concat(page.items || []);
-      nextUrl  = page.next || null;
-    }
+    // Extraire les tracks de la réponse embedded
+    const allItems = (pl.tracks?.items || []);
+    // Note : pagination impossible sans OAuth sur /tracks, on retourne les 100 premiers
+    const truncated = (pl.tracks?.total || 0) > allItems.length;
 
     const tracks = allItems
       .filter(i => i.track?.id)
@@ -264,7 +284,15 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
         cover_url:   i.track.album.images[1]?.url || i.track.album.images[0]?.url || null,
       }));
 
-    res.json({ name: pl.name, cover: pl.images[0]?.url || null, tracks });
+    if (!tracks.length) throw new Error('Playlist vide ou privée.');
+
+    res.json({
+      name:      pl.name,
+      cover:     pl.images[0]?.url || null,
+      tracks,
+      truncated,
+      total:     pl.tracks?.total || tracks.length,
+    });
   } catch (e) {
     res.status(502).json({ error: e.message });
   }
@@ -311,16 +339,18 @@ app.get('/api/deezer/playlist/:id', async (req, res) => {
     if (!data.tracks?.data?.length) throw new Error('Playlist vide ou privée');
 
     let allTracks = [...data.tracks.data];
-    let nextUrl   = data.tracks.next || null;
+    const total   = data.tracks.total || allTracks.length;
 
-    // Paginer jusqu'à 500 titres
-    while (nextUrl && allTracks.length < 500) {
-      const nextR = await fetchFn(nextUrl, { headers, signal: AbortSignal.timeout(10000) });
+    // Pagination par index (plus fiable que suivre `next`)
+    while (allTracks.length < Math.min(total, 1000)) {
+      const index = allTracks.length;
+      const nextR = await fetchFn(`https://api.deezer.com/playlist/${req.params.id}/tracks?index=${index}&limit=100`, {
+        headers, signal: AbortSignal.timeout(10000),
+      });
       if (!nextR.ok) break;
       const nextData = await nextR.json();
       if (nextData.error || !nextData.data?.length) break;
       allTracks = allTracks.concat(nextData.data);
-      nextUrl   = nextData.next || null;
     }
 
     const tracks = allTracks
@@ -469,7 +499,9 @@ io.on('connection', (socket) => {
         foundTitle: false,
       };
     } else {
-      // Reconnexion - update socket
+      // Reconnexion — annuler le timer de déconnexion
+      clearTimeout(room.players[username]._dcTimer);
+      delete room.players[username]._dcTimer;
       const oldSocketId = room.nameToSocket[username];
       if (oldSocketId) delete room.socketToName[oldSocketId];
     }
@@ -538,17 +570,30 @@ io.on('connection', (socket) => {
 
     const simArtist = stringSimilarity.compareTwoStrings(input, track.cleanArtist);
     const simTitle  = stringSimilarity.compareTwoStrings(input, track.cleanTitle);
+
+    // Vérifie si le mot saisi est un mot-clé du champ (ex: "daft" → match "daft punk")
+    function wordMatch(input, target) {
+      if (input.length < 2) return false;
+      const words = target.split(/\s+/).filter(w => w.length > 1);
+      return words.some(w => stringSimilarity.compareTwoStrings(input, w) > 0.82);
+    }
+    const cover = track.cover || '';
     let hit = false;
 
     // Check artiste
     if (!user.foundArtist) {
-      const match = (simArtist > 0.72 || track.cleanArtist.includes(input) || input.includes(track.cleanArtist)) && input.length > 1;
+      const match = input.length > 1 && (
+        simArtist > 0.55 ||
+        track.cleanArtist.includes(input) ||
+        input.includes(track.cleanArtist) ||
+        wordMatch(input, track.cleanArtist)
+      );
       if (match) {
         user.foundArtist = true;
         user.score += 1 + speedBonus;
-        socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.artist });
+        socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.artist, cover });
         hit = true;
-      } else if (simArtist > 0.45) {
+      } else if (simArtist > 0.38) {
         socket.emit('feedback', { type: 'close', msg: "🔥 Tu chauffes sur l'artiste !" });
         hit = true;
       }
@@ -556,13 +601,18 @@ io.on('connection', (socket) => {
 
     // Check titre
     if (!user.foundTitle) {
-      const match = (simTitle > 0.72 || track.cleanTitle.includes(input) || input.includes(track.cleanTitle)) && input.length > 1;
+      const match = input.length > 1 && (
+        simTitle > 0.55 ||
+        track.cleanTitle.includes(input) ||
+        input.includes(track.cleanTitle) ||
+        wordMatch(input, track.cleanTitle)
+      );
       if (match) {
         user.foundTitle = true;
         user.score += 1 + speedBonus;
-        socket.emit('feedback', { type: 'success_title', msg: `✅ Titre ! (+${1 + speedBonus} pts)`, val: track.title });
+        socket.emit('feedback', { type: 'success_title', msg: `✅ Titre ! (+${1 + speedBonus} pts)`, val: track.title, cover });
         hit = true;
-      } else if (simTitle > 0.45 && !hit) {
+      } else if (simTitle > 0.38 && !hit) {
         socket.emit('feedback', { type: 'close', msg: '🔥 Tu chauffes sur le titre !' });
         hit = true;
       }
@@ -573,8 +623,12 @@ io.on('connection', (socket) => {
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
 
     if (user.foundArtist && user.foundTitle) {
+      if (room.game.totalFullFound === 0 || !room.game.firstFullFinder) {
+        room.game.firstFullFinder = user.name;
+      }
       room.game.totalFullFound++;
-      if (!room.game.firstFullFinder) room.game.firstFullFinder = user.name;
+      // Montrer la cover immédiatement à ce joueur
+      socket.emit('reveal_cover', { cover: game.currentTrack.cover });
     }
 
     checkEveryoneFound(roomId);
@@ -592,9 +646,14 @@ function leaveRoom(socket, roomId) {
   if (name) {
     delete room.nameToSocket[name];
     delete room.socketToName[socket.id];
-    // Optionnel : retirer le joueur de la liste
-    // delete room.players[name];
-    // getRoomIO(roomId).emit('update_players', Object.values(room.players));
+    // Retirer le joueur après 30s (laisse le temps de se reconnecter)
+    if (room.players[name]) {
+      clearTimeout(room.players[name]._dcTimer);
+      room.players[name]._dcTimer = setTimeout(() => {
+        delete room.players[name];
+        getRoomIO(roomId).emit('update_players', Object.values(room.players).filter(p => !p._dcTimer));
+      }, 30_000);
+    }
   }
   socket.leave(`room:${roomId}`);
 }
@@ -625,7 +684,7 @@ async function startNextRound(roomId) {
     if (!r.videos?.length) throw new Error('No video');
 
     const video = r.videos[0];
-    const safeStart = Math.max(0, Math.floor(Math.random() * Math.max(1, video.seconds - CONFIG.roundDuration - 10)));
+    const safeStart = Math.max(0, Math.floor(Math.random() * Math.max(1, video.seconds - game.roundDuration - 10)));
 
     game.isActive = true;
     game.startTime = Date.now();

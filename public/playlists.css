@@ -69,8 +69,8 @@
 .pl-card-new-icon { font-size: 2rem; }
 
 /* ── Modals size overrides ───────────────────────────────────────────────────── */
-.modal-lg  { max-width: 520px; }
-.modal-xl  { max-width: 820px; max-height: 90vh; overflow-y: auto; }
+.modal-lg  { max-width: 620px; }
+.modal-xl  { max-width: 960px; max-height: 92vh; overflow-y: auto; }
 
 /* ── Playlist form ───────────────────────────────────────────────────────────── */
 .pl-form-row { display: flex; gap: 12px; }

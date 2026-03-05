@@ -208,8 +208,8 @@ footer{
 }
 .modal{
   background:var(--bg2);border:1px solid rgba(255,255,255,.1);
-  border-radius:22px;padding:36px 32px;
-  width:100%;max-width:400px;position:relative;
+  border-radius:22px;padding:40px 38px;
+  width:100%;max-width:460px;position:relative;
   box-shadow:0 40px 100px rgba(0,0,0,.8);
   animation:popIn .2s ease;
 }

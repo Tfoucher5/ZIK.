@@ -30,7 +30,7 @@ a{text-decoration:none;color:inherit}
 #game-screen{
   flex:1;
   display:grid;
-  grid-template-columns:230px 1fr 230px;
+  grid-template-columns:260px 1fr 260px;
   grid-template-rows:var(--nav-h) 1fr var(--footer-h);
   gap:10px;
   padding:10px;
@@ -87,7 +87,7 @@ a{text-decoration:none;color:inherit}
 
 /* Cover */
 #cover-wrap{
-  width:min(200px,30vh);height:min(200px,30vh);
+  width:min(240px,34vh);height:min(240px,34vh);
   position:relative;flex-shrink:0;
 }
 #cover-placeholder{
@@ -115,13 +115,13 @@ a{text-decoration:none;color:inherit}
 .slots{display:flex;gap:10px;width:100%;justify-content:center}
 .slot{
   background:var(--surface);border:1px solid var(--border);border-bottom:3px solid transparent;
-  padding:10px 18px;border-radius:12px;
-  min-width:150px;max-width:210px;text-align:center;
+  padding:12px 20px;border-radius:12px;
+  min-width:160px;max-width:240px;text-align:center;
   transition:border-bottom-color .3s,background .3s;
   flex:1;
 }
-.slot-label{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--dim);display:block;margin-bottom:4px}
-.slot-val{font-family:'Bricolage Grotesque',sans-serif;font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-label{font-size:.62rem;text-transform:uppercase;letter-spacing:2px;color:var(--dim);display:block;margin-bottom:5px}
+.slot-val{font-family:'Bricolage Grotesque',sans-serif;font-size:1.05rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot.found{border-bottom-color:var(--success);background:rgba(74,222,128,.04)}
 .slot.found .slot-val{color:var(--success)}
 .slot.missed{border-bottom-color:var(--danger);background:rgba(248,113,113,.04)}
@@ -168,11 +168,11 @@ a{text-decoration:none;color:inherit}
 .g-footer{
   grid-column:1/4;display:flex;align-items:center;justify-content:center;
 }
-.guess-wrap{position:relative;width:100%;max-width:460px}
+.guess-wrap{position:relative;width:100%;max-width:540px}
 #guessInput{
-  width:100%;padding:14px 44px 14px 24px;border-radius:50px;
+  width:100%;padding:15px 48px 15px 26px;border-radius:50px;
   background:rgba(255,255,255,.05);border:1px solid var(--border);
-  color:var(--text);font-size:.95rem;font-family:inherit;text-align:center;outline:none;
+  color:var(--text);font-size:1rem;font-family:inherit;text-align:center;outline:none;
   transition:border-color .2s,background .2s;
 }
 #guessInput:focus{border-color:var(--accent);background:rgba(62,207,255,.04)}
