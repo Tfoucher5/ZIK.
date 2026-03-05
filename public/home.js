@@ -77,6 +77,21 @@ function bindUI() {
   document.getElementById('logoutBtn').onclick       = () => sb?.auth.signOut();
   document.getElementById('closeModal').onclick      = closeAuthModal;
 
+  // Nav profile dropdown
+  const trigger  = document.getElementById('nav-profile-trigger');
+  const dropdown = document.getElementById('nav-dropdown');
+  if (trigger && dropdown) {
+    trigger.onclick = e => {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    };
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+  }
+
+  // Google OAuth
+  document.getElementById('googleLoginBtn')?.addEventListener('click', signInWithGoogle);
+  document.getElementById('googleRegisterBtn')?.addEventListener('click', signInWithGoogle);
+
   // Rejoindre par code
   document.getElementById('joinByCodeBtn').onclick = joinByCode;
   document.getElementById('roomCodeInput').onkeypress = e => { if (e.key === 'Enter') joinByCode(); };
@@ -106,6 +121,15 @@ function bindUI() {
   document.getElementById('confirmGuest').onclick  = confirmGuest;
   document.getElementById('guestUsername').onkeypress = e => { if (e.key === 'Enter') confirmGuest(); };
   document.getElementById('guestToLogin').onclick  = e => { e.preventDefault(); closeGuestModal(); openAuthModal('login'); };
+}
+
+// ─── Google OAuth ─────────────────────────────────────────────────────────────
+async function signInWithGoogle() {
+  if (!sb) return;
+  await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  });
 }
 
 // ─── Auth actions ─────────────────────────────────────────────────────────────

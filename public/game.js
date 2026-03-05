@@ -100,7 +100,10 @@ function requestGame() {
 
 // ─── Socket events ────────────────────────────────────────────────────────────
 socket.on('room_joined', ({ roomConfig }) => {
-  if (roomConfig) ui.roomLabel.textContent = `${roomConfig.emoji} ${roomConfig.name}`;
+  if (roomConfig) {
+    const trackInfo = roomConfig.trackCount ? ` — ${roomConfig.trackCount} titres` : '';
+    ui.roomLabel.textContent = `${roomConfig.emoji || ''} ${roomConfig.name || ''}${trackInfo}`.trim();
+  }
 });
 
 socket.on('update_players', players => {
@@ -120,7 +123,13 @@ socket.on('update_players', players => {
     }).join('');
 });
 
-socket.on('init_history',  () => { ui.histList.innerHTML = ''; });
+socket.on('init_history', history => {
+  ui.histList.innerHTML = '';
+  if (Array.isArray(history) && history.length) {
+    // Afficher du plus récent au plus ancien (prepend inverse l'ordre)
+    [...history].reverse().forEach(item => ui.histList.appendChild(buildHistoryItem(item)));
+  }
+});
 socket.on('game_starting', () => {
   ui.gameover.style.display = 'none';
   ui.startBtn.style.display = 'none';
@@ -220,19 +229,7 @@ socket.on('round_end', data => {
   stopVideo();
 
   // Add to history
-  const el = document.createElement('div');
-  el.className = 'h-item';
-  el.innerHTML = data.cover
-    ? `<img src="${esc(data.cover)}" alt="">`
-    : `<div class="h-no-img">♪</div>`;
-  el.innerHTML += `
-    <div class="h-info">
-      <div class="h-name">${esc(data.answer)}</div>
-      <div class="h-tags">
-        <span class="h-tag ${data.foundArtist ? 'f' : ''}">A</span>
-        <span class="h-tag ${data.foundTitle  ? 'f' : ''}">T</span>
-      </div>
-    </div>`;
+  const el = buildHistoryItem(data, data.foundArtist, data.foundTitle);
   ui.histList.prepend(el);
   // No max-height limit — sidebar scrolls naturally
 });
@@ -284,4 +281,20 @@ function clearFeedback() {
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function buildHistoryItem(data, foundArtist, foundTitle) {
+  const el = document.createElement('div');
+  el.className = 'h-item';
+  const coverHtml = data.cover
+    ? `<img src="${esc(data.cover)}" alt="">`
+    : `<div class="h-no-img">♪</div>`;
+  const tagsHtml = (foundArtist !== undefined)
+    ? `<div class="h-tags">
+        <span class="h-tag ${foundArtist ? 'f' : ''}">A</span>
+        <span class="h-tag ${foundTitle  ? 'f' : ''}">T</span>
+       </div>`
+    : '';
+  el.innerHTML = `${coverHtml}<div class="h-info"><div class="h-name">${esc(data.answer)}</div>${tagsHtml}</div>`;
+  return el;
 }

@@ -279,14 +279,24 @@ async function deletePlaylist() {
   if (!editingPl) return;
   if (!confirm(`Supprimer "${editingPl.name}" ? Cette action est irréversible.`)) return;
 
+  const btn = document.getElementById('deletePlaylistBtn');
+  btn.disabled = true; btn.textContent = '...';
+
   // Supprimer les tracks en premier (évite la contrainte FK si pas de CASCADE)
   const { error: tracksErr } = await sb.from('custom_playlist_tracks').delete().eq('playlist_id', editingPl.id);
-  if (tracksErr) { toast('Erreur suppression tracks : ' + tracksErr.message, 'error'); return; }
+  if (tracksErr) { toast('Erreur suppression tracks : ' + tracksErr.message, 'error'); btn.disabled = false; btn.textContent = 'Supprimer'; return; }
 
-  const { error } = await sb.from('custom_playlists').delete().eq('id', editingPl.id);
-  if (error) { toast('Erreur suppression playlist : ' + error.message, 'error'); return; }
+  const deletedId = editingPl.id;
+  const { error } = await sb.from('custom_playlists').delete().eq('id', deletedId);
+  if (error) { toast('Erreur suppression playlist : ' + error.message, 'error'); btn.disabled = false; btn.textContent = 'Supprimer'; return; }
 
   closeEditorModal();
+  editingPl = null;
+
+  // Retirer la carte immédiatement du DOM
+  const grid = document.getElementById('playlists-grid');
+  const cards = grid.querySelectorAll('.pl-card:not(.pl-card-new)');
+  // Recharger la liste depuis la base
   toast('Playlist supprimée.', 'success');
   await loadPlaylists();
 }
@@ -515,6 +525,13 @@ function bindNavAuth() {
   document.getElementById('logoutBtn')?.addEventListener('click', () => sb?.auth.signOut());
   document.getElementById('wallLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
   document.getElementById('wallRegisterBtn')?.addEventListener('click', () => openAuthModal('register'));
+
+  const trigger  = document.getElementById('nav-profile-trigger');
+  const dropdown = document.getElementById('nav-dropdown');
+  if (trigger && dropdown) {
+    trigger.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+  }
 }
 
 function bindModals() {
@@ -534,6 +551,9 @@ function bindModals() {
   document.getElementById('loginSubmit').addEventListener('click', handleLogin);
   document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
   document.getElementById('registerSubmit').addEventListener('click', handleRegister);
+  document.getElementById('googleLoginBtn')?.addEventListener('click', () => {
+    sb?.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+  });
 }
 
 function bindEditor() {

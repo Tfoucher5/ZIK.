@@ -250,48 +250,90 @@ app.get('/api/spotify/search', async (req, res) => {
 });
 
 // ─── Spotify : importer une playlist ─────────────────────────────────────────
-// Workaround pour la restriction API Spotify (nov 2024) : l'endpoint /tracks requiert
-// OAuth utilisateur, mais GET /playlists/{id} sans filtre fields intègre les 100 premiers
-// tracks et reste accessible avec Client Credentials pour les playlists publiques.
+// Stratégie :
+// 1. GET /playlists/{id}/tracks avec pagination (fonctionne avec CC pour playlists publiques)
+// 2. Si 403, fallback sur les tracks embedded dans GET /playlists/{id} (100 premiers)
 app.get('/api/spotify/playlist/:id', async (req, res) => {
   try {
     const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
+    const plId    = req.params.id;
 
-    // Fetch playlist complète (inclut les 100 premiers tracks en embedded)
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}`, {
-      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
+    // 1. Métadonnées de la playlist
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=FR`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000),
     });
     if (!plRes.ok) {
       const body = await plRes.text().catch(() => '');
-      throw new Error(`Playlist introuvable (HTTP ${plRes.status}) — ${body.slice(0, 120)}`);
+      console.error(`Spotify playlist ${plId} error ${plRes.status}:`, body.slice(0, 200));
+      if (plRes.status === 404) throw new Error('Playlist introuvable — vérifie que le lien est correct et que la playlist est publique.');
+      if (plRes.status === 403) throw new Error('Accès refusé par Spotify — la playlist est peut-être privée.');
+      throw new Error(`Erreur Spotify (HTTP ${plRes.status})`);
     }
     const pl = await plRes.json();
+    const total = pl.tracks?.total || 0;
 
-    // Extraire les tracks de la réponse embedded
-    const allItems = (pl.tracks?.items || []);
-    // Note : pagination impossible sans OAuth sur /tracks, on retourne les 100 premiers
-    const truncated = (pl.tracks?.total || 0) > allItems.length;
+    console.log(`Spotify playlist "${pl.name}": total=${total}, embedded=${pl.tracks?.items?.length || 0}`);
+
+    // 2. Tenter la pagination via /tracks (fonctionne souvent avec CC pour playlists publiques)
+    let allItems = [];
+    let usedPagination = false;
+    try {
+      let offset = 0;
+      const limit = 100;
+      while (offset < Math.min(total, 500)) {
+        const tRes = await fetchFn(
+          `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=${limit}&offset=${offset}&market=FR&fields=items(track(id,name,artists(name),album(images),preview_url)),next,total`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
+        );
+        if (!tRes.ok) {
+          console.warn(`Spotify /tracks offset=${offset} returned ${tRes.status} — fallback sur embedded`);
+          break;
+        }
+        const tData = await tRes.json();
+        if (!tData.items?.length) break;
+        allItems = allItems.concat(tData.items);
+        offset += limit;
+        if (tData.items.length < limit || !tData.next) break;
+      }
+      if (allItems.length > 0) usedPagination = true;
+    } catch (paginationErr) {
+      console.warn('Spotify pagination error:', paginationErr.message);
+    }
+
+    // 3. Fallback sur les tracks embedded si pagination vide
+    if (!usedPagination) {
+      allItems = pl.tracks?.items || [];
+      console.log(`Spotify: utilisation des ${allItems.length} tracks embedded (pagination indisponible)`);
+    }
 
     const tracks = allItems
-      .filter(i => i.track?.id)
+      .filter(i => i?.track?.id)
       .map(i => ({
         external_id: i.track.id,
         source:      'spotify',
         artist:      i.track.artists.map(a => a.name).join(', '),
         title:       i.track.name,
         preview_url: i.track.preview_url || null,
-        cover_url:   i.track.album.images[1]?.url || i.track.album.images[0]?.url || null,
+        cover_url:   i.track.album?.images?.[1]?.url || i.track.album?.images?.[0]?.url || null,
       }));
 
-    if (!tracks.length) throw new Error('Playlist vide ou privée.');
+    console.log(`Spotify: ${tracks.length} tracks valides extraits (sur ${allItems.length} items)`);
 
+    if (!tracks.length) {
+      if (total > 0) {
+        throw new Error(`La playlist contient ${total} titre(s) mais aucun n'est accessible via l'API Spotify avec les identifiants actuels. Essaie l'import Deezer ou ajoute les titres manuellement.`);
+      }
+      throw new Error('Playlist vide ou privée — vérifie que la playlist est bien publique et contient des titres.');
+    }
+
+    const truncated = total > tracks.length;
     res.json({
       name:      pl.name,
-      cover:     pl.images[0]?.url || null,
+      cover:     pl.images?.[0]?.url || null,
       tracks,
       truncated,
-      total:     pl.tracks?.total || tracks.length,
+      total,
     });
   } catch (e) {
     res.status(502).json({ error: e.message });
@@ -367,6 +409,49 @@ app.get('/api/deezer/playlist/:id', async (req, res) => {
     res.json({ name: data.title, cover: data.picture_xl || data.picture_big || null, tracks });
   } catch (e) {
     res.status(502).json({ error: e.message });
+  }
+});
+
+// ─── Profil : mise à jour (nom + avatar) ─────────────────────────────────────
+app.post('/api/profile/update', async (req, res) => {
+  const { userId, username, avatar_url } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+  const updates = {};
+  if (username !== undefined) {
+    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) return res.status(400).json({ error: 'Pseudo invalide' });
+    updates.username = username.trim();
+  }
+  if (avatar_url !== undefined) updates.avatar_url = avatar_url || null;
+  if (!Object.keys(updates).length) return res.status(400).json({ error: 'Rien à mettre à jour' });
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// ─── Stats : meilleurs scores par room ───────────────────────────────────────
+app.get('/api/stats/:userId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('game_players')
+      .select('score, games(room_id, ended_at)')
+      .eq('user_id', req.params.userId)
+      .eq('is_guest', false)
+      .not('games', 'is', null)
+      .order('score', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Meilleur score par room
+    const bestByRoom = {};
+    (data || []).forEach(row => {
+      const roomId = row.games?.room_id;
+      if (!roomId) return;
+      if (!bestByRoom[roomId] || row.score > bestByRoom[roomId]) {
+        bestByRoom[roomId] = row.score;
+      }
+    });
+    res.json({ bestByRoom });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -510,7 +595,17 @@ io.on('connection', (socket) => {
     room.nameToSocket[username] = socket.id;
 
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
-    socket.emit('room_joined', { roomId, roomConfig: ROOMS[roomId] || { id: roomId, name: customRooms[roomId]?.name, emoji: customRooms[roomId]?.emoji } });
+    const cust = customRooms[roomId];
+    socket.emit('room_joined', {
+      roomId,
+      roomConfig: ROOMS[roomId] || {
+        id: roomId,
+        name: cust?.name,
+        emoji: cust?.emoji,
+        trackCount: cust?.tracks?.length,
+        maxRounds: cust?.maxRounds,
+      },
+    });
     socket.emit('init_history', room.game.history);
 
     if (room.game.isActive && room.game.lastRoundData) {
@@ -571,21 +666,20 @@ io.on('connection', (socket) => {
     const simArtist = stringSimilarity.compareTwoStrings(input, track.cleanArtist);
     const simTitle  = stringSimilarity.compareTwoStrings(input, track.cleanTitle);
 
-    // Vérifie si le mot saisi est un mot-clé du champ (ex: "daft" → match "daft punk")
+    // Vérifie si le mot saisi correspond exactement à un mot du champ (min 3 lettres)
     function wordMatch(input, target) {
-      if (input.length < 2) return false;
-      const words = target.split(/\s+/).filter(w => w.length > 1);
-      return words.some(w => stringSimilarity.compareTwoStrings(input, w) > 0.82);
+      if (input.length < 3) return false;
+      const words = target.split(/\s+/).filter(w => w.length >= 3);
+      return words.some(w => stringSimilarity.compareTwoStrings(input, w) > 0.88);
     }
     const cover = track.cover || '';
     let hit = false;
 
     // Check artiste
     if (!user.foundArtist) {
-      const match = input.length > 1 && (
-        simArtist > 0.55 ||
-        track.cleanArtist.includes(input) ||
-        input.includes(track.cleanArtist) ||
+      const match = input.length >= 3 && (
+        simArtist > 0.70 ||
+        (input.length >= 4 && simArtist > 0.60 && wordMatch(input, track.cleanArtist)) ||
         wordMatch(input, track.cleanArtist)
       );
       if (match) {
@@ -593,7 +687,7 @@ io.on('connection', (socket) => {
         user.score += 1 + speedBonus;
         socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.artist, cover });
         hit = true;
-      } else if (simArtist > 0.38) {
+      } else if (simArtist > 0.48) {
         socket.emit('feedback', { type: 'close', msg: "🔥 Tu chauffes sur l'artiste !" });
         hit = true;
       }
@@ -601,10 +695,9 @@ io.on('connection', (socket) => {
 
     // Check titre
     if (!user.foundTitle) {
-      const match = input.length > 1 && (
-        simTitle > 0.55 ||
-        track.cleanTitle.includes(input) ||
-        input.includes(track.cleanTitle) ||
+      const match = input.length >= 3 && (
+        simTitle > 0.70 ||
+        (input.length >= 4 && simTitle > 0.60 && wordMatch(input, track.cleanTitle)) ||
         wordMatch(input, track.cleanTitle)
       );
       if (match) {
@@ -612,7 +705,7 @@ io.on('connection', (socket) => {
         user.score += 1 + speedBonus;
         socket.emit('feedback', { type: 'success_title', msg: `✅ Titre ! (+${1 + speedBonus} pts)`, val: track.title, cover });
         hit = true;
-      } else if (simTitle > 0.38 && !hit) {
+      } else if (simTitle > 0.48 && !hit) {
         socket.emit('feedback', { type: 'close', msg: '🔥 Tu chauffes sur le titre !' });
         hit = true;
       }

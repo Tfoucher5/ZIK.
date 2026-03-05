@@ -106,13 +106,41 @@ CREATE POLICY "Round results insérables par tous"
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  base_username TEXT;
+  final_username TEXT;
+  counter INTEGER := 0;
 BEGIN
+  -- Dériver un username depuis les métadonnées (email/username/name)
+  base_username := COALESCE(
+    NEW.raw_user_meta_data->>'username',
+    REGEXP_REPLACE(
+      LOWER(COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1))),
+      '[^a-z0-9_-]', '', 'g'
+    )
+  );
+  -- S'assurer que le username fait entre 3 et 20 caractères
+  base_username := SUBSTRING(base_username FROM 1 FOR 20);
+  IF LENGTH(base_username) < 3 THEN base_username := 'user'; END IF;
+  final_username := base_username;
+
+  -- Unicité du username (ajouter suffix si déjà pris)
+  WHILE EXISTS (SELECT 1 FROM public.profiles WHERE username = final_username) LOOP
+    counter := counter + 1;
+    final_username := SUBSTRING(base_username FROM 1 FOR 17) || counter::TEXT;
+  END LOOP;
+
   INSERT INTO public.profiles (id, username, avatar_url)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-    NEW.raw_user_meta_data->>'avatar_url'
-  );
+    final_username,
+    COALESCE(
+      NEW.raw_user_meta_data->>'avatar_url',
+      NEW.raw_user_meta_data->>'picture'
+    )
+  )
+  ON CONFLICT (id) DO NOTHING;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
