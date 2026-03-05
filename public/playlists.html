@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZIK — Mes Playlists</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="home.css">
+  <link rel="stylesheet" href="playlists.css">
+</head>
+<body>
+
+  <nav id="navbar">
+    <a href="/" class="nav-logo">ZIK<span>.</span></a>
+    <div class="nav-right">
+      <div id="nav-user" style="display:none">
+        <div class="nav-avatar-wrap">
+          <img id="nav-avatar" src="" alt="">
+          <span id="nav-username"></span>
+        </div>
+        <button class="btn-ghost sm" id="logoutBtn">Déco</button>
+      </div>
+      <div id="nav-auth" style="display:none">
+        <button class="btn-ghost sm" id="openLoginBtn">Connexion</button>
+        <button class="btn-accent sm" id="openRegisterBtn">S'inscrire</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="pl-header">
+    <div class="pl-header-inner">
+      <h1>Mes <em>Playlists</em></h1>
+      <p class="pl-sub">Crée et gère tes playlists personnalisées pour le blind test.</p>
+      <button class="btn-accent" id="newPlaylistBtn">+ Nouvelle playlist</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="pl-main">
+
+    <!-- Auth wall -->
+    <div id="auth-wall" style="display:none" class="auth-wall">
+      <div class="auth-wall-icon">🎵</div>
+      <h2>Connecte-toi pour accéder à tes playlists</h2>
+      <p>Crée un compte gratuit pour sauvegarder et partager tes playlists.</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
+        <button class="btn-ghost" id="wallLoginBtn">Se connecter</button>
+        <button class="btn-accent" id="wallRegisterBtn">Créer un compte</button>
+      </div>
+    </div>
+
+    <!-- Grid playlists -->
+    <div id="playlists-grid" class="playlists-grid" style="display:none"></div>
+    <div id="playlists-loading" class="pl-loading">Chargement...</div>
+
+  </div>
+
+  <!-- ===================== MODAL : Nouvelle / éditer playlist ===================== -->
+  <div id="modal-playlist" class="overlay" style="display:none">
+    <div class="modal modal-lg">
+      <button class="close-btn" id="closePlaylistModal">✕</button>
+      <h2 id="modal-pl-title">Nouvelle playlist</h2>
+      <p class="mdesc">Donne un nom et un emoji à ta playlist.</p>
+
+      <div class="pl-form-row">
+        <div class="field" style="flex:0 0 80px">
+          <label>Emoji</label>
+          <input type="text" id="pl-emoji" value="🎵" maxlength="4" class="emoji-input">
+        </div>
+        <div class="field" style="flex:1">
+          <label>Nom</label>
+          <input type="text" id="pl-name" placeholder="Ma playlist rap" maxlength="60">
+        </div>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="pl-public" style="width:auto;accent-color:var(--accent)">
+          Rendre cette playlist publique
+        </label>
+      </div>
+      <div id="pl-form-error" class="alert-err" style="display:none"></div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="cancelPlaylistModal">Annuler</button>
+        <button class="btn-accent" id="savePlaylistBtn">Créer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL : Éditeur de tracks ===================== -->
+  <div id="modal-editor" class="overlay" style="display:none">
+    <div class="modal modal-xl">
+      <button class="close-btn" id="closeEditorModal">✕</button>
+
+      <div class="editor-header">
+        <span id="editor-emoji" class="editor-pl-emoji">🎵</span>
+        <div>
+          <h2 id="editor-pl-name">Playlist</h2>
+          <span id="editor-track-count" class="pill">0 titre</span>
+        </div>
+        <div class="editor-header-actions">
+          <button class="btn-ghost sm" id="editPlaylistInfoBtn">Modifier</button>
+          <button class="btn-danger sm" id="deletePlaylistBtn">Supprimer</button>
+        </div>
+      </div>
+
+      <!-- Onglets import / ajout manuel -->
+      <div class="editor-tabs">
+        <button class="etab active" data-tab="search">Rechercher un titre</button>
+        <button class="etab" data-tab="import-spotify">Importer Spotify</button>
+        <button class="etab" data-tab="import-deezer">Importer Deezer</button>
+        <button class="etab" data-tab="manual">Ajouter manuellement</button>
+      </div>
+
+      <!-- Tab : recherche -->
+      <div id="tab-search" class="tab-pane">
+        <div class="search-bar">
+          <div class="search-source-toggle">
+            <button class="src-btn active" data-src="deezer">Deezer</button>
+            <button class="src-btn" data-src="spotify">Spotify</button>
+          </div>
+          <input type="text" id="search-query" placeholder="Artiste, titre..." autocomplete="off">
+          <button class="btn-accent sm" id="searchBtn">Rechercher</button>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+
+      <!-- Tab : import Spotify -->
+      <div id="tab-import-spotify" class="tab-pane" style="display:none">
+        <div id="spotify-unconfigured" style="display:none" class="import-notice">
+          <p>Spotify n'est pas configuré. Ajoute <code>SPOTIFY_CLIENT_ID</code> et <code>SPOTIFY_CLIENT_SECRET</code> dans ton fichier <code>.env</code>.</p>
+        </div>
+        <div id="spotify-configured">
+          <p class="import-hint">Colle l'URL ou l'ID d'une playlist Spotify publique.</p>
+          <div class="search-bar">
+            <input type="text" id="spotify-pl-url" placeholder="https://open.spotify.com/playlist/... ou ID">
+            <button class="btn-accent sm" id="importSpotifyBtn">Importer</button>
+          </div>
+          <div id="import-spotify-preview" class="import-preview"></div>
+        </div>
+      </div>
+
+      <!-- Tab : import Deezer -->
+      <div id="tab-import-deezer" class="tab-pane" style="display:none">
+        <p class="import-hint">Colle l'URL ou l'ID d'une playlist Deezer publique.</p>
+        <div class="search-bar">
+          <input type="text" id="deezer-pl-url" placeholder="https://www.deezer.com/playlist/... ou ID">
+          <button class="btn-accent sm" id="importDeezerBtn">Importer</button>
+        </div>
+        <div id="import-deezer-preview" class="import-preview"></div>
+      </div>
+
+      <!-- Tab : ajout manuel -->
+      <div id="tab-manual" class="tab-pane" style="display:none">
+        <div class="manual-form">
+          <div class="pl-form-row">
+            <div class="field" style="flex:1">
+              <label>Artiste</label>
+              <input type="text" id="manual-artist" placeholder="Ex: PNL" maxlength="100">
+            </div>
+            <div class="field" style="flex:1">
+              <label>Titre</label>
+              <input type="text" id="manual-title" placeholder="Ex: Au DD" maxlength="100">
+            </div>
+          </div>
+          <div class="field">
+            <label>URL Preview (MP3, 30s) <span style="color:var(--dim);font-weight:400">— optionnel</span></label>
+            <input type="url" id="manual-preview" placeholder="https://...mp3">
+          </div>
+          <div id="manual-error" class="alert-err" style="display:none"></div>
+          <button class="btn-accent" id="addManualBtn">Ajouter à la playlist</button>
+        </div>
+      </div>
+
+      <!-- Liste des titres -->
+      <div class="tracks-section">
+        <div class="tracks-section-head">
+          <h3>Titres dans la playlist</h3>
+          <span id="tracks-empty-hint" class="tracks-empty-hint" style="display:none">Ajoute des titres via les onglets ci-dessus.</span>
+        </div>
+        <div id="tracks-list" class="tracks-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AUTH MODAL (réutilisé depuis home) -->
+  <div id="auth-modal" class="overlay" style="display:none">
+    <div class="modal" id="auth-box">
+      <button class="close-btn" id="closeModal">✕</button>
+      <div id="view-login">
+        <div class="modal-logo">ZIK<span>.</span></div>
+        <h2>Bon retour</h2>
+        <p class="mdesc">Connecte-toi pour accéder à tes playlists.</p>
+        <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="ton@email.com" autocomplete="email"></div>
+        <div class="field"><label>Mot de passe</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
+        <div id="login-error" class="alert-err" style="display:none"></div>
+        <button class="btn-accent full" id="loginSubmit">Se connecter</button>
+        <p class="mswitch">Pas de compte ? <a href="#" id="switchToRegister">Créer un compte</a></p>
+      </div>
+      <div id="view-register" style="display:none">
+        <div class="modal-logo">ZIK<span>.</span></div>
+        <h2>Créer un compte</h2>
+        <div class="field"><label>Pseudo</label><input type="text" id="regUsername" placeholder="MonPseudo" maxlength="20"></div>
+        <div class="field"><label>Email</label><input type="email" id="regEmail" placeholder="ton@email.com"></div>
+        <div class="field"><label>Mot de passe</label><input type="password" id="regPassword" placeholder="Min. 6 caractères"></div>
+        <div id="register-error" class="alert-err" style="display:none"></div>
+        <button class="btn-accent full" id="registerSubmit">Créer mon compte</button>
+        <p class="mswitch">Déjà un compte ? <a href="#" id="switchToLogin">Se connecter</a></p>
+      </div>
+      <div id="view-confirm" style="display:none">
+        <div class="confirm-view">
+          <div class="confirm-emoji">📬</div>
+          <h2>Vérifie tes mails</h2>
+          <p class="mdesc">Un lien de confirmation t'a été envoyé.</p>
+          <button class="btn-ghost full" id="closeConfirm">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script src="/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="playlists.js"></script>
+</body>
+</html>

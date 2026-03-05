@@ -163,6 +163,146 @@ app.get('/api/leaderboard/elo', async (req, res) => {
   res.json(data);
 });
 
+// ─── Spotify : token client credentials (mis en cache 50 min) ────────────────
+let _spotifyToken = null;
+let _spotifyTokenExpiry = 0;
+
+async function getSpotifyToken() {
+  if (_spotifyToken && Date.now() < _spotifyTokenExpiry) return _spotifyToken;
+  const clientId     = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error('SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET manquants dans .env');
+  const fetchFn = await getFetch();
+  const res = await fetchFn('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+    },
+    body: 'grant_type=client_credentials',
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Spotify auth HTTP ${res.status}`);
+  const json = await res.json();
+  _spotifyToken = json.access_token;
+  _spotifyTokenExpiry = Date.now() + (json.expires_in - 60) * 1000;
+  return _spotifyToken;
+}
+
+// ─── Spotify : recherche de titres ───────────────────────────────────────────
+app.get('/api/spotify/search', async (req, res) => {
+  const q = req.query.q?.trim();
+  if (!q) return res.status(400).json({ error: 'Paramètre q requis' });
+  try {
+    const token   = await getSpotifyToken();
+    const fetchFn = await getFetch();
+    const url     = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=20&market=FR`;
+    const r = await fetchFn(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    res.json(data.tracks.items.map(t => ({
+      external_id: t.id,
+      source:      'spotify',
+      artist:      t.artists.map(a => a.name).join(', '),
+      title:       t.name,
+      preview_url: t.preview_url || null,
+      cover_url:   t.album.images[1]?.url || t.album.images[0]?.url || null,
+    })));
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// ─── Spotify : importer une playlist ─────────────────────────────────────────
+app.get('/api/spotify/playlist/:id', async (req, res) => {
+  try {
+    const token   = await getSpotifyToken();
+    const fetchFn = await getFetch();
+    const [plRes, tracksRes] = await Promise.all([
+      fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}?fields=name,images`, {
+        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+      }),
+      fetchFn(`https://api.spotify.com/v1/playlists/${req.params.id}/tracks?limit=100&market=FR&fields=items(track(id,name,artists,album,preview_url))`, {
+        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+      }),
+    ]);
+    if (!plRes.ok)     throw new Error(`Playlist introuvable (HTTP ${plRes.status})`);
+    if (!tracksRes.ok) throw new Error(`Tracks inaccessibles (HTTP ${tracksRes.status})`);
+    const pl   = await plRes.json();
+    const trkD = await tracksRes.json();
+    const tracks = trkD.items
+      .filter(i => i.track?.id)
+      .map(i => ({
+        external_id: i.track.id,
+        source:      'spotify',
+        artist:      i.track.artists.map(a => a.name).join(', '),
+        title:       i.track.name,
+        preview_url: i.track.preview_url || null,
+        cover_url:   i.track.album.images[1]?.url || i.track.album.images[0]?.url || null,
+      }));
+    res.json({ name: pl.name, cover: pl.images[0]?.url || null, tracks });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// ─── Deezer : recherche de titres ────────────────────────────────────────────
+app.get('/api/deezer/search', async (req, res) => {
+  const q = req.query.q?.trim();
+  if (!q) return res.status(400).json({ error: 'Paramètre q requis' });
+  try {
+    const fetchFn = await getFetch();
+    const r = await fetchFn(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=20`, {
+      headers: { 'User-Agent': 'ZIK-BlindTest/1.0' }, signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error.message);
+    res.json((data.data || []).map(t => ({
+      external_id: String(t.id),
+      source:      'deezer',
+      artist:      t.artist.name,
+      title:       t.title,
+      preview_url: t.preview || null,
+      cover_url:   t.album.cover_xl || t.album.cover_big || null,
+    })));
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// ─── Deezer : importer une playlist ──────────────────────────────────────────
+app.get('/api/deezer/playlist/:id', async (req, res) => {
+  try {
+    const fetchFn = await getFetch();
+    const r = await fetchFn(`https://api.deezer.com/playlist/${req.params.id}?limit=100`, {
+      headers: { 'User-Agent': 'ZIK-BlindTest/1.0' }, signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error.message || 'Playlist introuvable');
+    if (!data.tracks?.data?.length) throw new Error('Playlist vide ou privée');
+    const tracks = data.tracks.data
+      .filter(t => t.readable !== false)
+      .map(t => ({
+        external_id: String(t.id),
+        source:      'deezer',
+        artist:      t.artist.name,
+        title:       t.title,
+        preview_url: t.preview || null,
+        cover_url:   t.album.cover_xl || t.album.cover_big || null,
+      }));
+    res.json({ name: data.title, cover: data.picture_xl || data.picture_big || null, tracks });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// ─── Spotify config status ────────────────────────────────────────────────────
+app.get('/api/spotify/status', (req, res) => {
+  res.json({ configured: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) });
+});
+
 // ─── Game State per Room ──────────────────────────────────────────────────────
 // roomGames[roomId] = { players, socketToName, nameToSocket, game }
 const roomGames = {};
