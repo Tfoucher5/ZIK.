@@ -2,50 +2,128 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>PoC BlindTest</title>
-    <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        #player { display: none; } /* On cache la vidéo pour le blind test */
-        .status { margin-top: 20px; font-size: 1.2rem; color: #38bdf8; }
-        button { padding: 10px 20px; background: #38bdf8; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BT Project | Blind Test</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Test Sync Audio YouTube</h1>
-    <button onclick="requestNext()">Lancer une musique</button>
-    <div class="status" id="status">En attente...</div>
-    
-    <div id="player"></div>
+    <div id="app">
+
+        <!-- Barre de timer globale -->
+        <div id="timer-bar-container">
+            <div id="timer-bar"></div>
+        </div>
+
+        <!-- ══════════════ LOGIN ══════════════ -->
+        <div id="login-screen">
+            <div class="login-card">
+                <div class="logo-wrap">
+                    <div class="logo-icon">🎵</div>
+                    <h1 class="logo-title">BT PROJECT</h1>
+                    <p class="logo-sub">Blind Test Multijoueur</p>
+                </div>
+                <div class="login-form">
+                    <input type="text" id="usernameInput" placeholder="Ton pseudo..." maxlength="20" autocomplete="off">
+                    <button id="joinBtn" class="btn-primary">REJOINDRE LA PARTIE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ GAME ══════════════ -->
+        <div id="game-screen" style="display: none;">
+
+            <!-- Header -->
+            <header class="game-header">
+                <div id="round-info" class="round-badge">Manche 0 / 10</div>
+                <div class="vol-ctrl">
+                    <span>🔊</span>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="50">
+                </div>
+            </header>
+
+            <!-- Sidebar gauche : joueurs -->
+            <aside id="sidebar-left">
+                <h3 class="sidebar-title">👥 JOUEURS</h3>
+                <div id="player-list"></div>
+            </aside>
+
+            <!-- Centre -->
+            <main id="center-stage">
+
+                <!-- Pochette -->
+                <div id="reveal-container">
+                    <div id="album-placeholder">
+                        <div class="vinyl-record"></div>
+                        <span class="placeholder-label">?</span>
+                    </div>
+                    <img id="reveal-cover" src="" style="display:none;" alt="Album cover">
+                </div>
+
+                <!-- Slots Artiste / Titre -->
+                <div class="info-placeholders">
+                    <div id="slot-artist" class="slot">
+                        <span>Artiste</span>
+                        <div class="val">???</div>
+                    </div>
+                    <div id="slot-title" class="slot">
+                        <span>Titre</span>
+                        <div class="val">???</div>
+                    </div>
+                </div>
+
+                <!-- Feedback (chaud/froid/trouvé) -->
+                <div id="game-feedback"></div>
+
+                <!-- Résumé de manche -->
+                <div id="round-summary" style="display:none;">
+                    <p id="round-reason" class="round-reason"></p>
+                    <p id="first-finder-msg" class="first-finder"></p>
+                </div>
+
+                <!-- Erreur serveur -->
+                <div id="error-msg" class="error-msg" style="display:none;"></div>
+
+                <!-- Bouton lancer partie -->
+                <button id="startBtn" class="btn-primary btn-launch">🎮 LANCER UNE PARTIE</button>
+            </main>
+
+            <!-- Sidebar droite : historique -->
+            <aside id="sidebar-right">
+                <h3 class="sidebar-title">📜 HISTORIQUE</h3>
+                <div id="history-list"></div>
+            </aside>
+
+            <!-- Footer : input guess -->
+            <footer class="game-footer">
+                <input
+                    type="text"
+                    id="guessInput"
+                    placeholder="Tape l'artiste ou le titre..."
+                    disabled
+                    autocomplete="off"
+                    maxlength="100"
+                >
+            </footer>
+
+        </div><!-- /game-screen -->
+
+        <!-- ══════════════ GAME OVER OVERLAY ══════════════ -->
+        <div id="game-over-screen" style="display:none;">
+            <div class="game-over-card">
+                <div class="game-over-title">🏁 PARTIE TERMINÉE</div>
+                <div id="final-scores"></div>
+            </div>
+        </div>
+
+    </div><!-- /app -->
+
+    <!-- YouTube player caché -->
+    <div id="youtube-player" style="position:absolute;opacity:0;pointer-events:none;"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-        const socket = io();
-        let player;
-
-        // Initialisation de l'API YouTube
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', {
-                height: '0', width: '0',
-                playerVars: { 'autoplay': 1, 'controls': 0 },
-                events: { 'onReady': () => console.log("Player Prêt") }
-            });
-        }
-
-        function requestNext() {
-            socket.emit('request_new_round');
-        }
-
-        socket.on('start_round', (data) => {
-            document.getElementById('status').innerText = "Lecture en cours (Segment aléatoire)...";
-            
-            // On charge la vidéo et on saute au moment voulu
-            player.loadVideoById({
-                videoId: data.videoId,
-                startSeconds: data.startTime
-            });
-            player.playVideo();
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

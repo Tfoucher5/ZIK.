@@ -2,6 +2,17 @@
   "dependencies": {
     "express": "^5.2.1",
     "socket.io": "^4.8.3",
+    "string-similarity": "^4.0.4",
     "yt-search": "^2.13.1"
-  }
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "overrides": {
+    "minimatch": "^9.0.0"
+}
 }
