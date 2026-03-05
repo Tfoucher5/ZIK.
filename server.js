@@ -1,25 +1,40 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
+const http    = require('http');
+const path    = require('path');
 const { Server } = require('socket.io');
 const { createClient } = require('@supabase/supabase-js');
 const yts = require('yt-search');
 const stringSimilarity = require('string-similarity');
 const ROOMS = require('./rooms');
 
-const app = express();
+const app    = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io     = new Server(server);
 
-// ⚠️ /config.js DOIT être avant express.static pour ne pas chercher un fichier physique
+// ─── Config JS (avant static) ─────────────────────────────────────────────────
 app.get('/config.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.setHeader('Cache-Control', 'no-cache');
   res.send(`window.ZIK_SUPABASE_URL=${JSON.stringify(process.env.SUPABASE_URL||'')};window.ZIK_SUPABASE_ANON_KEY=${JSON.stringify(process.env.SUPABASE_ANON_KEY||'')};`);
 });
 
-app.use(express.static('public'));
+// ─── Static assets (CSS, JS, images) ─────────────────────────────────────────
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
+// ─── Routes HTML (URLs propres sans .html) ────────────────────────────────────
+const views = path.join(__dirname, 'views');
+app.get('/',           (req, res) => res.sendFile(path.join(views, 'index.html')));
+app.get('/game',       (req, res) => res.sendFile(path.join(views, 'game.html')));
+app.get('/playlists',  (req, res) => res.sendFile(path.join(views, 'playlists.html')));
+app.get('/profile',    (req, res) => res.sendFile(path.join(views, 'profile.html')));
+
+// Redirects pour les anciens liens en .html
+app.get('/game.html',      (req, res) => res.redirect(301, '/game'      + (Object.keys(req.query).length ? '?' + new URLSearchParams(req.query) : '')));
+app.get('/playlists.html', (req, res) => res.redirect(301, '/playlists'));
+app.get('/profile.html',   (req, res) => res.redirect(301, '/profile'));
+app.get('/index.html',     (req, res) => res.redirect(301, '/'));
 
 // ─── Supabase ─────────────────────────────────────────────────────────────────
 const supabase = createClient(
@@ -91,6 +106,39 @@ async function loadPlaylist(roomId) {
   const room = ROOMS[roomId];
   if (!room) return [];
 
+  // 1. Chercher d'abord une playlist officielle Supabase liée à cette room
+  try {
+    const { data: officialPl } = await supabase
+      .from('custom_playlists')
+      .select('id')
+      .eq('linked_room_id', roomId)
+      .eq('is_official', true)
+      .single();
+
+    if (officialPl) {
+      const { data: trackRows } = await supabase
+        .from('custom_playlist_tracks')
+        .select('artist, title, cover_url, preview_url')
+        .eq('playlist_id', officialPl.id)
+        .order('position');
+
+      if (trackRows?.length >= 5) {
+        const tracks = trackRows.map(t => ({
+          artist:      t.artist,
+          title:       t.title,
+          cleanTitle:  cleanString(t.title),
+          cleanArtist: cleanString(t.artist),
+          cover:       t.cover_url || '',
+          preview_url: t.preview_url || null,
+        }));
+        playlistCache[roomId] = tracks;
+        console.log(`✅ Room "${roomId}" (playlist Supabase officielle): ${tracks.length} titres`);
+        return tracks;
+      }
+    }
+  } catch { /* fallback Deezer */ }
+
+  // 2. Fallback : playlist Deezer configurée dans rooms.js
   const ids = room.playlist_ids || (room.playlist_id ? [room.playlist_id] : []);
   if (!ids.length) { console.error(`❌ Room "${roomId}": aucun playlist_id configuré`); return []; }
 
@@ -98,7 +146,7 @@ async function loadPlaylist(roomId) {
     try {
       const data = await fetchDeezerPlaylist(pid);
       const tracks = data.tracks.data
-        .filter(t => t.readable !== false) // exclure titres non disponibles
+        .filter(t => t.readable !== false)
         .map(t => ({
           artist:      t.artist.name,
           title:       t.title,
@@ -110,7 +158,7 @@ async function loadPlaylist(roomId) {
       if (tracks.length < 5) throw new Error(`Seulement ${tracks.length} titres lisibles`);
 
       playlistCache[roomId] = tracks;
-      console.log(`✅ Room "${roomId}" (playlist ${pid}): ${tracks.length} titres — "${data.title}"`);
+      console.log(`✅ Room "${roomId}" (playlist Deezer ${pid}): ${tracks.length} titres — "${data.title}"`);
       return tracks;
     } catch (err) {
       console.warn(`⚠️  Room "${roomId}" playlist ${pid} KO: ${err.message}`);
@@ -294,7 +342,7 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
         if (!tData.items?.length) break;
         allItems = allItems.concat(tData.items);
         offset += limit;
-        if (tData.items.length < limit || !tData.next) break;
+        if (tData.items.length < limit) break; // moins que demandé = fin de playlist
       }
       if (allItems.length > 0) usedPagination = true;
     } catch (paginationErr) {
@@ -410,6 +458,29 @@ app.get('/api/deezer/playlist/:id', async (req, res) => {
   } catch (e) {
     res.status(502).json({ error: e.message });
   }
+});
+
+// ─── Playlists custom : suppression sécurisée ────────────────────────────────
+app.delete('/api/playlists/:id', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Non authentifié' });
+  const token = authHeader.slice(7);
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Session invalide' });
+
+  const plId = req.params.id;
+  // Vérifier l'ownership
+  const { data: pl, error: plErr } = await supabase
+    .from('custom_playlists').select('owner_id').eq('id', plId).single();
+  if (plErr || !pl) return res.status(404).json({ error: 'Playlist introuvable' });
+  if (pl.owner_id !== user.id) return res.status(403).json({ error: 'Non autorisé' });
+
+  // Supprimer les tracks (le CASCADE le ferait aussi, mais on est explicite)
+  await supabase.from('custom_playlist_tracks').delete().eq('playlist_id', plId);
+  const { error } = await supabase.from('custom_playlists').delete().eq('id', plId);
+  if (error) return res.status(400).json({ error: error.message });
+  console.log(`🗑️  Playlist ${plId} supprimée par ${user.email}`);
+  res.json({ ok: true });
 });
 
 // ─── Profil : mise à jour (nom + avatar) ─────────────────────────────────────
@@ -595,16 +666,13 @@ io.on('connection', (socket) => {
     room.nameToSocket[username] = socket.id;
 
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
-    const cust = customRooms[roomId];
+    const cust        = customRooms[roomId];
+    const officialRoom = ROOMS[roomId];
     socket.emit('room_joined', {
       roomId,
-      roomConfig: ROOMS[roomId] || {
-        id: roomId,
-        name: cust?.name,
-        emoji: cust?.emoji,
-        trackCount: cust?.tracks?.length,
-        maxRounds: cust?.maxRounds,
-      },
+      roomConfig: officialRoom
+        ? { ...officialRoom, trackCount: playlistCache[roomId]?.length || null }
+        : { id: roomId, name: cust?.name, emoji: cust?.emoji, trackCount: cust?.tracks?.length, maxRounds: cust?.maxRounds },
     });
     socket.emit('init_history', room.game.history);
 

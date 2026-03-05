@@ -256,7 +256,7 @@ function bindModals() {
     if (e.key === 'Enter') handleLogin();
   });
   document.getElementById('googleLoginBtn')?.addEventListener('click', () => {
-    sb?.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/profile.html' } });
+    sb?.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/profile' } });
   });
 }
 

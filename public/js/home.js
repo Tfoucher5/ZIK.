@@ -250,7 +250,7 @@ function joinRoom(roomId) {
 
 function goToGame(roomId, username, userId, isGuest) {
   const p = new URLSearchParams({ roomId, username, userId: userId || '', isGuest: isGuest ? '1' : '0' });
-  window.location.href = `/game.html?${p}`;
+  window.location.href = `/game?${p}`;
 }
 
 // ─── Guest modal ─────────────────────────────────────────────────────────────

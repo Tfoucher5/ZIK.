@@ -282,23 +282,24 @@ async function deletePlaylist() {
   const btn = document.getElementById('deletePlaylistBtn');
   btn.disabled = true; btn.textContent = '...';
 
-  // Supprimer les tracks en premier (évite la contrainte FK si pas de CASCADE)
-  const { error: tracksErr } = await sb.from('custom_playlist_tracks').delete().eq('playlist_id', editingPl.id);
-  if (tracksErr) { toast('Erreur suppression tracks : ' + tracksErr.message, 'error'); btn.disabled = false; btn.textContent = 'Supprimer'; return; }
+  try {
+    // Endpoint serveur avec auth token explicite (plus fiable que client-side Supabase)
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(`/api/playlists/${editingPl.id}`, {
+      method:  'DELETE',
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
 
-  const deletedId = editingPl.id;
-  const { error } = await sb.from('custom_playlists').delete().eq('id', deletedId);
-  if (error) { toast('Erreur suppression playlist : ' + error.message, 'error'); btn.disabled = false; btn.textContent = 'Supprimer'; return; }
-
-  closeEditorModal();
-  editingPl = null;
-
-  // Retirer la carte immédiatement du DOM
-  const grid = document.getElementById('playlists-grid');
-  const cards = grid.querySelectorAll('.pl-card:not(.pl-card-new)');
-  // Recharger la liste depuis la base
-  toast('Playlist supprimée.', 'success');
-  await loadPlaylists();
+    closeEditorModal();
+    editingPl = null;
+    toast('Playlist supprimée.', 'success');
+    await loadPlaylists();
+  } catch (e) {
+    toast('Erreur suppression : ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = 'Supprimer';
+  }
 }
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
@@ -664,7 +665,7 @@ async function createRoom() {
 }
 
 function showRoomCode(code) {
-  const url = `${location.origin}/game.html?roomId=${code}`;
+  const url = `${location.origin}/game?roomId=${code}`;
   document.getElementById('room-code-display').textContent = code;
   document.getElementById('room-share-url').textContent    = url;
   document.getElementById('modal-room-code').style.display = 'flex';
@@ -672,7 +673,7 @@ function showRoomCode(code) {
 
 function copyRoomLink() {
   if (!_createdRoomCode) return;
-  const url = `${location.origin}/game.html?roomId=${_createdRoomCode}`;
+  const url = `${location.origin}/game?roomId=${_createdRoomCode}`;
   navigator.clipboard.writeText(url).then(() => toast('Lien copié !', 'success')).catch(() => toast('Copie échouée', 'error'));
 }
 
@@ -681,7 +682,7 @@ function joinRoomNow() {
   const name = currentUser?.profile?.username || currentUser?.email?.split('@')[0] || 'Joueur';
   const uid  = currentUser?.id || '';
   const p    = new URLSearchParams({ roomId: _createdRoomCode, username: name, userId: uid, isGuest: uid ? '0' : '1' });
-  window.location.href = `/game.html?${p}`;
+  window.location.href = `/game?${p}`;
 }
 
 // ─── Auth actions ─────────────────────────────────────────────────────────────

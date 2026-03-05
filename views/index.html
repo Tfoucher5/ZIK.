@@ -6,7 +6,7 @@
   <title>ZIK — Blind Test Multijoueur</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="home.css">
+  <link rel="stylesheet" href="/css/home.css">
 </head>
 <body>
 
@@ -14,7 +14,7 @@
     <a href="/" class="nav-logo">ZIK<span>.</span></a>
     <div class="nav-right">
       <div id="nav-user" style="display:none">
-        <a href="/playlists.html" class="btn-ghost sm" style="text-decoration:none">Mes playlists</a>
+        <a href="/playlists" class="btn-ghost sm" style="text-decoration:none">Mes playlists</a>
         <div class="nav-profile-wrap">
           <button class="nav-avatar-wrap" id="nav-profile-trigger" aria-haspopup="true">
             <img id="nav-avatar" src="" alt="">
@@ -22,7 +22,7 @@
             <span class="nav-chevron">▾</span>
           </button>
           <div class="nav-dropdown" id="nav-dropdown">
-            <a href="/profile.html" class="nav-dd-item">Mon profil</a>
+            <a href="/profile" class="nav-dd-item">Mon profil</a>
             <button class="nav-dd-item nav-dd-logout" id="logoutBtn">Déconnexion</button>
           </div>
         </div>
@@ -148,6 +148,6 @@
 
   <script src="/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="home.js"></script>
+  <script src="/js/home.js"></script>
 </body>
 </html>

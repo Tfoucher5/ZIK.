@@ -221,23 +221,28 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 --  CUSTOM_PLAYLISTS (playlists personnalisées par les utilisateurs)
 -- ============================================================
 CREATE TABLE public.custom_playlists (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id    UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  emoji       TEXT NOT NULL DEFAULT '🎵',
-  is_public   BOOLEAN NOT NULL DEFAULT FALSE,
-  track_count INTEGER NOT NULL DEFAULT 0,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id       UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  emoji          TEXT NOT NULL DEFAULT '🎵',
+  is_public      BOOLEAN NOT NULL DEFAULT FALSE,
+  is_official    BOOLEAN NOT NULL DEFAULT FALSE,  -- playlist officielle (room de base)
+  linked_room_id TEXT,                            -- room_id si officielle (ex: 'hiphop')
+  track_count    INTEGER NOT NULL DEFAULT 0,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_custom_playlists_linked_room
+  ON public.custom_playlists(linked_room_id) WHERE is_official = TRUE;
 
 ALTER TABLE public.custom_playlists ENABLE ROW LEVEL SECURITY;
 
--- SELECT : propriétaire + playlists publiques visibles par tous
+-- SELECT : propriétaire + playlists publiques + playlists officielles visibles par tous
 CREATE POLICY "custom_playlists_select"
   ON public.custom_playlists
   FOR SELECT
-  USING (auth.uid() = owner_id OR is_public = true);
+  USING (auth.uid() = owner_id OR is_public = true OR is_official = true);
 
 -- INSERT : owner_id doit être l'utilisateur connecté (WITH CHECK explicite)
 CREATE POLICY "custom_playlists_insert"
