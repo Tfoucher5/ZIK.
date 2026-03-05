@@ -628,7 +628,7 @@ io.on('connection', (socket) => {
       }
       room.game.totalFullFound++;
       // Montrer la cover immédiatement à ce joueur
-      socket.emit('reveal_cover', { cover: game.currentTrack.cover });
+      socket.emit('reveal_cover', { cover: room.game.currentTrack.cover });
     }
 
     checkEveryoneFound(roomId);
