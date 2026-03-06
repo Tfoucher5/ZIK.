@@ -4,7 +4,7 @@
 - **Backend** : Node.js + Express + Socket.IO
 - **Base de données** : Supabase (PostgreSQL)
 - **Auth** : Supabase Auth (email/password)
-- **Musique** : Deezer API (playlists) + YouTube IFrame (lecture)
+- **Musique** : Deezer API (playlists) + YouTube IFrame (lecture) 
 
 ---
 
