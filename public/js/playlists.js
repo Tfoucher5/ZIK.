@@ -39,6 +39,27 @@ async function initAuth() {
       }
     });
   } catch { showAuthWall(); }
+
+  // Rafraîchir le token quand l'onglet redevient actif (évite la désynchronisation RLS)
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && sb && currentUser) {
+      const { data: { session } } = await sb.auth.getSession().catch(() => ({ data: {} }));
+      if (!session) { currentUser = null; showAuthWall(); }
+    }
+  });
+}
+
+// Assure une session Supabase valide avant toute écriture critique
+async function ensureSession() {
+  const { data: { session }, error } = await sb.auth.getSession();
+  if (error || !session) throw new Error('Session expirée — reconnecte-toi.');
+  // Si le token expire dans moins de 60s, rafraîchir
+  const exp = session.expires_at * 1000;
+  if (exp - Date.now() < 60_000) {
+    const { data, error: rErr } = await sb.auth.refreshSession();
+    if (rErr || !data.session) throw new Error('Session expirée — reconnecte-toi.');
+  }
+  return session;
 }
 
 async function applyUser(user) {
@@ -149,6 +170,8 @@ async function savePlaylist() {
   const btn = document.getElementById('savePlaylistBtn');
   btn.disabled = true;
 
+  try { await ensureSession(); } catch (e) { showErr(errEl, e.message); btn.disabled = false; return; }
+
   if (editingPl) {
     const { error } = await sb.from('custom_playlists')
       .update({ name, emoji, is_public, updated_at: new Date().toISOString() })
@@ -258,6 +281,7 @@ async function addTrack(trackData) {
     (normalize(t.artist) + '|' + normalize(t.title)) === norm
   );
   if (isDup) { toast('Ce titre est déjà dans la playlist.', 'error'); return false; }
+  try { await ensureSession(); } catch (e) { toast(e.message, 'error'); return false; }
   const { data, error } = await sb.from('custom_playlist_tracks').insert({
     playlist_id: editingPl.id,
     artist:      trackData.artist,
@@ -552,38 +576,49 @@ async function importSpotify() {
       throw new Error(`Erreur Spotify HTTP ${plRes.status}`);
     }
     const pl    = await plRes.json();
-    const total = pl.tracks?.total || 0;
+    let   total = pl.tracks?.total || 0;
 
-    // Pagination complète des tracks
+    // Pagination complète (sans 'fields' pour éviter les problèmes de format de réponse)
     let allItems = [];
     let offset   = 0;
     const limit  = 100;
-    while (offset < Math.min(total, 1000)) {
+    while (offset < Math.min(total || 9999, 1000)) {
       const tRes = await fetch(
-        `https://api.spotify.com/v1/playlists/${id}/tracks?limit=${limit}&offset=${offset}&market=FR` +
-        `&fields=items(track(id,name,artists(name),album(images),preview_url)),total`,
+        `https://api.spotify.com/v1/playlists/${id}/tracks?limit=${limit}&offset=${offset}&market=FR`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!tRes.ok) break;
+      if (!tRes.ok) {
+        if (tRes.status === 401) {
+          sessionStorage.removeItem('sp_token'); updateSpotifyUI();
+          throw new Error('Session Spotify expirée — reconnecte-toi.');
+        }
+        break;
+      }
       const tData = await tRes.json();
       if (!tData.items?.length) break;
+      if (!total && tData.total) total = tData.total;
       allItems = allItems.concat(tData.items);
       offset += limit;
       if (tData.items.length < limit) break;
     }
 
     const tracks = allItems
-      .filter(i => i?.track?.id)
+      .filter(i => i?.track?.id && i.track.type === 'track')
       .map(i => ({
         external_id: i.track.id,
         source:      'spotify',
-        artist:      i.track.artists.map(a => a.name).join(', '),
+        artist:      i.track.artists?.map(a => a.name).join(', ') || '?',
         title:       i.track.name,
         preview_url: i.track.preview_url || null,
         cover_url:   i.track.album?.images?.[1]?.url || i.track.album?.images?.[0]?.url || null,
       }));
 
-    if (!tracks.length) throw new Error('Playlist vide ou impossible à lire.');
+    if (!tracks.length) {
+      const raw = allItems.length;
+      throw new Error(raw > 0
+        ? `${raw} élément(s) reçus mais aucun n'est une piste audio valide (podcasts / fichiers locaux exclus).`
+        : 'Playlist vide ou inaccessible. Vérifie que la playlist est publique.');
+    }
 
     importPreviewTracks = tracks;
     const truncated = total > tracks.length;
@@ -677,6 +712,9 @@ async function confirmImport(source) {
     position:    editorTracks.length + i,
   }));
 
+  try { await ensureSession(); } catch (e) {
+    previewEl.innerHTML = `<p style="color:#f87171;font-size:.83rem">${e.message}</p>`; return;
+  }
   const { data, error } = await sb.from('custom_playlist_tracks').insert(rows).select();
   if (error) {
     previewEl.innerHTML = `<p style="color:#f87171;font-size:.83rem">${error.message}</p>`;

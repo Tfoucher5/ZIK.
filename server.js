@@ -24,6 +24,16 @@ app.get('/config.js', (req, res) => {
   );
 });
 
+// ─── Favicon SVG (évite que Spotify vole le favicon lors de l'OAuth) ──────────
+app.get('/favicon.svg', (req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#070b10"/>
+  <text x="32" y="46" font-size="38" text-anchor="middle" font-family="sans-serif">🎵</text>
+</svg>`);
+});
+
 // ─── Static assets (CSS, JS, images) ─────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -698,9 +708,13 @@ io.on('connection', (socket) => {
 
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
 
-    // Charger/pré-charger la playlist pour avoir le nb de titres disponible
+    // Charger la playlist et notifier le client dès qu'on a le nb de titres
     if (ROOMS[roomId] && !playlistCache[roomId]) {
-      loadPlaylist(roomId).catch(() => {}); // fire-and-forget, pas bloquant
+      loadPlaylist(roomId)
+        .then(tracks => {
+          if (tracks.length > 0) socket.emit('track_count_update', tracks.length);
+        })
+        .catch(() => {});
     }
     const cust        = customRooms[roomId];
     const officialRoom = ROOMS[roomId];
@@ -770,11 +784,15 @@ io.on('connection', (socket) => {
     const simArtist = stringSimilarity.compareTwoStrings(input, track.cleanArtist);
     const simTitle  = stringSimilarity.compareTwoStrings(input, track.cleanTitle);
 
-    // Vérifie si le mot saisi correspond exactement à un mot du champ (min 3 lettres)
+    // Un mot doit matcher ET représenter ≥ 50 % du contenu du champ (sinon trop facile)
     function wordMatch(input, target) {
       if (input.length < 3) return false;
+      const totalLen = target.replace(/\s+/g, '').length || 1;
       const words = target.split(/\s+/).filter(w => w.length >= 3);
-      return words.some(w => stringSimilarity.compareTwoStrings(input, w) > 0.88);
+      return words.some(w =>
+        stringSimilarity.compareTwoStrings(input, w) > 0.88 &&
+        w.length / totalLen >= 0.50          // le mot doit couvrir ≥ 50 % du contenu
+      );
     }
     const cover = track.cover || '';
     let hit = false;
@@ -782,16 +800,15 @@ io.on('connection', (socket) => {
     // Check artiste
     if (!user.foundArtist) {
       const match = input.length >= 3 && (
-        simArtist > 0.70 ||
-        (input.length >= 4 && simArtist > 0.60 && wordMatch(input, track.cleanArtist)) ||
-        wordMatch(input, track.cleanArtist)
+        simArtist > 0.75 ||
+        (input.length >= 5 && simArtist > 0.65 && wordMatch(input, track.cleanArtist))
       );
       if (match) {
         user.foundArtist = true;
         user.score += 1 + speedBonus;
         socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.artist, cover });
         hit = true;
-      } else if (simArtist > 0.48) {
+      } else if (simArtist > 0.50) {
         socket.emit('feedback', { type: 'close', msg: "🔥 Tu chauffes sur l'artiste !" });
         hit = true;
       }
@@ -800,16 +817,15 @@ io.on('connection', (socket) => {
     // Check titre
     if (!user.foundTitle) {
       const match = input.length >= 3 && (
-        simTitle > 0.70 ||
-        (input.length >= 4 && simTitle > 0.60 && wordMatch(input, track.cleanTitle)) ||
-        wordMatch(input, track.cleanTitle)
+        simTitle > 0.75 ||
+        (input.length >= 5 && simTitle > 0.65 && wordMatch(input, track.cleanTitle))
       );
       if (match) {
         user.foundTitle = true;
         user.score += 1 + speedBonus;
         socket.emit('feedback', { type: 'success_title', msg: `✅ Titre ! (+${1 + speedBonus} pts)`, val: track.title, cover });
         hit = true;
-      } else if (simTitle > 0.48 && !hit) {
+      } else if (simTitle > 0.50 && !hit) {
         socket.emit('feedback', { type: 'close', msg: '🔥 Tu chauffes sur le titre !' });
         hit = true;
       }

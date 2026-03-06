@@ -18,7 +18,9 @@ window.onYouTubeIframeAPIReady = () => {
     events: {
       onReady(e) {
         ytReady = true;
-        e.target.setVolume(savedVol());
+        const v = savedVol();
+        e.target.setVolume(v);
+        ui.volSlider.style.setProperty('--vol', v + '%');
         if (pendingLoad) { loadVideo(pendingLoad.id, pendingLoad.start); pendingLoad = null; }
       },
       onStateChange(e) {
@@ -67,12 +69,14 @@ let feedTimer;
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Volume
-  ui.volSlider.value = savedVol();
-  ui.volSlider.oninput = e => {
-    const v = parseInt(e.target.value);
+  const setVol = v => {
+    ui.volSlider.value = v;
+    ui.volSlider.style.setProperty('--vol', v + '%');
     if (ytPlayer?.setVolume) ytPlayer.setVolume(v);
     localStorage.setItem('zik_vol', v);
   };
+  setVol(savedVol());
+  ui.volSlider.oninput = e => setVol(parseInt(e.target.value));
 
   // Guess input
   ui.guessInput.onkeydown = e => {
@@ -103,7 +107,15 @@ socket.on('room_joined', ({ roomConfig }) => {
   if (roomConfig) {
     const trackInfo = roomConfig.trackCount ? ` — ${roomConfig.trackCount} titres` : '';
     ui.roomLabel.textContent = `${roomConfig.emoji || ''} ${roomConfig.name || ''}${trackInfo}`.trim();
+    ui.roomLabel.dataset.base = `${roomConfig.emoji || ''} ${roomConfig.name || ''}`.trim();
   }
+});
+
+// Reçu quand la playlist finit de charger côté serveur (si pas encore en cache au join)
+socket.on('track_count_update', count => {
+  const base = ui.roomLabel.dataset.base || ui.roomLabel.textContent.replace(/ — \d+ titres$/, '');
+  ui.roomLabel.textContent = `${base} — ${count} titres`;
+  ui.roomLabel.dataset.base = base;
 });
 
 socket.on('update_players', players => {
