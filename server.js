@@ -43,6 +43,7 @@ const views = path.join(__dirname, 'views');
 app.get('/',           (req, res) => res.sendFile(path.join(views, 'index.html')));
 app.get('/game',       (req, res) => res.sendFile(path.join(views, 'game.html')));
 app.get('/playlists',  (req, res) => res.sendFile(path.join(views, 'playlists.html')));
+app.get('/rooms',      (req, res) => res.sendFile(path.join(views, 'rooms.html')));
 app.get('/profile',    (req, res) => res.sendFile(path.join(views, 'profile.html')));
 
 // Redirects pour les anciens liens en .html
@@ -113,11 +114,41 @@ async function fetchDeezerPlaylist(playlistId) {
   return data;
 }
 
+// Cache pour les rooms DB chargées depuis Supabase
+const dbRooms = {}; // code -> { name, emoji, max_rounds, round_duration, break_duration, playlist_id }
+
 async function loadPlaylist(roomId) {
-  // Custom rooms: tracks déjà en mémoire
+  // Custom rooms éphémères : tracks déjà en mémoire
   if (customRooms[roomId]) return customRooms[roomId].tracks;
 
   if (playlistCache[roomId]?.length > 0) return playlistCache[roomId];
+
+  // DB rooms : charger depuis custom_playlist_tracks via playlist_id
+  const dbRoom = dbRooms[roomId];
+  if (dbRoom?.playlist_id) {
+    try {
+      const { data: trackRows } = await supabase
+        .from('custom_playlist_tracks')
+        .select('artist, title, cover_url, preview_url')
+        .eq('playlist_id', dbRoom.playlist_id)
+        .order('position');
+      if (trackRows?.length >= 3) {
+        const tracks = trackRows.map(t => ({
+          artist:      t.artist,
+          title:       t.title,
+          cleanTitle:  cleanString(t.title),
+          cleanArtist: cleanString(t.artist),
+          cover:       t.cover_url || '',
+          preview_url: t.preview_url || null,
+        }));
+        playlistCache[roomId] = tracks;
+        console.log(`Room DB "${roomId}": ${tracks.length} titres chargés`);
+        return tracks;
+      }
+    } catch { /* fallback ci-dessous */ }
+    return [];
+  }
+
   const room = ROOMS[roomId];
   if (!room) return [];
 
@@ -603,22 +634,166 @@ app.get('/api/spotify/status', (req, res) => {
 
 // ─── Admin : marquer une playlist comme officielle ────────────────────────────
 app.post('/api/playlists/:id/official', async (req, res) => {
-  if (!process.env.ADMIN_USER_ID) return res.status(403).json({ error: 'Admin non configuré' });
   const token = req.headers.authorization?.slice(7);
   if (!token) return res.status(401).json({ error: 'Non authentifié' });
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
   if (authErr || !user) return res.status(401).json({ error: 'Session invalide' });
-  if (user.id !== process.env.ADMIN_USER_ID) return res.status(403).json({ error: 'Admin uniquement' });
+
+  // Vérifier le rôle super_admin en DB
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'super_admin') return res.status(403).json({ error: 'Super-admin uniquement' });
+
+  // Client avec JWT utilisateur → satisfait RLS
+  const userSupabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
+  );
 
   const { is_official, linked_room_id } = req.body || {};
-  const { error } = await supabase.from('custom_playlists')
+  const { error } = await userSupabase.from('custom_playlists')
     .update({ is_official: !!is_official, linked_room_id: linked_room_id || null })
     .eq('id', req.params.id);
   if (error) return res.status(400).json({ error: error.message });
 
-  // Vider le cache de la room liée pour forcer un rechargement
   if (linked_room_id && is_official) delete playlistCache[linked_room_id];
-  console.log(`⭐ Playlist ${req.params.id} marquée officielle → room "${linked_room_id}" par ${user.email}`);
+  console.log(`Playlist ${req.params.id} marquée officielle → room "${linked_room_id}" par ${user.email}`);
+  res.json({ ok: true });
+});
+
+// ─── Rooms persistantes (Supabase) ───────────────────────────────────────────
+
+// Helper auth commun
+async function requireAuth(req, res) {
+  const token = req.headers.authorization?.slice(7);
+  if (!token) { res.status(401).json({ error: 'Non authentifié' }); return null; }
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) { res.status(401).json({ error: 'Session invalide' }); return null; }
+  return user;
+}
+
+function userClient(token) {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
+
+// GET /api/rooms — rooms publiques (+ toutes si super_admin)
+app.get('/api/rooms', async (req, res) => {
+  const token = req.headers.authorization?.slice(7);
+  let isSuperAdmin = false;
+
+  if (token) {
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (user) {
+      const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      isSuperAdmin = p?.role === 'super_admin';
+    }
+  }
+
+  const sb = token ? userClient(token) : supabase;
+  let query = sb.from('rooms')
+    .select('id, code, name, emoji, description, is_public, max_rounds, round_duration, break_duration, last_active_at, owner_id, playlist_id, profiles!owner_id(username, avatar_url)')
+    .order('last_active_at', { ascending: false })
+    .limit(50);
+
+  if (!isSuperAdmin) query = query.eq('is_public', true);
+
+  const { data, error } = await query;
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// GET /api/rooms/mine — rooms de l'utilisateur connecté
+app.get('/api/rooms/mine', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const token = req.headers.authorization.slice(7);
+  const { data, error } = await userClient(token)
+    .from('rooms')
+    .select('id, code, name, emoji, description, is_public, max_rounds, round_duration, break_duration, last_active_at, playlist_id')
+    .eq('owner_id', user.id)
+    .order('last_active_at', { ascending: false });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// GET /api/rooms/:code — info d'une room par son code
+app.get('/api/rooms/:code', async (req, res) => {
+  const code = req.params.code.toUpperCase();
+
+  // Vérifier d'abord dans les rooms éphémères en mémoire
+  const ephemeral = customRooms[code];
+  if (ephemeral) {
+    return res.json({ source: 'ephemeral', name: ephemeral.name, emoji: ephemeral.emoji, maxRounds: ephemeral.maxRounds, trackCount: ephemeral.tracks.length });
+  }
+
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('id, code, name, emoji, description, is_public, max_rounds, round_duration, break_duration, playlist_id, profiles!owner_id(username)')
+    .eq('code', code)
+    .single();
+  if (error || !data) return res.status(404).json({ error: 'Room introuvable' });
+  res.json({ source: 'db', ...data });
+});
+
+// POST /api/rooms — créer une room
+app.post('/api/rooms', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const token = req.headers.authorization.slice(7);
+
+  const { name, emoji, description, playlist_id, is_public, max_rounds, round_duration, break_duration } = req.body || {};
+  if (!name?.trim()) return res.status(400).json({ error: 'name requis' });
+
+  const { data, error } = await userClient(token)
+    .from('rooms')
+    .insert({
+      name:           String(name).trim().slice(0, 60),
+      emoji:          emoji || '🎵',
+      description:    String(description || '').slice(0, 200),
+      owner_id:       user.id,
+      playlist_id:    playlist_id || null,
+      is_public:      is_public !== false,
+      max_rounds:     Math.min(Math.max(parseInt(max_rounds) || 10, 3), 50),
+      round_duration: Math.min(Math.max(parseInt(round_duration) || 30, 10), 60),
+      break_duration: Math.min(Math.max(parseInt(break_duration) || 7, 3), 15),
+    })
+    .select('id, code, name, emoji')
+    .single();
+
+  if (error) return res.status(400).json({ error: error.message });
+  console.log(`Room "${data.code}" créée par ${user.email}`);
+  res.json(data);
+});
+
+// PATCH /api/rooms/:id — modifier sa room
+app.patch('/api/rooms/:id', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const token = req.headers.authorization.slice(7);
+
+  const allowed = ['name', 'emoji', 'description', 'playlist_id', 'is_public', 'max_rounds', 'round_duration', 'break_duration'];
+  const updates = {};
+  for (const k of allowed) {
+    if (req.body[k] !== undefined) updates[k] = req.body[k];
+  }
+  if (updates.name) updates.name = String(updates.name).trim().slice(0, 60);
+
+  const { error } = await userClient(token)
+    .from('rooms').update(updates).eq('id', req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// DELETE /api/rooms/:id — supprimer sa room
+app.delete('/api/rooms/:id', async (req, res) => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+  const token = req.headers.authorization.slice(7);
+  const { error } = await userClient(token)
+    .from('rooms').delete().eq('id', req.params.id);
+  if (error) return res.status(400).json({ error: error.message });
   res.json({ ok: true });
 });
 
@@ -684,7 +859,7 @@ const CONFIG = { roundDuration: 30, breakDuration: 7 };
 
 function getOrCreateRoom(roomId) {
   if (!roomGames[roomId]) {
-    const cust = customRooms[roomId];
+    const cust = customRooms[roomId] || dbRooms[roomId];
     roomGames[roomId] = {
       roomId,
       players: {},
@@ -698,6 +873,7 @@ function getOrCreateRoom(roomId) {
         breakDuration: cust?.breakDuration || CONFIG.breakDuration,
         timer: 0,
         interval: null,
+        breakTimer: null,
         currentTrack: null,
         startTime: 0,
         sessionPlaylist: [],
@@ -720,8 +896,21 @@ function getRoomIO(roomId) {
 io.on('connection', (socket) => {
 
   socket.on('join_room', async ({ roomId, username, userId, isGuest }) => {
-    if (!ROOMS[roomId] && !customRooms[roomId]) return socket.emit('error', 'Room inconnue ou expirée');
     if (!username?.trim()) return socket.emit('error', 'Pseudo requis');
+    // Vérifier l'existence de la room (officielle, éphémère, ou DB)
+    if (!ROOMS[roomId] && !customRooms[roomId] && !dbRooms[roomId]) {
+      // Tentative de chargement depuis Supabase
+      const { data: dbRoom } = await supabase
+        .from('rooms')
+        .select('code, name, emoji, max_rounds, round_duration, break_duration, playlist_id')
+        .eq('code', roomId)
+        .single();
+      if (dbRoom) {
+        dbRooms[roomId] = dbRoom;
+      } else {
+        return socket.emit('error', 'Room inconnue ou expirée');
+      }
+    }
 
     username = username.trim();
     const room = getOrCreateRoom(roomId);
@@ -758,21 +947,27 @@ io.on('connection', (socket) => {
 
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
 
-    // Charger la playlist et notifier le client dès qu'on a le nb de titres
-    if (ROOMS[roomId] && !playlistCache[roomId]) {
+    // Charger la playlist si pas encore cachée
+    if (!playlistCache[roomId] && (ROOMS[roomId] || dbRooms[roomId])) {
       loadPlaylist(roomId)
         .then(tracks => {
           if (tracks.length > 0) socket.emit('track_count_update', tracks.length);
         })
         .catch(() => {});
     }
-    const cust        = customRooms[roomId];
+    const cust        = customRooms[roomId] || dbRooms[roomId];
     const officialRoom = ROOMS[roomId];
     socket.emit('room_joined', {
       roomId,
       roomConfig: officialRoom
         ? { ...officialRoom, trackCount: playlistCache[roomId]?.length || null }
-        : { id: roomId, name: cust?.name, emoji: cust?.emoji, trackCount: cust?.tracks?.length, maxRounds: cust?.maxRounds },
+        : {
+            id: roomId,
+            name: cust?.name,
+            emoji: cust?.emoji,
+            trackCount: customRooms[roomId]?.tracks?.length || playlistCache[roomId]?.length || null,
+            maxRounds: cust?.max_rounds || cust?.maxRounds,
+          },
     });
     socket.emit('init_history', room.game.history);
 
@@ -902,6 +1097,17 @@ io.on('connection', (socket) => {
   });
 });
 
+function cleanupRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return;
+  clearInterval(room.game.interval);
+  clearTimeout(room.game.breakTimer);
+  room.game.interval  = null;
+  room.game.breakTimer = null;
+  delete roomGames[roomId];
+  console.log(`Room "${roomId}" libérée de la mémoire`);
+}
+
 function leaveRoom(socket, roomId) {
   const room = roomGames[roomId];
   if (!room) return;
@@ -913,8 +1119,12 @@ function leaveRoom(socket, roomId) {
     if (room.players[name]) {
       clearTimeout(room.players[name]._dcTimer);
       room.players[name]._dcTimer = setTimeout(() => {
+        if (!roomGames[roomId]) return; // room déjà nettoyée
         delete room.players[name];
-        getRoomIO(roomId).emit('update_players', Object.values(room.players).filter(p => !p._dcTimer));
+        const active = Object.values(room.players).filter(p => !p._dcTimer);
+        getRoomIO(roomId).emit('update_players', active);
+        // Plus personne et partie terminée → libérer la mémoire
+        if (active.length === 0 && !room.game.isActive) cleanupRoom(roomId);
       }, 30_000);
     }
   }
@@ -1014,7 +1224,10 @@ function endRound(roomId, reason) {
     }
   });
 
-  setTimeout(() => startNextRound(roomId), game.breakDuration * 1000);
+  game.breakTimer = setTimeout(() => {
+    game.breakTimer = null;
+    startNextRound(roomId);
+  }, game.breakDuration * 1000);
 }
 
 // ─── Supabase : sauvegarder résultats ────────────────────────────────────────
