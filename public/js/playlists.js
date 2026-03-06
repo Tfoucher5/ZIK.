@@ -343,7 +343,7 @@ async function deletePlaylist() {
 
 // ─── Admin : section officielle ───────────────────────────────────────────────
 function isAdmin() {
-  return !!(window.ZIK_ADMIN_USER_ID && currentUser?.id === window.ZIK_ADMIN_USER_ID);
+  return currentUser?.profile?.role === 'super_admin';
 }
 
 async function openAdminSection(pl) {

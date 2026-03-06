@@ -1,0 +1,148 @@
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.rooms-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+}
+.rtab {
+  background: none;
+  border: none;
+  color: var(--mid);
+  font: 500 .875rem/1 'Inter', sans-serif;
+  padding: 8px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.rtab.active {
+  background: rgba(255,255,255,.07);
+  color: var(--fg);
+}
+.rtab:hover:not(.active) { color: var(--fg); }
+
+/* ── Room card ────────────────────────────────────────────────────────────── */
+.room-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.room-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255,255,255,.15);
+  box-shadow: 0 16px 40px rgba(0,0,0,.4);
+}
+
+.room-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.room-card-emoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.room-card-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  word-break: break-word;
+}
+.room-card-owner {
+  font-size: .75rem;
+  color: var(--dim);
+}
+.room-card-desc {
+  font-size: .8rem;
+  color: var(--mid);
+  flex: 1;
+  line-height: 1.45;
+}
+.room-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: .72rem;
+  color: var(--dim);
+}
+.room-card-tag {
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.room-card-private {
+  color: #f87171;
+  border-color: rgba(248,113,113,.3);
+  background: rgba(248,113,113,.06);
+}
+.room-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+.room-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.rooms-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--mid);
+}
+.rooms-empty span { font-size: 3rem; display: block; margin-bottom: 16px; }
+.rooms-empty p { font-size: .9rem; line-height: 1.6; }
+
+/* ── Form helpers ─────────────────────────────────────────────────────────── */
+.form-row   { display: flex; align-items: flex-start; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.form-label { font-size: .8rem; font-weight: 500; color: var(--mid); text-transform: uppercase; letter-spacing: .5px; }
+.form-opt   { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.form-input {
+  width: 100%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--fg);
+  font: 400 .9rem/1 'Inter', sans-serif;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color .15s;
+  box-sizing: border-box;
+}
+.form-input:focus { border-color: var(--accent); }
+select.form-input { cursor: pointer; }
+.form-hint  { font-size: .75rem; color: var(--dim); margin-top: 4px; }
+.form-check { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: .875rem; }
+.form-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.form-error { color: #f87171; font-size: .8rem; margin-top: -8px; }
+
+.link-accent { color: var(--accent); text-decoration: none; }
+.link-accent:hover { text-decoration: underline; }
+
+/* ── Btn danger ───────────────────────────────────────────────────────────── */
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font: 600 .875rem/1 'Inter', sans-serif;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-danger:hover { background: #dc2626; }
