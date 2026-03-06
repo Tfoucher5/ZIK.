@@ -342,37 +342,33 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
     const embeddedItems = pl.tracks?.items || [];
     console.log(`Spotify metadata "${pl.name}": total=${total}, embedded=${embeddedItems.length}`);
 
-    // 2. Tenter de paginer via /tracks (souvent 403 si app Spotify sans Extended Access)
+    // 2. Pagination via /tracks
+    // BUG évité : ne pas utiliser total=0 comme signal "embedded suffit"
+    // total peut valoir 0 si metadata retourne pl.tracks=null (scope user-read-private absent)
     let allItems = [...embeddedItems];
-    let tracksOk = embeddedItems.length >= total; // si embedded couvre tout, pas besoin de /tracks
     let offset   = embeddedItems.length;
+    let tracksOk = false;
+    // loopTotal fiable : si total=0 depuis metadata, paginer quand même
+    let loopTotal = total > 0 ? total : 9999;
 
-    if (!tracksOk) {
-      const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=from_token`,
-        { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
-      );
-      if (tRes.ok) {
-        tracksOk = true;
-        const first = await tRes.json();
-        if (first.items?.length) {
-          allItems = allItems.concat(first.items);
-          offset += first.items.length;
-          while (allItems.length < Math.min(total, 1000) && first.items.length === 100) {
-            const nRes = await fetchFn(
-              `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=from_token`,
-              { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
-            );
-            if (!nRes.ok) break;
-            const nd = await nRes.json();
-            if (!nd.items?.length) break;
-            allItems = allItems.concat(nd.items);
-            offset += nd.items.length;
-            if (nd.items.length < 100) break;
-          }
+    // Toujours appeler /tracks sauf si on a déjà tout depuis embedded
+    if (allItems.length < loopTotal) {
+      while (allItems.length < Math.min(loopTotal, 1000)) {
+        const tRes = await fetchFn(
+          `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=from_token`,
+          { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
+        );
+        if (!tRes.ok) {
+          console.warn(`Spotify /tracks offset=${offset} → HTTP ${tRes.status} — fallback sur ${allItems.length} tracks embedded`);
+          break;
         }
-      } else {
-        console.warn(`Spotify /tracks → HTTP ${tRes.status} (app sans Extended Access ?) — fallback sur ${embeddedItems.length} tracks embedded`);
+        tracksOk = true;
+        const page = await tRes.json();
+        if (typeof page.total === 'number') loopTotal = Math.min(page.total, 1000);
+        if (!page.items?.length) break;
+        allItems = allItems.concat(page.items);
+        offset += page.items.length;
+        if (page.items.length < 100) break;
       }
     }
 
