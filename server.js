@@ -323,8 +323,8 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
   const plId    = req.params.id;
 
   try {
-    // 1. Métadonnées (embedded tracks inclus — jusqu'à 100 pré-chargés)
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}`, {
+    // 1. Métadonnées avec market=from_token (indispensable : sans market, Spotify retourne total=0)
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=from_token`, {
       headers: { Authorization: `Bearer ${userToken}` },
       signal: AbortSignal.timeout(12000),
     });
@@ -350,7 +350,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
 
     while (allItems.length < Math.min(loopTotal, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}`,
+        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=from_token`,
         { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
       );
       if (!tRes.ok) {
