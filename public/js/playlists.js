@@ -69,14 +69,23 @@ async function applyUser(user) {
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
     const avatar = profile?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
     showNavUser(name, avatar);
+    applyRoleUI(profile?.role);
     hideAuthWall();
     await loadPlaylists();
   } catch {
     currentUser = { ...user, profile: null };
     showNavUser(user.email?.split('@')[0] || 'Joueur', '');
+    applyRoleUI(null);
     hideAuthWall();
     await loadPlaylists();
   }
+}
+
+function applyRoleUI(role) {
+  const isSuperAdmin = role === 'super_admin';
+  // Onglet "Importer Spotify" visible uniquement pour les super_admins
+  const spotifyTab = document.querySelector('[data-tab="import-spotify"]');
+  if (spotifyTab) spotifyTab.style.display = isSuperAdmin ? '' : 'none';
 }
 
 function showNavUser(name, avatar) {

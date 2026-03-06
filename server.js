@@ -531,17 +531,25 @@ app.delete('/api/playlists/:id', async (req, res) => {
   if (authErr || !user) return res.status(401).json({ error: 'Session invalide' });
 
   const plId = req.params.id;
+
+  // Client avec JWT de l'utilisateur → auth.uid() correct côté Supabase (RLS)
+  const userSupabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
+  );
+
   // Vérifier l'ownership
-  const { data: pl, error: plErr } = await supabase
+  const { data: pl, error: plErr } = await userSupabase
     .from('custom_playlists').select('owner_id').eq('id', plId).single();
   if (plErr || !pl) return res.status(404).json({ error: 'Playlist introuvable' });
   if (pl.owner_id !== user.id) return res.status(403).json({ error: 'Non autorisé' });
 
-  // Supprimer les tracks (le CASCADE le ferait aussi, mais on est explicite)
-  await supabase.from('custom_playlist_tracks').delete().eq('playlist_id', plId);
-  const { error } = await supabase.from('custom_playlists').delete().eq('id', plId);
+  // Supprimer les tracks puis la playlist (RLS satisfaite grâce au JWT)
+  await userSupabase.from('custom_playlist_tracks').delete().eq('playlist_id', plId);
+  const { error } = await userSupabase.from('custom_playlists').delete().eq('id', plId);
   if (error) return res.status(400).json({ error: error.message });
-  console.log(`🗑️  Playlist ${plId} supprimée par ${user.email}`);
+  console.log(`Playlist ${plId} supprimée par ${user.email}`);
   res.json({ ok: true });
 });
 
