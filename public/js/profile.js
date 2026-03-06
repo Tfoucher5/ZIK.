@@ -111,7 +111,7 @@ function renderBestScores(bestByRoom) {
     return;
   }
   // Get room info for display
-  fetch('/api/rooms').then(r => r.json()).then(rooms => {
+  fetch('/api/rooms/official').then(r => r.json()).then(rooms => {
     const roomMap = {};
     rooms.forEach(r => { roomMap[r.id] = r; });
     el.innerHTML = entries.map(([roomId, score]) => {

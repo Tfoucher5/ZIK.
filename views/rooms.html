@@ -41,8 +41,8 @@
   <div class="pl-header">
     <div class="pl-header-inner">
       <div>
-        <h1>Rooms <em>communaute</em></h1>
-        <p class="pl-sub" style="display:block">Browse les rooms creees par les joueurs ou cree la tienne.</p>
+        <h1>Rooms <em>publiques</em></h1>
+        <p class="pl-sub" style="display:block">Browse les rooms des joueurs ou cree la tienne.</p>
       </div>
       <button class="btn-accent" id="createRoomBtn" style="display:none">+ Creer une room</button>
     </div>
@@ -55,7 +55,7 @@
     <div id="auth-wall" class="auth-wall" style="display:none">
       <div class="auth-wall-icon">&#128274;</div>
       <h2>Connecte-toi pour acceder aux rooms</h2>
-      <p>Cree un compte ou connecte-toi pour creer et rejoindre des rooms personnalisees.</p>
+      <p>Cree un compte ou connecte-toi pour creer et rejoindre des rooms.</p>
       <div style="margin-top:20px;display:flex;gap:10px;justify-content:center">
         <button class="btn-ghost" id="openLoginBtn2">Connexion</button>
         <button class="btn-accent" id="openRegisterBtn2">S'inscrire</button>
@@ -92,70 +92,71 @@
   </div>
 
   <!-- Modal : creer / editer une room -->
-  <div id="room-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true">
-    <div class="modal-box" style="max-width:560px">
-      <button class="modal-close" id="closeRoomModal" aria-label="Fermer">x</button>
-      <h2 class="modal-title" id="room-modal-title">Creer une room</h2>
+  <div id="room-modal" class="overlay" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal modal-lg">
+      <button class="close-btn" id="closeRoomModal">&#x2715;</button>
+      <h2 id="room-modal-title">Creer une room</h2>
+      <p class="mdesc" id="room-modal-desc">Configure ta room et partage le code a tes amis.</p>
 
-      <div class="form-row" style="align-items:flex-end;gap:12px">
-        <div class="form-group" style="width:80px;flex-shrink:0">
-          <label class="form-label">Emoji</label>
-          <input type="text" id="room-emoji" class="form-input" value="&#127925;" maxlength="2" style="text-align:center;font-size:1.5rem">
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="field" style="width:72px;flex-shrink:0">
+          <label>Emoji</label>
+          <input type="text" id="room-emoji" value="&#127925;" maxlength="2" style="text-align:center;font-size:1.5rem;padding:8px">
         </div>
-        <div class="form-group" style="flex:1">
-          <label class="form-label">Nom de la room</label>
-          <input type="text" id="room-name" class="form-input" placeholder="Ma super room" maxlength="60">
+        <div class="field" style="flex:1">
+          <label>Nom de la room</label>
+          <input type="text" id="room-name" placeholder="Ma super room" maxlength="60">
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Description <span class="form-opt">(optionnel)</span></label>
-        <input type="text" id="room-desc" class="form-input" placeholder="Un petit mot pour decrire la room..." maxlength="200">
+      <div class="field">
+        <label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel)</span></label>
+        <input type="text" id="room-desc" placeholder="Un petit mot pour decrire la room..." maxlength="200">
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Playlist</label>
-        <select id="room-playlist" class="form-input">
+      <div class="field">
+        <label>Playlist</label>
+        <select id="room-playlist" class="room-select">
           <option value="">Choisir une playlist...</option>
         </select>
-        <p class="form-hint">La playlist doit contenir au moins 3 titres. Tu peux en creer une dans <a href="/playlists" class="link-accent">Mes playlists</a>.</p>
+        <p style="font-size:.75rem;color:var(--dim);margin-top:4px">Au moins 3 titres requis. <a href="/playlists" style="color:var(--accent)">Gerer mes playlists</a></p>
       </div>
 
-      <div class="form-row" style="gap:16px">
-        <div class="form-group" style="flex:1">
-          <label class="form-label">Manches</label>
-          <input type="number" id="room-max-rounds" class="form-input" value="10" min="3" max="50">
+      <div style="display:flex;gap:14px">
+        <div class="field" style="flex:1">
+          <label>Manches</label>
+          <input type="number" id="room-max-rounds" value="10" min="3" max="50">
         </div>
-        <div class="form-group" style="flex:1">
-          <label class="form-label">Duree/manche (s)</label>
-          <input type="number" id="room-round-duration" class="form-input" value="30" min="10" max="60">
+        <div class="field" style="flex:1">
+          <label>Duree/manche (s)</label>
+          <input type="number" id="room-round-duration" value="30" min="10" max="60">
         </div>
-        <div class="form-group" style="flex:1">
-          <label class="form-label">Pause (s)</label>
-          <input type="number" id="room-break-duration" class="form-input" value="7" min="3" max="15">
+        <div class="field" style="flex:1">
+          <label>Pause (s)</label>
+          <input type="number" id="room-break-duration" value="7" min="3" max="15">
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-check">
-          <input type="checkbox" id="room-is-public" checked>
-          <span>Room publique (visible dans le browse)</span>
-        </label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:.875rem">
+        <input type="checkbox" id="room-is-public" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+        <label for="room-is-public" style="cursor:pointer">Room publique (visible dans le browse)</label>
       </div>
 
-      <div class="modal-actions">
+      <div id="room-modal-error" class="alert-err" style="display:none"></div>
+
+      <div class="modal-footer">
         <button class="btn-ghost" id="cancelRoomModal">Annuler</button>
-        <button class="btn-accent" id="saveRoomBtn">Creer</button>
+        <button class="btn-accent full" id="saveRoomBtn" style="width:auto;margin:0">Creer</button>
       </div>
     </div>
   </div>
 
   <!-- Confirm delete -->
-  <div id="delete-modal" class="modal-overlay" style="display:none">
-    <div class="modal-box" style="max-width:400px;text-align:center">
-      <h2 class="modal-title">Supprimer la room ?</h2>
-      <p style="color:var(--mid);margin-bottom:24px">Cette action est irreversible.</p>
-      <div class="modal-actions" style="justify-content:center">
+  <div id="delete-modal" class="overlay" style="display:none">
+    <div class="modal modal-sm" style="text-align:center">
+      <h2>Supprimer la room ?</h2>
+      <p class="mdesc">Cette action est irreversible.</p>
+      <div class="modal-footer" style="justify-content:center">
         <button class="btn-ghost" id="cancelDeleteRoom">Annuler</button>
         <button class="btn-danger" id="confirmDeleteRoom">Supprimer</button>
       </div>
@@ -166,44 +167,28 @@
   <div id="toast-container"></div>
 
   <!-- Auth modal -->
-  <div id="auth-modal" class="modal-overlay" style="display:none">
-    <div class="modal-box">
-      <button class="modal-close" id="closeAuthModal">x</button>
-      <div id="auth-login-form">
-        <h2 class="modal-title">Connexion</h2>
-        <div class="form-group">
-          <label class="form-label">E-mail</label>
-          <input type="email" id="login-email" class="form-input" placeholder="ton@email.com">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mot de passe</label>
-          <input type="password" id="login-password" class="form-input" placeholder="••••••••">
-        </div>
-        <div id="login-error" class="form-error" style="display:none"></div>
-        <div class="modal-actions">
-          <button class="btn-ghost" id="switchToRegister">Creer un compte</button>
-          <button class="btn-accent" id="loginBtn">Se connecter</button>
-        </div>
+  <div id="auth-modal" class="overlay" style="display:none">
+    <div class="modal" id="auth-box">
+      <button class="close-btn" id="closeAuthModal">&#x2715;</button>
+      <div id="view-login">
+        <div class="modal-logo">ZIK<span>.</span></div>
+        <h2>Bon retour</h2>
+        <p class="mdesc">Connecte-toi pour acceder aux rooms.</p>
+        <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="ton@email.com"></div>
+        <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••"></div>
+        <div id="login-error" class="alert-err" style="display:none"></div>
+        <button class="btn-accent full" id="loginBtn">Se connecter</button>
+        <button class="btn-ghost full" id="switchToRegister">Creer un compte</button>
       </div>
-      <div id="auth-register-form" style="display:none">
-        <h2 class="modal-title">Creer un compte</h2>
-        <div class="form-group">
-          <label class="form-label">Pseudo</label>
-          <input type="text" id="reg-username" class="form-input" placeholder="MonPseudo">
-        </div>
-        <div class="form-group">
-          <label class="form-label">E-mail</label>
-          <input type="email" id="reg-email" class="form-input" placeholder="ton@email.com">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mot de passe</label>
-          <input type="password" id="reg-password" class="form-input" placeholder="••••••••">
-        </div>
-        <div id="reg-error" class="form-error" style="display:none"></div>
-        <div class="modal-actions">
-          <button class="btn-ghost" id="switchToLogin">J'ai deja un compte</button>
-          <button class="btn-accent" id="registerBtn">S'inscrire</button>
-        </div>
+      <div id="view-register" style="display:none">
+        <div class="modal-logo">ZIK<span>.</span></div>
+        <h2>Creer un compte</h2>
+        <div class="field"><label>Pseudo</label><input type="text" id="reg-username" placeholder="MonPseudo" maxlength="20"></div>
+        <div class="field"><label>E-mail</label><input type="email" id="reg-email" placeholder="ton@email.com"></div>
+        <div class="field"><label>Mot de passe</label><input type="password" id="reg-password" placeholder="••••••••"></div>
+        <div id="reg-error" class="alert-err" style="display:none"></div>
+        <button class="btn-accent full" id="registerBtn">S'inscrire</button>
+        <button class="btn-ghost full" id="switchToLogin">J'ai deja un compte</button>
       </div>
     </div>
   </div>

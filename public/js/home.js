@@ -188,7 +188,7 @@ async function handleRegister() {
 async function loadRooms() {
   const grid = document.getElementById('rooms-grid');
   try {
-    const res   = await fetch('/api/rooms');
+    const res   = await fetch('/api/rooms/official');
     const rooms = await res.json();
     let total = 0;
 

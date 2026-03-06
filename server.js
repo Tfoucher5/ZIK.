@@ -36,7 +36,14 @@ app.get('/favicon.svg', (req, res) => {
 
 // ─── Static assets (CSS, JS, images) ─────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+
+// Gestionnaire d'erreur JSON malformé (retourne du JSON, pas du HTML)
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Payload trop volumineux (max 2 Mo)' });
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON invalide' });
+  next(err);
+});
 
 // ─── Routes HTML (URLs propres sans .html) ────────────────────────────────────
 const views = path.join(__dirname, 'views');
@@ -57,6 +64,46 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
+
+// ─── Cache de tokens JWT (évite un appel Supabase par requête) ────────────────
+const _tokenCache = new Map(); // token -> { user, exp }
+const TOKEN_TTL   = 30_000;   // 30s
+
+async function verifyToken(token) {
+  const cached = _tokenCache.get(token);
+  if (cached && cached.exp > Date.now()) return cached.user;
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return null;
+  _tokenCache.set(token, { user, exp: Date.now() + TOKEN_TTL });
+  return user;
+}
+
+// Nettoyage périodique du cache
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of _tokenCache.entries()) if (v.exp < now) _tokenCache.delete(k);
+}, 60_000);
+
+// ─── Rate limiter (en mémoire, sans dépendance externe) ───────────────────────
+const _rl = new Map(); // ip -> { count, resetAt }
+
+function rateLimit(max, windowMs) {
+  return (req, res, next) => {
+    const ip  = req.ip || req.socket?.remoteAddress || 'unknown';
+    const now = Date.now();
+    const e   = _rl.get(ip);
+    if (!e || e.resetAt < now) { _rl.set(ip, { count: 1, resetAt: now + windowMs }); return next(); }
+    if (e.count >= max) return res.status(429).json({ error: 'Trop de requêtes, réessaie dans un instant.' });
+    e.count++;
+    next();
+  };
+}
+
+// Nettoyage périodique
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of _rl.entries()) if (v.resetAt < now) _rl.delete(k);
+}, 60_000);
 
 // ─── Fetch helper (compatible Node 16/17 et Node 18+) ────────────────────────
 let _fetch;
@@ -243,8 +290,8 @@ function calcSpeedBonus(timeTaken) {
 
 // ─── REST API ─────────────────────────────────────────────────────────────────
 
-// Liste des rooms avec nb de joueurs en ligne
-app.get('/api/rooms', (req, res) => {
+// Liste des rooms officielles (hardcodées) avec nb de joueurs en ligne
+app.get('/api/rooms/official', (req, res) => {
   const result = Object.values(ROOMS).map(r => ({
     ...r,
     online: Object.values(roomGames).filter(g => g.roomId === r.id)
@@ -310,7 +357,7 @@ async function getSpotifyToken() {
 }
 
 // ─── Spotify : Search ─────────────────────────────────────────────────────────
-app.get('/api/spotify/search', async (req, res) => {
+app.get('/api/spotify/search', rateLimit(30, 60_000), async (req, res) => {
   const q = req.query.q?.trim();
   if (!q) return res.status(400).json({ error: 'Paramètre q requis' });
   try {
@@ -350,7 +397,7 @@ function normalizeSpotifyItem(i) {
 }
 
 // ─── Spotify : Import USER (Login PKCE) ────────────────────────────────────────
-app.get('/api/spotify/playlist-user/:id', async (req, res) => {
+app.get('/api/spotify/playlist-user/:id', rateLimit(10, 60_000), async (req, res) => {
   const userToken = req.headers['x-spotify-token'];
   const plId = req.params.id;
   if (!userToken) return res.status(400).json({ error: 'X-Spotify-Token manquant' });
@@ -432,7 +479,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
 
 
 // ─── Spotify : Import PUBLIC (Lien direct, Client Credentials) ───────────────
-app.get('/api/spotify/playlist/:id', async (req, res) => {
+app.get('/api/spotify/playlist/:id', rateLimit(10, 60_000), async (req, res) => {
   try {
     const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
@@ -477,7 +524,7 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
 });
 
 // ─── Deezer : recherche de titres ────────────────────────────────────────────
-app.get('/api/deezer/search', async (req, res) => {
+app.get('/api/deezer/search', rateLimit(30, 60_000), async (req, res) => {
   const q = req.query.q?.trim();
   if (!q) return res.status(400).json({ error: 'Paramètre q requis' });
   try {
@@ -502,7 +549,7 @@ app.get('/api/deezer/search', async (req, res) => {
 });
 
 // ─── Deezer : importer une playlist (avec pagination complète) ───────────────
-app.get('/api/deezer/playlist/:id', async (req, res) => {
+app.get('/api/deezer/playlist/:id', rateLimit(10, 60_000), async (req, res) => {
   try {
     const fetchFn = await getFetch();
     const headers = { 'User-Agent': 'ZIK-BlindTest/1.0' };
@@ -555,11 +602,10 @@ app.get('/api/deezer/playlist/:id', async (req, res) => {
 
 // ─── Playlists custom : suppression sécurisée ────────────────────────────────
 app.delete('/api/playlists/:id', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Non authentifié' });
-  const token = authHeader.slice(7);
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-  if (authErr || !user) return res.status(401).json({ error: 'Session invalide' });
+  const token = req.headers.authorization?.slice(7);
+  if (!token) return res.status(401).json({ error: 'Non authentifié' });
+  const user = await verifyToken(token);
+  if (!user) return res.status(401).json({ error: 'Session invalide' });
 
   const plId = req.params.id;
 
@@ -636,8 +682,8 @@ app.get('/api/spotify/status', (req, res) => {
 app.post('/api/playlists/:id/official', async (req, res) => {
   const token = req.headers.authorization?.slice(7);
   if (!token) return res.status(401).json({ error: 'Non authentifié' });
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-  if (authErr || !user) return res.status(401).json({ error: 'Session invalide' });
+  const user = await verifyToken(token);
+  if (!user) return res.status(401).json({ error: 'Session invalide' });
 
   // Vérifier le rôle super_admin en DB
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
@@ -663,12 +709,12 @@ app.post('/api/playlists/:id/official', async (req, res) => {
 
 // ─── Rooms persistantes (Supabase) ───────────────────────────────────────────
 
-// Helper auth commun
+// Helper auth commun (utilise le cache JWT)
 async function requireAuth(req, res) {
   const token = req.headers.authorization?.slice(7);
   if (!token) { res.status(401).json({ error: 'Non authentifié' }); return null; }
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) { res.status(401).json({ error: 'Session invalide' }); return null; }
+  const user = await verifyToken(token);
+  if (!user) { res.status(401).json({ error: 'Session invalide' }); return null; }
   return user;
 }
 
@@ -684,14 +730,16 @@ app.get('/api/rooms', async (req, res) => {
   let isSuperAdmin = false;
 
   if (token) {
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const user = await verifyToken(token);
     if (user) {
+      // Rôle mis en cache dans le profil utilisateur (lecture légère)
       const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single();
       isSuperAdmin = p?.role === 'super_admin';
     }
   }
 
-  const sb = token ? userClient(token) : supabase;
+  // Rooms publiques : pas besoin du JWT utilisateur pour la requête SELECT
+  const sb = supabase;
   let query = sb.from('rooms')
     .select('id, code, name, emoji, description, is_public, max_rounds, round_duration, break_duration, last_active_at, owner_id, playlist_id, profiles!owner_id(username, avatar_url)')
     .order('last_active_at', { ascending: false })
@@ -738,7 +786,7 @@ app.get('/api/rooms/:code', async (req, res) => {
 });
 
 // POST /api/rooms — créer une room
-app.post('/api/rooms', async (req, res) => {
+app.post('/api/rooms', rateLimit(10, 60_000), async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
   const token = req.headers.authorization.slice(7);
@@ -808,7 +856,7 @@ function genRoomCode() {
   return code;
 }
 
-app.post('/api/rooms/custom', async (req, res) => {
+app.post('/api/rooms/custom', rateLimit(5, 60_000), async (req, res) => {
   const { name, emoji, tracks, maxRounds = 10, roundDuration = 30, breakDuration = 7 } = req.body || {};
   if (!name?.trim() || !Array.isArray(tracks) || tracks.length < 3) {
     return res.status(400).json({ error: 'name et au moins 3 tracks requis' });
