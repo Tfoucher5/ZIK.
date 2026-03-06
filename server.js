@@ -51,8 +51,10 @@ app.get('/',           (req, res) => res.sendFile(path.join(views, 'index.html')
 app.get('/game',       (req, res) => res.sendFile(path.join(views, 'game.html')));
 app.get('/playlists',  (req, res) => res.sendFile(path.join(views, 'playlists.html')));
 app.get('/rooms',      (req, res) => res.sendFile(path.join(views, 'rooms.html')));
-app.get('/profile',    (req, res) => res.sendFile(path.join(views, 'profile.html')));
-app.get('/settings',   (req, res) => res.sendFile(path.join(views, 'settings.html')));
+app.get('/profile',         (req, res) => res.sendFile(path.join(views, 'profile.html')));
+app.get('/settings',        (req, res) => res.sendFile(path.join(views, 'settings.html')));
+app.get('/cgu',             (req, res) => res.sendFile(path.join(views, 'cgu.html')));
+app.get('/confidentialite', (req, res) => res.sendFile(path.join(views, 'confidentialite.html')));
 
 // Redirects pour les anciens liens en .html
 app.get('/game.html',      (req, res) => res.redirect(301, '/game'      + (Object.keys(req.query).length ? '?' + new URLSearchParams(req.query) : '')));
@@ -263,15 +265,28 @@ function cleanString(str) {
     .trim().toLowerCase();
 }
 
-// Extracts main artist and featuring artist from an artist string
-// e.g. "Drake feat. Rihanna" → { main: "Drake", feat: "Rihanna" }
+// Extracts main artist and featuring artist from an artist string.
+// Handles: "A feat. B", "A ft. B", "A (feat. B)", "A, B" (Spotify multi-artist), "A & B"
 function parseFeaturing(artistStr) {
   if (!artistStr) return { main: '', feat: null };
-  // Match: "A feat. B", "A feat B", "A ft. B", "A ft B", "A (feat. B)", "A (ft. B)", "A (featuring B)"
+
+  // 1. feat./ft./featuring (parenthetical or inline)
   const m = artistStr.match(
     /^(.+?)(?:\s*\((?:feat\.?|ft\.?|featuring)\s+([^)]+)\)|\s+(?:feat\.?|ft\.?|featuring)\s+(.+))$/i
   );
   if (m) return { main: m[1].trim(), feat: (m[2] || m[3]).trim() };
+
+  // 2. Comma-separated (Spotify stores multi-artist as "A, B, C")
+  //    Split only on the first ", " so "B, C" stays together as feat
+  const commaIdx = artistStr.indexOf(', ');
+  if (commaIdx > 0) {
+    return { main: artistStr.slice(0, commaIdx).trim(), feat: artistStr.slice(commaIdx + 2).trim() };
+  }
+
+  // 3. Ampersand (e.g. "Jay-Z & Kanye West") — only one "&"
+  const ampMatch = artistStr.match(/^(.+?)\s+&\s+(.+)$/);
+  if (ampMatch) return { main: ampMatch[1].trim(), feat: ampMatch[2].trim() };
+
   return { main: artistStr, feat: null };
 }
 

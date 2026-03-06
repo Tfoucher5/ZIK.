@@ -169,10 +169,18 @@ function roomCard(r, owned) {
         ${privTag}
       </div>
       <div class="room-card-footer">
-        <a href="/game?roomId=${r.code}" class="btn-accent sm" style="text-decoration:none">Rejoindre</a>
+        <button class="btn-accent sm" onclick="joinRoom('${r.code}')">Rejoindre</button>
         ${actions}
       </div>
     </div>`;
+}
+
+function joinRoom(code) {
+  const username = currentUser?.profile?.username || currentUser?.email?.split('@')[0] || 'Joueur';
+  const userId   = currentUser?.id || '';
+  const isGuest  = currentUser ? '0' : '1';
+  const p = new URLSearchParams({ roomId: code, username, userId, isGuest });
+  window.location.href = `/game?${p}`;
 }
 
 function esc(s) {

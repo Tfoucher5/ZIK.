@@ -274,11 +274,14 @@ socket.on('reveal_cover', ({ cover }) => {
 });
 
 socket.on('round_end', data => {
-  const [artist, ...rest] = data.answer.split(' - ');
-  const title = rest.join(' - ');
+  // answer = "FullArtist - Title"; use server-provided featArtist for correctness
+  const dashIdx = data.answer.indexOf(' - ');
+  const fullArtist = dashIdx > -1 ? data.answer.slice(0, dashIdx) : data.answer;
+  const title      = dashIdx > -1 ? data.answer.slice(dashIdx + 3) : '—';
 
-  // Main artist — parse feat back out to show only the main part in the slot
-  const { main: mainArtist, feat: featArtist } = _parseFeat(artist || data.answer);
+  const featArtist = data.featArtist || null;
+  const mainArtist = featArtist ? _parseFeat(fullArtist).main : fullArtist;
+
   setSlot(ui.slotArtist, mainArtist, data.foundArtist ? 'found' : 'missed');
   if (featArtist) {
     ui.slotFeat.style.display = '';
@@ -362,13 +365,20 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// Mirror of server parseFeaturing — used to split the answer for display
+// Mirror of server parseFeaturing — used to split the answer string for display
 function _parseFeat(artistStr) {
   if (!artistStr) return { main: '', feat: null };
+  // feat./ft./featuring
   const m = artistStr.match(
     /^(.+?)(?:\s*\((?:feat\.?|ft\.?|featuring)\s+([^)]+)\)|\s+(?:feat\.?|ft\.?|featuring)\s+(.+))$/i
   );
   if (m) return { main: m[1].trim(), feat: (m[2] || m[3]).trim() };
+  // Comma-separated
+  const ci = artistStr.indexOf(', ');
+  if (ci > 0) return { main: artistStr.slice(0, ci).trim(), feat: artistStr.slice(ci + 2).trim() };
+  // Ampersand
+  const am = artistStr.match(/^(.+?)\s+&\s+(.+)$/);
+  if (am) return { main: am[1].trim(), feat: am[2].trim() };
   return { main: artistStr, feat: null };
 }
 

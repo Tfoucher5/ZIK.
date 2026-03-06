@@ -229,12 +229,15 @@ h1 em{
 .private-room-err{font-size:.78rem;color:#f87171;margin-top:4px;width:100%}
 
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
-footer{
-  display:flex;align-items:center;justify-content:space-between;
+footer,.site-footer{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
   padding:24px clamp(16px,5vw,80px);
   border-top:1px solid var(--border);
   font-size:.8rem;color:var(--dim);
 }
+.footer-links{display:flex;gap:20px;flex-wrap:wrap}
+.footer-links a{color:var(--dim);transition:color .15s}
+.footer-links a:hover{color:var(--text)}
 
 /* ── Overlay / Modal ────────────────────────────────────────────────────────── */
 .overlay{

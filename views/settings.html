@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZIK — Parametres</title>
+  <title>ZIK — Paramètres</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/home.css">
@@ -17,6 +17,7 @@
     <a href="/" class="nav-logo">ZIK<span>.</span></a>
     <div class="nav-right">
       <div id="nav-user" style="display:none">
+        <a href="/rooms" class="btn-ghost sm" style="text-decoration:none">Rooms</a>
         <a href="/playlists" class="btn-ghost sm" style="text-decoration:none">Mes playlists</a>
         <div class="nav-profile-wrap">
           <button class="nav-avatar-wrap" id="nav-profile-trigger">
@@ -27,8 +28,8 @@
           <div class="nav-dropdown" id="nav-dropdown">
             <a href="/profile" class="nav-dd-item">Mon profil</a>
             <a href="/rooms" class="nav-dd-item">Rooms</a>
-            <a href="/settings" class="nav-dd-item">Parametres</a>
-            <button class="nav-dd-item nav-dd-logout" id="logoutBtn">Deconnexion</button>
+            <a href="/settings" class="nav-dd-item nav-dd-active">Paramètres</a>
+            <button class="nav-dd-item nav-dd-logout" id="logoutBtn">Déconnexion</button>
           </div>
         </div>
       </div>
@@ -40,8 +41,9 @@
 
   <main class="settings-page">
     <div class="settings-container">
-      <h1 class="settings-title">Parametres</h1>
-      <p class="settings-sub">Personnalise ton experience ZIK.</p>
+      <a href="javascript:history.back()" class="settings-back">← Retour</a>
+      <h1 class="settings-title">Paramètres</h1>
+      <p class="settings-sub">Personnalise ton expérience ZIK.</p>
 
       <!-- Section : Visuel -->
       <section class="settings-section">
@@ -50,7 +52,7 @@
         <div class="settings-row">
           <div class="settings-row-info">
             <div class="settings-row-label">Animations</div>
-            <div class="settings-row-desc">Active ou desactive les animations de l'interface (cartes, scores, transitions).</div>
+            <div class="settings-row-desc">Active ou désactive les animations de l'interface (cartes, scores, transitions). Désactivez si vous ressentez des ralentissements.</div>
           </div>
           <label class="toggle-switch" aria-label="Activer les animations">
             <input type="checkbox" id="pref-animations" checked>
@@ -65,8 +67,8 @@
 
         <div class="settings-row">
           <div class="settings-row-info">
-            <div class="settings-row-label">Volume par defaut</div>
-            <div class="settings-row-desc">Volume de la musique au demarrage d'une partie.</div>
+            <div class="settings-row-label">Volume par défaut</div>
+            <div class="settings-row-desc">Volume de la musique au démarrage d'une partie.</div>
           </div>
           <div class="settings-vol-wrap">
             <input type="range" id="pref-volume" min="0" max="100" step="5" value="50">
@@ -78,7 +80,17 @@
     </div>
   </main>
 
-  <script type="module" src="/js/auth.js"></script>
-  <script type="module" src="/js/settings.js"></script>
+  <footer class="site-footer">
+    <span class="nav-logo">ZIK<span>.</span></span>
+    <span>© 2025 ZIK — Blind Test Multijoueur</span>
+    <div class="footer-links">
+      <a href="/cgu">CGU</a>
+      <a href="/confidentialite">Confidentialité</a>
+      <a href="mailto:contact@zik.app">Contact</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/js/settings.js"></script>
 </body>
 </html>
