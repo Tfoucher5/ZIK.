@@ -359,7 +359,7 @@ async function openAdminSection(pl) {
   const sel = document.getElementById('admin-linked-room');
   if (sel.options.length <= 1) {
     try {
-      const r = await fetch('/api/rooms');
+      const r = await fetch('/api/rooms/official');
       const rooms = await r.json();
       rooms.forEach(room => {
         const opt = document.createElement('option');
