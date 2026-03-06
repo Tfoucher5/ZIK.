@@ -303,6 +303,21 @@ app.get('/api/spotify/search', async (req, res) => {
   }
 });
 
+// ─── Spotify : normalise un item playlist (supporte /items et métadonnées) ────
+function normalizeSpotifyItem(i) {
+  // /items endpoint → champ "item" ; métadonnées embarquées → champ "track"
+  const t = i?.item ?? i?.track;
+  if (!t?.id || t.type === 'episode' || i.is_local) return null;
+  return {
+    external_id: t.id,
+    source:      'spotify',
+    artist:      t.artists?.map(a => a.name).join(', ') || '?',
+    title:       t.name,
+    preview_url: t.preview_url || null,
+    cover_url:   t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || null,
+  };
+}
+
 // ─── Spotify : Import USER (Login PKCE) ────────────────────────────────────────
 app.get('/api/spotify/playlist-user/:id', async (req, res) => {
   const userToken = req.headers['x-spotify-token'];
@@ -312,9 +327,10 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
   const fetchFn = await getFetch();
 
   try {
-    // 1. Métadonnées (Tentative Token User)
-    let plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks(total)`, {
-      headers: { Authorization: `Bearer ${userToken}` }
+    // 1. Métadonnées complètes (sans fields= — inclut pl.tracks.items embarquées, champ "track")
+    let plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}`, {
+      headers: { Authorization: `Bearer ${userToken}` },
+      signal: AbortSignal.timeout(12000),
     });
 
     let currentToken = userToken;
@@ -325,32 +341,35 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
       // 403 : fallback Client Credentials (playlists publiques)
       console.warn(`[Spotify] metadata ${plRes.status} — fallback CC`);
       currentToken = await getSpotifyToken();
-      plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks(total)`, {
-        headers: { Authorization: `Bearer ${currentToken}` }
+      plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}`, {
+        headers: { Authorization: `Bearer ${currentToken}` },
+        signal: AbortSignal.timeout(12000),
       });
       if (!plRes.ok) return res.status(plRes.status).json({ error: 'Playlist inaccessible.' });
     }
 
     const pl    = await plRes.json();
     const total = pl.tracks?.total || 0;
-    console.log(`Spotify metadata "${pl.name}": total=${total}`);
+    const embeddedItems = pl.tracks?.items || [];
+    console.log(`Spotify metadata "${pl.name}": total=${total}, embedded=${embeddedItems.length}`);
 
-    // 2. Pagination via /playlists/{id}/items (endpoint actuel, limite max=50)
-    // Le champ dans la réponse est "item" (et non "track" de l'ancien endpoint /tracks)
-    let allItems = [];
-    let offset   = 0;
+    // 2. Pagination via /playlists/{id}/items (endpoint officiel, limite max=50, champ "item")
+    let allItems  = [];
+    let offset    = 0;
     let loopTotal = total > 0 ? total : 9999;
+    let itemsOk   = true;
 
     while (allItems.length < Math.min(loopTotal, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
-        { headers: { Authorization: `Bearer ${currentToken}` } }
+        `https://api.spotify.com/v1/playlists/${plId}/items?limit=50&offset=${offset}`,
+        { headers: { Authorization: `Bearer ${currentToken}` }, signal: AbortSignal.timeout(12000) }
       );
       if (tRes.status === 429) {
         await new Promise(r => setTimeout(r, 2000)); continue;
       }
       if (!tRes.ok) {
-        console.warn(`Spotify /items offset=${offset} → HTTP ${tRes.status}`);
+        console.warn(`Spotify /items offset=${offset} → HTTP ${tRes.status} — fallback embedded`);
+        itemsOk = false;
         break;
       }
       const page = await tRes.json();
@@ -361,24 +380,16 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
       if (page.items.length < 50) break;
     }
 
-    console.log(`Spotify /items: ${allItems.length} items bruts`);
+    // Fallback : utiliser les pistes embarquées dans la réponse metadata si /items échoue
+    const rawItems = itemsOk ? allItems : embeddedItems;
+    console.log(`Spotify source: ${itemsOk ? '/items' : 'embedded'}, ${rawItems.length} items bruts`);
 
-    // i.item = nouveau nom du champ (endpoint /items)
-    const tracks = allItems
-      .filter(i => i?.item?.id && i.item.type !== 'episode' && !i.is_local)
-      .map(i => ({
-        external_id: i.item.id,
-        source:      'spotify',
-        artist:      i.item.artists?.map(a => a.name).join(', ') || '?',
-        title:       i.item.name,
-        preview_url: i.item.preview_url || null,
-        cover_url:   i.item.album?.images?.[1]?.url || i.item.album?.images?.[0]?.url || null,
-      }));
+    const tracks = rawItems.map(normalizeSpotifyItem).filter(Boolean);
 
     console.log(`Spotify import "${pl.name}": ${tracks.length}/${loopTotal} pistes valides`);
 
     if (!tracks.length) {
-      return res.status(422).json({ error: `Aucune piste récupérée (${allItems.length} items bruts). La playlist est peut-être vide ou privée.` });
+      return res.status(422).json({ error: `Aucune piste récupérée (${rawItems.length} items bruts). La playlist est peut-être vide ou privée.` });
     }
 
     res.json({ name: pl.name, cover: pl.images?.[0]?.url || null, tracks, total: loopTotal, truncated: loopTotal > tracks.length });
@@ -396,23 +407,27 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
     const fetchFn = await getFetch();
     const plId    = req.params.id;
 
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks(total)`, {
-      headers: { Authorization: `Bearer ${token}` }
+    // Métadonnées complètes (inclut pl.tracks.items embarquées)
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(12000),
     });
     if (!plRes.ok) throw new Error('Playlist introuvable ou privée');
     const pl    = await plRes.json();
     const total = pl.tracks?.total || 0;
+    const embeddedItems = pl.tracks?.items || [];
 
-    let allItems = [];
-    let offset   = 0;
+    let allItems  = [];
+    let offset    = 0;
     let loopTotal = total > 0 ? total : 9999;
+    let itemsOk   = true;
 
     while (allItems.length < Math.min(loopTotal, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `https://api.spotify.com/v1/playlists/${plId}/items?limit=50&offset=${offset}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
       );
-      if (!tRes.ok) break;
+      if (!tRes.ok) { itemsOk = false; break; }
       const page = await tRes.json();
       if (typeof page.total === 'number') loopTotal = Math.min(page.total, 1000);
       if (!page.items?.length) break;
@@ -421,16 +436,8 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
       if (page.items.length < 50) break;
     }
 
-    const tracks = allItems
-      .filter(i => i?.item?.id && i.item.type !== 'episode' && !i.is_local)
-      .map(i => ({
-        external_id: i.item.id,
-        source:      'spotify',
-        artist:      i.item.artists?.map(a => a.name).join(', ') || '?',
-        title:       i.item.name,
-        preview_url: i.item.preview_url || null,
-        cover_url:   i.item.album?.images?.[1]?.url || i.item.album?.images?.[0]?.url || null,
-      }));
+    const rawItems = itemsOk ? allItems : embeddedItems;
+    const tracks = rawItems.map(normalizeSpotifyItem).filter(Boolean);
 
     res.json({ name: pl.name, cover: pl.images?.[0]?.url || null, tracks, total: loopTotal });
   } catch (e) {
