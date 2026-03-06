@@ -327,8 +327,8 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
     const tokenPreview = userToken ? `${userToken.slice(0,8)}...${userToken.slice(-4)}` : 'VIDE';
     console.log(`Spotify user-import ${plId} — token: ${tokenPreview}`);
 
-    // 1. Métadonnées
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=from_token`, {
+    // 1. Métadonnées (sans market=from_token : nécessite user-read-private, non dispo avec PKCE de base)
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}`, {
       headers: { Authorization: `Bearer ${userToken}` },
       signal: AbortSignal.timeout(12000),
     });
