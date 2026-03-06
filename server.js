@@ -313,7 +313,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
 
   try {
     // 1. Métadonnées (Tentative Token User)
-    let plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks(total)`, {
+    let plRes = await fetchFn(`https://api.spotify.com/v1/playlists/$${plId}?fields=name,images,tracks(total)`, {
       headers: { Authorization: `Bearer ${userToken}` }
     });
 
@@ -324,7 +324,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
     if (!plRes.ok || plRes.status === 403) {
       console.warn(`[Spotify] Fallback CC pour playlist ${plId}`);
       currentToken = await getSpotifyToken();
-      plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks(total)`, {
+      plRes = await fetchFn(`https://api.spotify.com/v1/playlists/$${plId}?fields=name,images,tracks(total)`, {
         headers: { Authorization: `Bearer ${currentToken}` }
       });
       usingCC = true;
@@ -341,7 +341,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
 
     while (offset < Math.min(total, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
+        `https://api.spotify.com/v1/playlists/$${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
         { headers: { Authorization: `Bearer ${currentToken}` } }
       );
 
@@ -383,7 +383,7 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
     const fetchFn = await getFetch();
     const plId = req.params.id;
 
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks(total)`, {
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/$${plId}?fields=name,images,tracks(total)`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -395,7 +395,7 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
     let offset = 0;
     while (offset < Math.min(total, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
+        `https://api.spotify.com/v1/playlists/$${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!tRes.ok) break;
