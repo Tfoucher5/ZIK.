@@ -313,10 +313,9 @@ app.get('/api/spotify/search', async (req, res) => {
 });
 
 // ─── Spotify : import via token utilisateur PKCE (proxy serveur) ──────────────
-// Le client fait l'auth PKCE et passe son access_token dans X-Spotify-Token.
-// Le serveur appelle l'API Spotify côté Node (pas de CORS, logs disponibles).
-// Fallback automatique sur Client Credentials si le token user est refusé (403)
-// sur l'endpoint /tracks (limitation des apps en mode Development).
+// Stratégie : metadata avec market=from_token donne 100 tracks embedded + total.
+// On tente ensuite /tracks (souvent 403 si app sans Extended Access).
+// Si 403, on se rabat sur les 100 tracks embedded de la metadata.
 app.get('/api/spotify/playlist-user/:id', async (req, res) => {
   const userToken = req.headers['x-spotify-token'];
   if (!userToken) return res.status(400).json({ error: 'X-Spotify-Token manquant' });
@@ -325,8 +324,8 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
   const plId    = req.params.id;
 
   try {
-    // 1. Métadonnées via token user (avec market=FR pour que Spotify retourne les tracks embedded)
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=FR`, {
+    // 1. Métadonnées avec market=from_token — retourne embedded tracks (jusqu'à 100) + total réel
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=from_token`, {
       headers: { Authorization: `Bearer ${userToken}` },
       signal: AbortSignal.timeout(12000),
     });
@@ -338,44 +337,46 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
       if (plRes.status === 404) return res.status(404).json({ error: 'Playlist introuvable.' });
       return res.status(plRes.status).json({ error: `Spotify HTTP ${plRes.status}` });
     }
-    const pl = await plRes.json();
-    let total = pl.tracks?.total || 0;
-    console.log(`Spotify metadata "${pl.name}": total=${total}, embedded=${pl.tracks?.items?.length || 0}`);
+    const pl    = await plRes.json();
+    const total = pl.tracks?.total || 0;
+    const embeddedItems = pl.tracks?.items || [];
+    console.log(`Spotify metadata "${pl.name}": total=${total}, embedded=${embeddedItems.length}`);
 
-    // 2. Pagination via /tracks — token user en premier, Client Credentials en fallback si 403
-    let allItems  = [];
-    let offset    = 0;
-    let loopTotal = total || 9999;
-    let usingCC   = false; // true si on utilise le token Client Credentials
+    // 2. Tenter de paginer via /tracks (souvent 403 si app Spotify sans Extended Access)
+    let allItems = [...embeddedItems];
+    let tracksOk = embeddedItems.length >= total; // si embedded couvre tout, pas besoin de /tracks
+    let offset   = embeddedItems.length;
 
-    while (allItems.length < Math.min(loopTotal, 1000)) {
-      const tok  = usingCC ? await getSpotifyToken() : userToken;
+    if (!tracksOk) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=FR`,
-        { headers: { Authorization: `Bearer ${tok}` }, signal: AbortSignal.timeout(12000) }
+        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=from_token`,
+        { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
       );
-
-      // 403 avec token user → fallback Client Credentials (playlists publiques)
-      if (tRes.status === 403 && !usingCC) {
-        console.warn(`Spotify /tracks 403 avec token user → fallback Client Credentials`);
-        usingCC = true;
-        continue; // relancer l'itération avec CC token
+      if (tRes.ok) {
+        tracksOk = true;
+        const first = await tRes.json();
+        if (first.items?.length) {
+          allItems = allItems.concat(first.items);
+          offset += first.items.length;
+          while (allItems.length < Math.min(total, 1000) && first.items.length === 100) {
+            const nRes = await fetchFn(
+              `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=from_token`,
+              { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
+            );
+            if (!nRes.ok) break;
+            const nd = await nRes.json();
+            if (!nd.items?.length) break;
+            allItems = allItems.concat(nd.items);
+            offset += nd.items.length;
+            if (nd.items.length < 100) break;
+          }
+        }
+      } else {
+        console.warn(`Spotify /tracks → HTTP ${tRes.status} (app sans Extended Access ?) — fallback sur ${embeddedItems.length} tracks embedded`);
       }
-
-      if (!tRes.ok) {
-        const errBody = await tRes.text().catch(() => '');
-        console.warn(`Spotify /tracks offset=${offset} → HTTP ${tRes.status}:`, errBody.slice(0, 200));
-        break;
-      }
-      const tData = await tRes.json();
-      if (typeof tData.total === 'number') { loopTotal = tData.total; total = tData.total; }
-      if (!tData.items?.length) break;
-      allItems = allItems.concat(tData.items);
-      offset += 100;
-      if (tData.items.length < 100) break;
     }
 
-    console.log(`Spotify /tracks: ${allItems.length} items (CC=${usingCC})`);
+    console.log(`Spotify /tracks: ${allItems.length} items, endpoint_ok=${tracksOk}`);
 
     const tracks = allItems
       .filter(i => i?.track?.id && i.track.type !== 'episode')
@@ -391,10 +392,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
     console.log(`Spotify import "${pl.name}": ${tracks.length}/${total} pistes valides`);
 
     if (!tracks.length) {
-      const msg = allItems.length > 0
-        ? `${allItems.length} éléments reçus mais aucun n'est une piste valide.`
-        : `Aucune piste récupérée (total=${total}). La playlist est peut-être privée ou vide.`;
-      return res.status(422).json({ error: msg });
+      return res.status(422).json({ error: `Aucune piste récupérée. La playlist est peut-être vide ou inaccessible (total Spotify: ${total}).` });
     }
 
     res.json({
@@ -403,6 +401,8 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
       tracks,
       total,
       truncated: total > tracks.length,
+      // Si /tracks retourne 403 (app sans Extended Access), on est limité aux 100 premiers
+      limited: !tracksOk && total > tracks.length,
     });
   } catch (e) {
     console.error('Spotify user-import error:', e.message);

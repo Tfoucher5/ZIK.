@@ -584,7 +584,7 @@ async function importSpotify() {
           <div class="import-preview-count">${data.tracks.length} titres${data.truncated ? ` / ${data.total}` : ''}</div>
         </div>
       </div>
-      ${data.truncated ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">⚠️ Limité aux ${data.tracks.length} premiers titres (total: ${data.total})</p>` : ''}
+      ${data.limited ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">⚠️ Limité aux ${data.tracks.length} premiers titres sur ${data.total} — l'app Spotify nécessite <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:#fbbf24">Extended Access</a> pour importer des playlists complètes.</p>` : data.truncated ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">⚠️ Limité aux ${data.tracks.length} premiers titres (total: ${data.total})</p>` : ''}
       <div class="import-actions">
         <button class="btn-accent sm" onclick="confirmImport('spotify')">Tout importer (${data.tracks.length} titres)</button>
         <button class="btn-ghost sm" onclick="document.getElementById('import-spotify-preview').innerHTML=''">Annuler</button>
