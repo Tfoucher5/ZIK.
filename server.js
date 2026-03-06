@@ -52,6 +52,7 @@ app.get('/game',       (req, res) => res.sendFile(path.join(views, 'game.html'))
 app.get('/playlists',  (req, res) => res.sendFile(path.join(views, 'playlists.html')));
 app.get('/rooms',      (req, res) => res.sendFile(path.join(views, 'rooms.html')));
 app.get('/profile',    (req, res) => res.sendFile(path.join(views, 'profile.html')));
+app.get('/settings',   (req, res) => res.sendFile(path.join(views, 'settings.html')));
 
 // Redirects pour les anciens liens en .html
 app.get('/game.html',      (req, res) => res.redirect(301, '/game'      + (Object.keys(req.query).length ? '?' + new URLSearchParams(req.query) : '')));
@@ -180,14 +181,7 @@ async function loadPlaylist(roomId) {
         .eq('playlist_id', dbRoom.playlist_id)
         .order('position');
       if (trackRows?.length >= 3) {
-        const tracks = trackRows.map(t => ({
-          artist:      t.artist,
-          title:       t.title,
-          cleanTitle:  cleanString(t.title),
-          cleanArtist: cleanString(t.artist),
-          cover:       t.cover_url || '',
-          preview_url: t.preview_url || null,
-        }));
+        const tracks = trackRows.map(t => buildTrack({ artist: t.artist, title: t.title, cover: t.cover_url, preview_url: t.preview_url }));
         playlistCache[roomId] = tracks;
         console.log(`Room DB "${roomId}": ${tracks.length} titres chargés`);
         return tracks;
@@ -216,14 +210,7 @@ async function loadPlaylist(roomId) {
         .order('position');
 
       if (trackRows?.length >= 5) {
-        const tracks = trackRows.map(t => ({
-          artist:      t.artist,
-          title:       t.title,
-          cleanTitle:  cleanString(t.title),
-          cleanArtist: cleanString(t.artist),
-          cover:       t.cover_url || '',
-          preview_url: t.preview_url || null,
-        }));
+        const tracks = trackRows.map(t => buildTrack({ artist: t.artist, title: t.title, cover: t.cover_url, preview_url: t.preview_url }));
         playlistCache[roomId] = tracks;
         console.log(`✅ Room "${roomId}" (playlist Supabase officielle): ${tracks.length} titres`);
         return tracks;
@@ -240,13 +227,7 @@ async function loadPlaylist(roomId) {
       const data = await fetchDeezerPlaylist(pid);
       const tracks = data.tracks.data
         .filter(t => t.readable !== false)
-        .map(t => ({
-          artist:      t.artist.name,
-          title:       t.title,
-          cleanTitle:  cleanString(t.title),
-          cleanArtist: cleanString(t.artist.name),
-          cover:       t.album.cover_xl || t.album.cover_big || '',
-        }));
+        .map(t => buildTrack({ artist: t.artist.name, title: t.title, cover: t.album.cover_xl || t.album.cover_big }));
 
       if (tracks.length < 5) throw new Error(`Seulement ${tracks.length} titres lisibles`);
 
@@ -280,6 +261,34 @@ function cleanString(str) {
     .replace(/ *\([^)]*\) */g, '').replace(/ *\[[^\]]*\] */g, '')
     .replace(/[''`]/g, "'").replace(/[-–—]/g, ' ')
     .trim().toLowerCase();
+}
+
+// Extracts main artist and featuring artist from an artist string
+// e.g. "Drake feat. Rihanna" → { main: "Drake", feat: "Rihanna" }
+function parseFeaturing(artistStr) {
+  if (!artistStr) return { main: '', feat: null };
+  // Match: "A feat. B", "A feat B", "A ft. B", "A ft B", "A (feat. B)", "A (ft. B)", "A (featuring B)"
+  const m = artistStr.match(
+    /^(.+?)(?:\s*\((?:feat\.?|ft\.?|featuring)\s+([^)]+)\)|\s+(?:feat\.?|ft\.?|featuring)\s+(.+))$/i
+  );
+  if (m) return { main: m[1].trim(), feat: (m[2] || m[3]).trim() };
+  return { main: artistStr, feat: null };
+}
+
+// Build a normalized track object from raw data
+function buildTrack({ artist, title, cover, preview_url }) {
+  const { main, feat } = parseFeaturing(artist || '');
+  return {
+    artist,                                // full string for display
+    mainArtist:      main,
+    featArtist:      feat || null,
+    title:           title || '',
+    cleanArtist:     cleanString(main),    // match only against main artist
+    cleanFeatArtist: feat ? cleanString(feat) : null,
+    cleanTitle:      cleanString(title),
+    cover:           cover || '',
+    preview_url:     preview_url || null,
+  };
 }
 
 function calcSpeedBonus(timeTaken) {
@@ -901,13 +910,11 @@ app.post('/api/rooms/custom', rateLimit(5, 60_000), async (req, res) => {
     id:            code,
     name:          String(name).trim().slice(0, 60),
     emoji:         emoji || '🎵',
-    tracks:        tracks.map(t => ({
-      artist:      String(t.artist || '').trim(),
-      title:       String(t.title  || '').trim(),
-      cleanTitle:  cleanString(t.title  || ''),
-      cleanArtist: cleanString(t.artist || ''),
-      cover:       t.cover_url || '',
-      preview_url: t.preview_url || null,
+    tracks:        tracks.map(t => buildTrack({
+      artist:  String(t.artist || '').trim(),
+      title:   String(t.title  || '').trim(),
+      cover:   t.cover_url,
+      preview_url: t.preview_url,
     })).filter(t => t.artist && t.title),
     maxRounds:     mr,
     roundDuration: rd,
@@ -1018,8 +1025,10 @@ io.on('connection', (socket) => {
         userId: userId || null,
         isGuest: isGuest !== false,
         score: 0,
-        foundArtist: false,
-        foundTitle: false,
+        foundArtist:       false,
+        foundTitle:        false,
+        foundFeat:         false,
+        _fullFoundCounted: false,
       };
     } else {
       // Reconnexion — annuler le timer de déconnexion
@@ -1129,7 +1138,7 @@ io.on('connection', (socket) => {
     const cover = track.cover || '';
     let hit = false;
 
-    // Check artiste
+    // Check artiste principal
     if (!user.foundArtist) {
       const match = input.length >= 3 && (
         simArtist > 0.75 ||
@@ -1138,10 +1147,28 @@ io.on('connection', (socket) => {
       if (match) {
         user.foundArtist = true;
         user.score += 1 + speedBonus;
-        socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.artist, cover });
+        socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.mainArtist || track.artist, cover });
         hit = true;
       } else if (simArtist > 0.50) {
         socket.emit('feedback', { type: 'close', msg: "🔥 Tu chauffes sur l'artiste !" });
+        hit = true;
+      }
+    }
+
+    // Check artiste en featuring (bonus)
+    if (!user.foundFeat && track.cleanFeatArtist) {
+      const simFeat = stringSimilarity.compareTwoStrings(input, track.cleanFeatArtist);
+      const matchFeat = input.length >= 3 && (
+        simFeat > 0.75 ||
+        (input.length >= 5 && simFeat > 0.65 && wordMatch(input, track.cleanFeatArtist))
+      );
+      if (matchFeat) {
+        user.foundFeat = true;
+        user.score += 1 + speedBonus;
+        socket.emit('feedback', { type: 'success_feat', msg: `✅ Feat ! (+${1 + speedBonus} pts)`, val: track.featArtist, cover });
+        hit = true;
+      } else if (simFeat > 0.50 && !hit) {
+        socket.emit('feedback', { type: 'close', msg: '🔥 Tu chauffes sur le feat !' });
         hit = true;
       }
     }
@@ -1167,12 +1194,13 @@ io.on('connection', (socket) => {
 
     getRoomIO(roomId).emit('update_players', Object.values(room.players));
 
-    if (user.foundArtist && user.foundTitle) {
-      if (room.game.totalFullFound === 0 || !room.game.firstFullFinder) {
-        room.game.firstFullFinder = user.name;
-      }
+    // "Fully found" = main artist + title (feat is optional)
+    const allMainFound = user.foundArtist && user.foundTitle &&
+      (!track.cleanFeatArtist || user.foundFeat);
+    if (allMainFound && !user._fullFoundCounted) {
+      user._fullFoundCounted = true;
+      if (!room.game.firstFullFinder) room.game.firstFullFinder = user.name;
       room.game.totalFullFound++;
-      // Montrer la cover immédiatement à ce joueur
       socket.emit('reveal_cover', { cover: room.game.currentTrack.cover });
     }
 
@@ -1267,10 +1295,11 @@ async function startNextRound(roomId) {
     game.startTime = Date.now();
     game.timer = game.roundDuration;
     game.lastRoundData = {
-      videoId: video.videoId,
+      videoId:     video.videoId,
       startSeconds: safeStart,
-      round: game.currentRound,
-      total: game.maxRounds,
+      round:       game.currentRound,
+      total:       game.maxRounds,
+      hasFeat:     !!game.currentTrack.featArtist,
     };
 
     getRoomIO(roomId).emit('start_round', game.lastRoundData);
@@ -1294,8 +1323,10 @@ function startTimer(roomId) {
 
 function checkEveryoneFound(roomId) {
   const room = getOrCreateRoom(roomId);
+  const track = room.game.currentTrack;
   const activePlayers = Object.values(room.players);
-  if (activePlayers.length > 0 && activePlayers.every(u => u.foundArtist && u.foundTitle) && room.game.isActive) {
+  const allDone = p => p.foundArtist && p.foundTitle && (!track?.cleanFeatArtist || p.foundFeat);
+  if (activePlayers.length > 0 && activePlayers.every(allDone) && room.game.isActive) {
     endRound(roomId, '🎉 Tout le monde a trouvé !');
   }
 }
@@ -1312,6 +1343,7 @@ function endRound(roomId, reason) {
     reason,
     firstFinder: game.firstFullFinder,
     totalFound:  game.totalFullFound,
+    featArtist:  game.currentTrack.featArtist || null,
   };
   game.history.push(summary);
 
@@ -1324,6 +1356,7 @@ function endRound(roomId, reason) {
         ...summary,
         foundArtist: p.foundArtist,
         foundTitle:  p.foundTitle,
+        foundFeat:   p.foundFeat || false,
       });
     }
   });
@@ -1376,8 +1409,10 @@ async function saveGameResults(roomId, finalScores) {
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function resetRoundFlags(room) {
   Object.keys(room.players).forEach(n => {
-    room.players[n].foundArtist = false;
-    room.players[n].foundTitle  = false;
+    room.players[n].foundArtist      = false;
+    room.players[n].foundTitle       = false;
+    room.players[n].foundFeat        = false;
+    room.players[n]._fullFoundCounted = false;
   });
 }
 

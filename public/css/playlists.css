@@ -217,13 +217,42 @@
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
 /* ── Room launch modal ───────────────────────────────────────────────────────── */
-.room-settings { display: flex; flex-direction: column; gap: 14px; margin: 18px 0; }
-.room-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.room-setting-row label { font-size: .82rem; color: var(--mid); flex: 1; }
-.room-setting-row input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.room-eph-header { text-align: center; margin-bottom: 4px; }
+.room-eph-badge {
+  display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .5px;
+  background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.35);
+  color: #fbbf24; padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;
+}
+.room-eph-notice {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: rgba(62,207,255,.05); border: 1px solid rgba(62,207,255,.15);
+  border-radius: 10px; padding: 12px 14px; font-size: .78rem;
+  color: var(--mid); line-height: 1.5; margin-bottom: 16px;
+}
+.room-eph-icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
+.room-eph-link { color: var(--accent); text-decoration: underline; }
+
+.room-settings { display: flex; flex-direction: column; gap: 14px; margin: 0 0 16px; }
+.room-setting-row { display: flex; align-items: center; gap: 12px; }
+.room-setting-row label { font-size: .82rem; color: var(--mid); flex: 1; min-width: 0; }
+.room-setting-row input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  flex: 1; height: 4px; cursor: pointer; border-radius: 99px;
+  background: rgba(255,255,255,.12); outline: none; border: none;
+}
+.room-setting-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+  box-shadow: 0 0 6px rgba(62,207,255,.5);
+}
+.room-setting-row input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; border: none;
+  background: var(--accent); cursor: pointer;
+}
 .room-setting-val {
   font-size: .82rem; font-weight: 600; color: var(--accent);
-  min-width: 40px; text-align: right;
+  min-width: 36px; text-align: right;
 }
 .room-code-box {
   text-align: center; padding: 24px 0 8px;

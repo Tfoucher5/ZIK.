@@ -89,6 +89,7 @@ const ui = {
   placeholder: $('cover-placeholder'),
   coverImg:    $('cover-img'),
   slotArtist:  $('slot-artist'),
+  slotFeat:    $('slot-feat'),
   slotTitle:   $('slot-title'),
   feedback:    $('feedback'),
   summary:     $('round-summary'),
@@ -104,7 +105,7 @@ const ui = {
   volSlider:   $('volSlider'),
 };
 
-let personalFound = { artist: false, title: false };
+let personalFound = { artist: false, feat: false, title: false };
 let feedTimer;
 let _prevScores = {}; // name → score, to detect score changes for flash
 
@@ -192,7 +193,7 @@ socket.on('game_starting', () => {
 });
 
 socket.on('start_round', data => {
-  personalFound = { artist: false, title: false };
+  personalFound = { artist: false, feat: false, title: false };
 
   ui.roundInfo.textContent = `Manche ${data.round} / ${data.total}`;
 
@@ -201,7 +202,13 @@ socket.on('start_round', data => {
   ui.coverImg.src = '';
   ui.placeholder.style.display = 'flex';
 
-  // Reset slots
+  // Show/hide feat slot and reset all slots
+  if (data.hasFeat) {
+    ui.slotFeat.style.display = '';
+    setSlot(ui.slotFeat, '???', null);
+  } else {
+    ui.slotFeat.style.display = 'none';
+  }
   setSlot(ui.slotArtist, '???', null);
   setSlot(ui.slotTitle,  '???', null);
 
@@ -244,6 +251,10 @@ socket.on('feedback', data => {
     setSlot(ui.slotArtist, data.val, 'found');
     personalFound.artist = true;
   }
+  if (data.type === 'success_feat') {
+    setSlot(ui.slotFeat, data.val, 'found');
+    personalFound.feat = true;
+  }
   if (data.type === 'success_title') {
     setSlot(ui.slotTitle, data.val, 'found');
     personalFound.title = true;
@@ -266,8 +277,16 @@ socket.on('round_end', data => {
   const [artist, ...rest] = data.answer.split(' - ');
   const title = rest.join(' - ');
 
-  setSlot(ui.slotArtist, artist || data.answer, data.foundArtist ? 'found' : 'missed');
-  setSlot(ui.slotTitle,  title  || '—',          data.foundTitle  ? 'found' : 'missed');
+  // Main artist — parse feat back out to show only the main part in the slot
+  const { main: mainArtist, feat: featArtist } = _parseFeat(artist || data.answer);
+  setSlot(ui.slotArtist, mainArtist, data.foundArtist ? 'found' : 'missed');
+  if (featArtist) {
+    ui.slotFeat.style.display = '';
+    setSlot(ui.slotFeat, featArtist, data.foundFeat ? 'found' : 'missed');
+  } else {
+    ui.slotFeat.style.display = 'none';
+  }
+  setSlot(ui.slotTitle, title || '—', data.foundTitle ? 'found' : 'missed');
 
   if (data.cover) {
     ui.coverImg.src = data.cover;
@@ -341,6 +360,16 @@ function clearFeedback() {
 
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Mirror of server parseFeaturing — used to split the answer for display
+function _parseFeat(artistStr) {
+  if (!artistStr) return { main: '', feat: null };
+  const m = artistStr.match(
+    /^(.+?)(?:\s*\((?:feat\.?|ft\.?|featuring)\s+([^)]+)\)|\s+(?:feat\.?|ft\.?|featuring)\s+(.+))$/i
+  );
+  if (m) return { main: m[1].trim(), feat: (m[2] || m[3]).trim() };
+  return { main: artistStr, feat: null };
 }
 
 function buildHistoryItem(data, foundArtist, foundTitle) {

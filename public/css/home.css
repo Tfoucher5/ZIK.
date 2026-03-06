@@ -307,3 +307,11 @@ footer{
 @media(max-width:480px){
   .nav-right .btn-accent{display:none}
 }
+
+/* ── User preference: no animations ─────────────────────────────────────────── */
+html.no-animations *,
+html.no-animations *::before,
+html.no-animations *::after {
+  animation: none !important;
+  transition: none !important;
+}

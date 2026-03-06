@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/playlists.css">
+  <script src="/js/prefs.js"></script>
 </head>
 <body>
 
@@ -25,6 +26,7 @@
           <div class="nav-dropdown" id="nav-dropdown">
             <a href="/profile" class="nav-dd-item">Mon profil</a>
             <a href="/rooms" class="nav-dd-item">Rooms</a>
+            <a href="/settings" class="nav-dd-item">Paramètres</a>
             <button class="nav-dd-item nav-dd-logout" id="logoutBtn">Déconnexion</button>
           </div>
         </div>
@@ -228,8 +230,20 @@
   <div id="modal-room-settings" class="overlay" style="display:none">
     <div class="modal modal-lg">
       <button class="close-btn" id="closeRoomSettingsModal">✕</button>
-      <h2>Lancer une room</h2>
-      <p class="mdesc" id="room-settings-pl-name"></p>
+      <div class="room-eph-header">
+        <span class="room-eph-badge">⚡ Room éphémère</span>
+        <h2>Lancer une room</h2>
+        <p class="mdesc" id="room-settings-pl-name"></p>
+      </div>
+
+      <div class="room-eph-notice">
+        <span class="room-eph-icon">💡</span>
+        <div>
+          Cette room est <strong>temporaire</strong> — elle disparaîtra automatiquement après 4h d'inactivité.
+          Pour créer une room permanente accessible à tous,
+          <a href="/rooms" class="room-eph-link">rendez-vous sur la page Rooms</a>.
+        </div>
+      </div>
 
       <div class="room-settings">
         <div class="room-setting-row">

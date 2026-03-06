@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/game.css">
+  <script src="/js/prefs.js"></script>
 </head>
 <body>
 <div id="app">
@@ -49,9 +50,13 @@
       </div>
 
       <!-- Artist / Title slots -->
-      <div class="slots">
+      <div class="slots" id="slots-wrap">
         <div class="slot" id="slot-artist">
           <span class="slot-label">Artiste</span>
+          <div class="slot-val">???</div>
+        </div>
+        <div class="slot" id="slot-feat" style="display:none">
+          <span class="slot-label">Feat.</span>
           <div class="slot-val">???</div>
         </div>
         <div class="slot" id="slot-title">

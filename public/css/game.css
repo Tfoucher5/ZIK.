@@ -309,8 +309,16 @@ a{text-decoration:none;color:inherit}
 }
 #round-summary[style*="block"]{ animation:summaryIn .3s ease; }
 
-/* Respect user motion preferences */
+/* Respect user motion preferences (system) */
 @media(prefers-reduced-motion:reduce){
   .p-score.flash, .slot.found, #round-summary[style*="block"],
   .h-item, .go-card, #gameover, #cover-img, .vinyl{ animation:none !important; }
+}
+
+/* Respect user preference set in settings */
+html.no-animations *,
+html.no-animations *::before,
+html.no-animations *::after {
+  animation: none !important;
+  transition: none !important;
 }
