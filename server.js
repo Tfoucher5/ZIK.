@@ -312,109 +312,130 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
   const fetchFn = await getFetch();
 
   try {
-    // 1. Métadonnées (Tentative Token User)
-    let plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=FR&fields=name,images,tracks(total)`, {
-      headers: { Authorization: `Bearer ${userToken}` }
+    // 1. Métadonnées — token user, fallback CC si 403
+    let plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks.total`, {
+      headers: { Authorization: `Bearer ${userToken}` },
+      signal: AbortSignal.timeout(12000),
     });
 
     let currentToken = userToken;
-    let usingCC = false;
 
-    // Fallback si 403 ou 0 tracks (Restriction Sandbox)
-    if (!plRes.ok || plRes.status === 403) {
-      console.warn(`[Spotify] Fallback CC pour playlist ${plId}`);
+    if (!plRes.ok) {
+      if (plRes.status === 401) return res.status(401).json({ error: 'Token Spotify expiré — reconnecte-toi.' });
+      if (plRes.status === 404) return res.status(404).json({ error: 'Playlist introuvable.' });
+      // 403 : fallback Client Credentials (playlists publiques)
+      console.warn(`[Spotify] metadata ${plRes.status} — fallback CC`);
       currentToken = await getSpotifyToken();
-      plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=FR&fields=name,images,tracks(total)`, {
-        headers: { Authorization: `Bearer ${currentToken}` }
+      plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks.total`, {
+        headers: { Authorization: `Bearer ${currentToken}` },
+        signal: AbortSignal.timeout(12000),
       });
-      usingCC = true;
+      if (!plRes.ok) return res.status(plRes.status).json({ error: 'Playlist inaccessible.' });
     }
 
-    if (!plRes.ok) return res.status(plRes.status).json({ error: "Playlist inaccessible" });
-
-    const pl = await plRes.json();
+    const pl    = await plRes.json();
     const total = pl.tracks?.total || 0;
+    console.log(`Spotify metadata "${pl.name}": total=${total}`);
 
-    // 2. Pagination (Max 1000)
+    // 2. Pagination via /playlists/{id}/items (endpoint actuel, limite max=50)
+    // Le champ dans la réponse est "item" (et non "track" de l'ancien endpoint /tracks)
     let allItems = [];
-    let offset = 0;
+    let offset   = 0;
+    let loopTotal = total > 0 ? total : 9999;
 
-    while (offset < Math.min(total, 1000)) {
+    while (allItems.length < Math.min(loopTotal, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=FR&fields=items(track(id,name,artists(name),album(images),preview_url))`,
-        { headers: { Authorization: `Bearer ${currentToken}` } }
+        `https://api.spotify.com/v1/playlists/${plId}/items?limit=50&offset=${offset}`,
+        { headers: { Authorization: `Bearer ${currentToken}` }, signal: AbortSignal.timeout(12000) }
       );
-
       if (tRes.status === 429) {
-        await delay(2000); continue;
+        await new Promise(r => setTimeout(r, 2000)); continue;
       }
-      if (!tRes.ok) break;
-
-      const tData = await tRes.json();
-      if (!tData.items?.length) break;
-
-      allItems = allItems.concat(tData.items);
-      if (tData.items.length < 100) break;
-      offset += 100;
+      if (!tRes.ok) {
+        console.warn(`Spotify /items offset=${offset} → HTTP ${tRes.status}`);
+        break;
+      }
+      const page = await tRes.json();
+      if (typeof page.total === 'number') loopTotal = Math.min(page.total, 1000);
+      if (!page.items?.length) break;
+      allItems = allItems.concat(page.items);
+      offset += page.items.length;
+      if (page.items.length < 50) break;
     }
 
+    console.log(`Spotify /items: ${allItems.length} items bruts`);
+
+    // i.item = nouveau nom du champ (endpoint /items)
     const tracks = allItems
-      .filter(i => i?.track?.id && i.track.type !== 'episode')
+      .filter(i => i?.item?.id && i.item.type !== 'episode' && !i.is_local)
       .map(i => ({
-        external_id: i.track.id,
-        source: 'spotify',
-        artist: i.track.artists?.map(a => a.name).join(', ') || '?',
-        title: i.track.name,
-        preview_url: i.track.preview_url || null,
-        cover_url: i.track.album?.images?.[1]?.url || i.track.album?.images?.[0]?.url || null,
+        external_id: i.item.id,
+        source:      'spotify',
+        artist:      i.item.artists?.map(a => a.name).join(', ') || '?',
+        title:       i.item.name,
+        preview_url: i.item.preview_url || null,
+        cover_url:   i.item.album?.images?.[1]?.url || i.item.album?.images?.[0]?.url || null,
       }));
 
-    res.json({ name: pl.name, cover: pl.images?.[0]?.url, tracks, total, usingCC });
+    console.log(`Spotify import "${pl.name}": ${tracks.length}/${loopTotal} pistes valides`);
+
+    if (!tracks.length) {
+      return res.status(422).json({ error: `Aucune piste récupérée (${allItems.length} items bruts). La playlist est peut-être vide ou privée.` });
+    }
+
+    res.json({ name: pl.name, cover: pl.images?.[0]?.url || null, tracks, total: loopTotal, truncated: loopTotal > tracks.length });
   } catch (e) {
+    console.error('Spotify user-import error:', e.message);
     res.status(502).json({ error: e.message });
   }
 });
 
 
-// ─── Spotify : Import PUBLIC (Lien direct) ────────────────────────────────────
+// ─── Spotify : Import PUBLIC (Lien direct, Client Credentials) ───────────────
 app.get('/api/spotify/playlist/:id', async (req, res) => {
   try {
-    const token = await getSpotifyToken();
+    const token   = await getSpotifyToken();
     const fetchFn = await getFetch();
-    const plId = req.params.id;
+    const plId    = req.params.id;
 
-    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?market=FR&fields=name,images,tracks(total)`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const plRes = await fetchFn(`https://api.spotify.com/v1/playlists/${plId}?fields=name,images,tracks.total`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(12000),
     });
-
     if (!plRes.ok) throw new Error('Playlist introuvable ou privée');
-    const pl = await plRes.json();
+    const pl    = await plRes.json();
     const total = pl.tracks?.total || 0;
 
     let allItems = [];
-    let offset = 0;
-    while (offset < Math.min(total, 1000)) {
+    let offset   = 0;
+    let loopTotal = total > 0 ? total : 9999;
+
+    while (allItems.length < Math.min(loopTotal, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&market=FR&fields=items(track(id,name,artists(name),album(images),preview_url))`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `https://api.spotify.com/v1/playlists/${plId}/items?limit=50&offset=${offset}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
       );
       if (!tRes.ok) break;
-      const tData = await tRes.json();
-      allItems = allItems.concat(tData.items || []);
-      if (tData.items?.length < 100) break;
-      offset += 100;
+      const page = await tRes.json();
+      if (typeof page.total === 'number') loopTotal = Math.min(page.total, 1000);
+      if (!page.items?.length) break;
+      allItems = allItems.concat(page.items);
+      offset += page.items.length;
+      if (page.items.length < 50) break;
     }
 
-    const tracks = allItems.filter(i => i?.track?.id).map(i => ({
-      external_id: i.track.id,
-      source: 'spotify',
-      artist: i.track.artists.map(a => a.name).join(', '),
-      title: i.track.name,
-      preview_url: i.track.preview_url || null,
-      cover_url: i.track.album?.images?.[1]?.url || null,
-    }));
+    const tracks = allItems
+      .filter(i => i?.item?.id && i.item.type !== 'episode' && !i.is_local)
+      .map(i => ({
+        external_id: i.item.id,
+        source:      'spotify',
+        artist:      i.item.artists?.map(a => a.name).join(', ') || '?',
+        title:       i.item.name,
+        preview_url: i.item.preview_url || null,
+        cover_url:   i.item.album?.images?.[1]?.url || i.item.album?.images?.[0]?.url || null,
+      }));
 
-    res.json({ name: pl.name, cover: pl.images?.[0]?.url, tracks, total });
+    res.json({ name: pl.name, cover: pl.images?.[0]?.url || null, tracks, total: loopTotal });
   } catch (e) {
     res.status(502).json({ error: e.message });
   }
