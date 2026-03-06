@@ -341,7 +341,7 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
 
     while (offset < Math.min(total, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
+        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,type,name,artists(name),album(images),preview_url))`,
         { headers: { Authorization: `Bearer ${currentToken}` } }
       );
 
@@ -395,7 +395,7 @@ app.get('/api/spotify/playlist/:id', async (req, res) => {
     let offset = 0;
     while (offset < Math.min(total, 1000)) {
       const tRes = await fetchFn(
-        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,name,artists(name),album(images),preview_url))`,
+        `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}&fields=items(track(id,type,name,artists(name),album(images),preview_url))`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!tRes.ok) break;
