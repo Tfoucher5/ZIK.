@@ -336,25 +336,31 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
       if (plRes.status === 404) return res.status(404).json({ error: 'Playlist introuvable.' });
       return res.status(plRes.status).json({ error: `Spotify HTTP ${plRes.status}` });
     }
-    const pl    = await plRes.json();
-    const total = pl.tracks?.total || 0;
+    const pl = await plRes.json();
+    // total depuis metadata (peut être 0 si Spotify ne le renvoie pas dans ce contexte)
+    let total = pl.tracks?.total || 0;
 
-    console.log(`Spotify user-import "${pl.name}": total=${total}, embedded=${pl.tracks?.items?.length || 0}`);
+    console.log(`Spotify user-import "${pl.name}": meta_total=${total}, embedded=${pl.tracks?.items?.length || 0}`);
 
-    // 2. Partir des items embarqués dans la réponse metadata, puis paginer
-    let allItems = [...(pl.tracks?.items || [])];
-    let offset   = allItems.length;
+    // Paginer directement depuis /tracks (plus fiable que les items embedded)
+    // On initialise offset à 0 pour ne pas dépendre des embedded items
+    let allItems = [];
+    let offset   = 0;
+    let loopTotal = total || 9999; // si total=0 depuis metadata, on pagine quand même
 
-    while (allItems.length < Math.min(total, 1000)) {
+    while (allItems.length < Math.min(loopTotal, 1000)) {
       const tRes = await fetchFn(
         `https://api.spotify.com/v1/playlists/${plId}/tracks?limit=100&offset=${offset}`,
         { headers: { Authorization: `Bearer ${userToken}` }, signal: AbortSignal.timeout(12000) }
       );
       if (!tRes.ok) {
-        console.warn(`Spotify /tracks offset=${offset} → HTTP ${tRes.status}`);
+        const errBody = await tRes.text().catch(() => '');
+        console.warn(`Spotify /tracks offset=${offset} → HTTP ${tRes.status}:`, errBody.slice(0, 200));
         break;
       }
       const tData = await tRes.json();
+      // Mettre à jour loopTotal avec la valeur réelle de l'API tracks (plus fiable)
+      if (typeof tData.total === 'number') { loopTotal = tData.total; total = tData.total; }
       if (!tData.items?.length) break;
       allItems = allItems.concat(tData.items);
       offset += 100;
@@ -372,12 +378,12 @@ app.get('/api/spotify/playlist-user/:id', async (req, res) => {
         cover_url:   i.track.album?.images?.[1]?.url || i.track.album?.images?.[0]?.url || null,
       }));
 
-    console.log(`Spotify user-import "${pl.name}": ${tracks.length}/${total} pistes valides (${allItems.length} items bruts)`);
+    console.log(`Spotify user-import "${pl.name}": ${tracks.length}/${total} pistes valides (${allItems.length} items bruts, ${allItems.length - tracks.length} filtrés)`);
 
     if (!tracks.length) {
-      const msg = total > 0
+      const msg = allItems.length > 0
         ? `${allItems.length} éléments reçus mais aucun n'est une piste audio (podcasts/fichiers locaux exclus).`
-        : 'Playlist vide.';
+        : `Aucune piste récupérée (total API: ${total}). Vérifie que le token Spotify est valide et que la playlist est publique.`;
       return res.status(422).json({ error: msg });
     }
 
