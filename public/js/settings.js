@@ -5,6 +5,18 @@ const SUPABASE_ANON_KEY = window.ZIK_SUPABASE_ANON_KEY || '';
 const SB_OK = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20;
 const sb = SB_OK ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
+// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
+const PROFILE_TTL = 5 * 60 * 1000;
+function getCachedProfile(uid) {
+  try {
+    const raw = sessionStorage.getItem('zik_profile_' + uid);
+    if (!raw) return null;
+    const { p, ts } = JSON.parse(raw);
+    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
+    return p;
+  } catch { return null; }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // ── Preferences ─────────────────────────────────────────────────────────────
   const animToggle = document.getElementById('pref-animations');
@@ -56,7 +68,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function applyNavUser(user) {
   try {
-    const { data: profile } = await sb.from('profiles').select('username, avatar_url').eq('id', user.id).single();
+    let profile = getCachedProfile(user.id);
+    if (!profile) {
+      const { data } = await sb.from('profiles').select('username, avatar_url').eq('id', user.id).single();
+      profile = data;
+    }
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
     const avatar = profile?.avatar_url ||
       `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
