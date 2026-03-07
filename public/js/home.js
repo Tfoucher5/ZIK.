@@ -1,35 +1,13 @@
 'use strict';
 
-// ─── Supabase (clés injectées par /config.js depuis le .env) ─────────────────
-const SUPABASE_URL      = window.ZIK_SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = window.ZIK_SUPABASE_ANON_KEY || '';
-const SB_OK = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20;
+// shared.js provides: esc, showErr, dicebear, getCachedProfile, setCachedProfile,
+// clearCachedProfile, showNavUser, showNavAuth, bindNavDropdown, openAuthModal,
+// closeAuthModal, showView, handleLogin, handleRegister, ZIK_SB
 
-const { createClient } = supabase;
-const sb = SB_OK ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
-if (!SB_OK) console.warn('[ZIK] Supabase non configuré — auth désactivée, mode guest uniquement.');
+const sb = ZIK_SB;
 
 let currentUser = null;
 let pendingRoom = null;
-
-// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
-const PROFILE_TTL = 5 * 60 * 1000;
-function getCachedProfile(uid) {
-  try {
-    const raw = sessionStorage.getItem('zik_profile_' + uid);
-    if (!raw) return null;
-    const { p, ts } = JSON.parse(raw);
-    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
-    return p;
-  } catch { return null; }
-}
-function setCachedProfile(uid, profile) {
-  try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
-}
-function clearCachedProfile(uid) {
-  try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
-}
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -71,76 +49,46 @@ async function applyUser(user) {
       if (profile) setCachedProfile(user.id, profile);
     }
     currentUser = { ...user, profile };
-    const name = profile?.username || user.email?.split('@')[0] || 'Joueur';
-    const avatar = profile?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
+    const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
+    const avatar = profile?.avatar_url || dicebear(name);
     showNavUser(name, avatar);
-  } catch (e) {
+  } catch {
     currentUser = { ...user, profile: null };
     showNavUser(user.email?.split('@')[0] || 'Joueur', '');
   }
 }
 
-function showNavUser(name, avatar) {
-  document.getElementById('nav-auth').style.display = 'none';
-  document.getElementById('nav-user').style.display = 'flex';
-  document.getElementById('nav-username').textContent = name;
-  const img = document.getElementById('nav-avatar');
-  if (avatar) img.src = avatar;
-}
-
-function showNavAuth() {
-  document.getElementById('nav-auth').style.display = 'flex';
-  document.getElementById('nav-user').style.display = 'none';
-}
-
 // ─── UI Bindings ─────────────────────────────────────────────────────────────
 function bindUI() {
-  // Nav
   document.getElementById('openLoginBtn').onclick    = () => openAuthModal('login');
   document.getElementById('openRegisterBtn').onclick = () => openAuthModal('register');
   document.getElementById('logoutBtn').onclick       = () => sb?.auth.signOut();
   document.getElementById('closeModal').onclick      = closeAuthModal;
 
-  // Nav profile dropdown
-  const trigger  = document.getElementById('nav-profile-trigger');
-  const dropdown = document.getElementById('nav-dropdown');
-  if (trigger && dropdown) {
-    trigger.onclick = e => {
-      e.stopPropagation();
-      dropdown.classList.toggle('open');
-    };
-    document.addEventListener('click', () => dropdown.classList.remove('open'));
-  }
+  bindNavDropdown();
 
-  // Google OAuth
   document.getElementById('googleLoginBtn')?.addEventListener('click', signInWithGoogle);
   document.getElementById('googleRegisterBtn')?.addEventListener('click', signInWithGoogle);
 
-  // Rejoindre par code
   document.getElementById('joinByCodeBtn').onclick = joinByCode;
   document.getElementById('roomCodeInput').onkeypress = e => { if (e.key === 'Enter') joinByCode(); };
   document.getElementById('roomCodeInput').oninput = e => {
     e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   };
 
-  // Close overlay on backdrop click
   document.getElementById('auth-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAuthModal(); });
   document.getElementById('guest-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeGuestModal(); });
 
-  // View switches
   document.getElementById('switchToRegister').onclick = e => { e.preventDefault(); showView('register'); };
   document.getElementById('switchToLogin').onclick    = e => { e.preventDefault(); showView('login'); };
   document.getElementById('closeConfirm').onclick     = closeAuthModal;
 
-  // Login
-  document.getElementById('loginSubmit').onclick  = handleLogin;
+  // Login / Register — handlers from shared.js
+  document.getElementById('loginSubmit').onclick      = handleLogin;
   document.getElementById('loginPassword').onkeypress = e => { if (e.key === 'Enter') handleLogin(); };
-
-  // Register
-  document.getElementById('registerSubmit').onclick = handleRegister;
+  document.getElementById('registerSubmit').onclick   = handleRegister;
   document.getElementById('regPassword').onkeypress  = e => { if (e.key === 'Enter') handleRegister(); };
 
-  // Guest
   document.getElementById('cancelGuest').onclick   = closeGuestModal;
   document.getElementById('confirmGuest').onclick  = confirmGuest;
   document.getElementById('guestUsername').onkeypress = e => { if (e.key === 'Enter') confirmGuest(); };
@@ -154,58 +102,6 @@ async function signInWithGoogle() {
     provider: 'google',
     options: { redirectTo: window.location.origin },
   });
-}
-
-// ─── Auth actions ─────────────────────────────────────────────────────────────
-async function handleLogin() {
-  const errEl = document.getElementById('login-error');
-  errEl.style.display = 'none';
-  if (!sb) return showErr(errEl, 'Supabase non configuré — vérifie ton fichier .env.');
-
-  const email = document.getElementById('loginEmail').value.trim();
-  const pwd   = document.getElementById('loginPassword').value;
-  if (!email || !pwd) return showErr(errEl, 'Remplis tous les champs.');
-
-  const btn = document.getElementById('loginSubmit');
-  btn.disabled = true; btn.textContent = 'Connexion...';
-  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
-  btn.disabled = false; btn.textContent = 'Se connecter';
-
-  if (error) {
-    const msg = error.message.toLowerCase();
-    showErr(errEl,
-      msg.includes('invalid') ? 'Email ou mot de passe incorrect.' :
-      msg.includes('confirm') ? 'Confirme ton email avant de te connecter.' :
-      error.message
-    );
-  }
-}
-
-async function handleRegister() {
-  const errEl = document.getElementById('register-error');
-  errEl.style.display = 'none';
-  if (!sb) return showErr(errEl, 'Supabase non configuré — vérifie ton fichier .env.');
-
-  const username = document.getElementById('regUsername').value.trim();
-  const email    = document.getElementById('regEmail').value.trim();
-  const pwd      = document.getElementById('regPassword').value;
-
-  if (!username || !email || !pwd) return showErr(errEl, 'Remplis tous les champs.');
-  if (username.length < 3)         return showErr(errEl, 'Pseudo trop court (min. 3 caractères).');
-  if (pwd.length < 6)              return showErr(errEl, 'Mot de passe trop court (min. 6 caractères).');
-  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) return showErr(errEl, 'Pseudo invalide (lettres, chiffres, - et _ uniquement).');
-
-  // Vérif dispo pseudo
-  const { data: exists } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-  if (exists) return showErr(errEl, 'Ce pseudo est déjà pris.');
-
-  const btn = document.getElementById('registerSubmit');
-  btn.disabled = true; btn.textContent = 'Création...';
-  const { error } = await sb.auth.signUp({ email, password: pwd, options: { data: { username } } });
-  btn.disabled = false; btn.textContent = 'Créer mon compte';
-
-  if (error) showErr(errEl, error.message);
-  else showView('confirm');
 }
 
 // ─── Rooms ───────────────────────────────────────────────────────────────────
@@ -229,7 +125,7 @@ async function loadRooms() {
             <div class="room-desc">${esc(r.description)}</div>
             <div class="room-footer">
               <span class="room-online"><span class="dot"></span>${r.online || 0} en ligne</span>
-              <button class="room-btn" onclick="event.stopPropagation();joinRoom('${r.id}')">JOUER →</button>
+              <button class="room-btn" onclick="event.stopPropagation();joinRoom('${r.id}')">JOUER &rarr;</button>
             </div>
           </div>
         </div>`;
@@ -255,13 +151,13 @@ async function joinByCode() {
 
   try {
     const r = await fetch(`/api/rooms/custom/${code}`);
-    if (!r.ok) throw new Error('Room introuvable ou expirée.');
+    if (!r.ok) throw new Error('Room introuvable ou expiree.');
     joinRoom(code);
   } catch (e) {
     errEl.textContent = e.message;
     errEl.style.display = 'block';
   } finally {
-    btn.disabled = false; btn.textContent = 'Rejoindre →';
+    btn.disabled = false; btn.textContent = 'Rejoindre';
   }
 }
 
@@ -297,33 +193,17 @@ function confirmGuest() {
   goToGame(pendingRoom, u, null, true);
 }
 
-// ─── Auth modal helpers ───────────────────────────────────────────────────────
-function openAuthModal(view) {
-  showView(view);
-  document.getElementById('auth-modal').style.display = 'flex';
-  setTimeout(() => {
-    const first = document.querySelector(`#view-${view} input`);
-    if (first) first.focus();
-  }, 80);
-}
-function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
-function showView(v) {
-  ['login','register','confirm'].forEach(n => {
-    document.getElementById(`view-${n}`).style.display = n === v ? 'block' : 'none';
-  });
-}
-
 // ─── Leaderboards ─────────────────────────────────────────────────────────────
 async function loadLeaderboards() {
   renderLb('weekly-list', '/api/leaderboard/weekly', p => `${p.weekly_score} pts`, p => `${p.games_count} parties`);
-  renderLb('elo-list',    '/api/leaderboard/elo',    p => `⚡ ${p.elo}`,           p => `${p.games_played} parties`);
+  renderLb('elo-list',    '/api/leaderboard/elo',    p => `${p.elo}`,              p => `${p.games_played} parties`);
 }
 
 async function renderLb(elId, url, scoreFn, metaFn) {
   const el = document.getElementById(elId);
   try {
     const data = await fetch(url).then(r => r.json());
-    if (!Array.isArray(data) || !data.length) { el.innerHTML = '<p class="lb-empty">Pas encore de données</p>'; return; }
+    if (!Array.isArray(data) || !data.length) { el.innerHTML = '<p class="lb-empty">Pas encore de donnees</p>'; return; }
     const medals = ['🥇','🥈','🥉'];
     el.innerHTML = data.map((p, i) => `
       <div class="lb-row">
@@ -336,7 +216,3 @@ async function renderLb(elId, url, scoreFn, metaFn) {
       </div>`).join('');
   } catch { el.innerHTML = '<p class="lb-empty">—</p>'; }
 }
-
-// ─── Utils ───────────────────────────────────────────────────────────────────
-function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

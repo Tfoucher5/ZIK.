@@ -1,34 +1,14 @@
 'use strict';
 
-const SUPABASE_URL     = window.ZIK_SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = window.ZIK_SUPABASE_ANON_KEY || '';
-const SB_OK = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+// shared.js provides: esc, showErr, dicebear, getCachedProfile, setCachedProfile,
+// clearCachedProfile, showNavUser, bindNavDropdown, ZIK_SB
 
-const { createClient } = supabase;
-const sb = SB_OK ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const sb = ZIK_SB;
 
 let currentUser   = null;
-let editingRoomId = null;  // UUID pour PATCH/DELETE
+let editingRoomId = null;
 let deletingRoomId = null;
 let userPlaylists  = [];
-
-// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
-const PROFILE_TTL = 5 * 60 * 1000;
-function getCachedProfile(uid) {
-  try {
-    const raw = sessionStorage.getItem('zik_profile_' + uid);
-    if (!raw) return null;
-    const { p, ts } = JSON.parse(raw);
-    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
-    return p;
-  } catch { return null; }
-}
-function setCachedProfile(uid, profile) {
-  try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
-}
-function clearCachedProfile(uid) {
-  try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
-}
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -66,7 +46,7 @@ async function applyUser(user) {
     }
     currentUser = { ...user, profile };
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
-    const avatar = profile?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
+    const avatar = profile?.avatar_url || dicebear(name);
     showNavUser(name, avatar);
     hideAuthWall();
     loadUserPlaylists();
@@ -75,14 +55,6 @@ async function applyUser(user) {
     showNavUser(user.email?.split('@')[0] || 'Joueur', '');
     hideAuthWall();
   }
-}
-
-function showNavUser(name, avatar) {
-  document.getElementById('nav-auth').style.display = 'none';
-  document.getElementById('nav-user').style.display = 'flex';
-  document.getElementById('nav-username').textContent = name;
-  const img = document.getElementById('nav-avatar');
-  if (avatar) img.src = avatar;
 }
 
 function showAuthWall() {
@@ -207,10 +179,6 @@ function joinRoom(code) {
   window.location.href = `/game?${p}`;
 }
 
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 // ─── Playlists select ─────────────────────────────────────────────────────────
 async function loadUserPlaylists() {
   if (!currentUser) return;
@@ -249,7 +217,6 @@ function openCreateRoom() {
   document.getElementById('room-modal').style.display = 'flex';
 }
 
-// openEditRoom reçoit le code (pour GET) et l'id UUID (pour PATCH)
 async function openEditRoom(code, id) {
   editingRoomId = id;
   document.getElementById('room-modal-title').textContent = 'Modifier la room';
@@ -263,7 +230,7 @@ async function openEditRoom(code, id) {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const room = await r.json();
 
-    await loadUserPlaylists(); // s'assurer que la liste est a jour
+    await loadUserPlaylists();
     populatePlaylistSelect(room.playlist_id);
     document.getElementById('room-name').value            = room.name            || '';
     document.getElementById('room-emoji').value           = room.emoji           || '🎵';
@@ -305,31 +272,26 @@ async function saveRoom() {
 
   try {
     const token = (await sb.auth.getSession()).data.session?.access_token;
-    if (!token) throw new Error('Session expirée, reconnecte-toi.');
-    const body  = { name, emoji, description, playlist_id, is_public, max_rounds, round_duration, break_duration };
+    if (!token) throw new Error('Session expiree, reconnecte-toi.');
+    const body = { name, emoji, description, playlist_id, is_public, max_rounds, round_duration, break_duration };
 
-    let r;
-    if (editingRoomId) {
-      r = await fetch(`/api/rooms/${editingRoomId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
-    } else {
-      r = await fetch('/api/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
-    }
+    const r = editingRoomId
+      ? await fetch(`/api/rooms/${editingRoomId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        })
+      : await fetch('/api/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
 
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
 
-    const msg = editingRoomId ? 'Room mise a jour !' : `Room creee ! Code : ${data.code}`;
-    toast(msg, 'success');
+    toast(editingRoomId ? 'Room mise a jour !' : `Room creee ! Code : ${data.code}`, 'success');
     closeRoomModal();
-    // Rafraichir les deux grilles
     loadPublicRooms();
     if (document.querySelector('.rtab.active')?.dataset.tab === 'mine') loadMyRooms();
   } catch (e) {
@@ -370,6 +332,14 @@ async function confirmDeleteRoom() {
   }
 }
 
+// ─── Auth modal (rooms page has different form IDs than shared standard) ──────
+function openAuthModal(mode) {
+  document.getElementById('auth-modal').style.display = 'flex';
+  document.getElementById('view-login').style.display    = mode === 'login'    ? 'block' : 'none';
+  document.getElementById('view-register').style.display = mode === 'register' ? 'block' : 'none';
+}
+function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function toast(msg, type = 'info') {
   const c = document.getElementById('toast-container');
@@ -381,48 +351,36 @@ function toast(msg, type = 'info') {
   setTimeout(() => { t.classList.remove('toast-show'); setTimeout(() => t.remove(), 300); }, 3500);
 }
 
-// ─── Auth modal ───────────────────────────────────────────────────────────────
-function openAuthModal(mode) {
-  document.getElementById('auth-modal').style.display = 'flex';
-  document.getElementById('view-login').style.display    = mode === 'login'    ? 'block' : 'none';
-  document.getElementById('view-register').style.display = mode === 'register' ? 'block' : 'none';
-}
-function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
-
 // ─── Bind all events ─────────────────────────────────────────────────────────
 function bindEvents() {
-  // Tabs
   document.querySelectorAll('.rtab').forEach(btn =>
     btn.addEventListener('click', () => switchTab(btn.dataset.tab))
   );
 
-  // Creer room
   document.getElementById('createRoomBtn').addEventListener('click', openCreateRoom);
   document.getElementById('createRoomBtn2')?.addEventListener('click', openCreateRoom);
 
-  // Modal room
   document.getElementById('closeRoomModal').addEventListener('click', closeRoomModal);
   document.getElementById('cancelRoomModal').addEventListener('click', closeRoomModal);
   document.getElementById('saveRoomBtn').addEventListener('click', saveRoom);
   document.getElementById('room-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeRoomModal(); });
 
-  // Modal delete
   document.getElementById('cancelDeleteRoom').addEventListener('click', () => {
     document.getElementById('delete-modal').style.display = 'none';
     deletingRoomId = null;
   });
   document.getElementById('confirmDeleteRoom').addEventListener('click', confirmDeleteRoom);
-  document.getElementById('delete-modal').addEventListener('click', e => { if (e.target === e.currentTarget) { document.getElementById('delete-modal').style.display='none'; deletingRoomId=null; }});
+  document.getElementById('delete-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) { document.getElementById('delete-modal').style.display = 'none'; deletingRoomId = null; }
+  });
 
-  // Auth triggers
-  document.getElementById('openLoginBtn').addEventListener('click',    () => openAuthModal('login'));
+  document.getElementById('openLoginBtn').addEventListener('click',     () => openAuthModal('login'));
   document.getElementById('openRegisterBtn').addEventListener('click',  () => openAuthModal('register'));
   document.getElementById('openLoginBtn2')?.addEventListener('click',   () => openAuthModal('login'));
   document.getElementById('openRegisterBtn2')?.addEventListener('click',() => openAuthModal('register'));
   document.getElementById('closeAuthModal').addEventListener('click',   closeAuthModal);
   document.getElementById('auth-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAuthModal(); });
 
-  // Bascule login <-> register
   document.getElementById('switchToRegister').addEventListener('click', () => {
     document.getElementById('view-login').style.display    = 'none';
     document.getElementById('view-register').style.display = 'block';
@@ -432,7 +390,6 @@ function bindEvents() {
     document.getElementById('view-login').style.display    = 'block';
   });
 
-  // Login
   document.getElementById('loginBtn').addEventListener('click', async () => {
     const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
@@ -443,7 +400,6 @@ function bindEvents() {
     if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
   });
 
-  // Register
   document.getElementById('registerBtn').addEventListener('click', async () => {
     const username = document.getElementById('reg-username').value.trim();
     const email    = document.getElementById('reg-email').value.trim();
@@ -456,15 +412,7 @@ function bindEvents() {
     else { closeAuthModal(); toast('Compte cree ! Verifie ton email.', 'success'); }
   });
 
-  // Logout
   document.getElementById('logoutBtn')?.addEventListener('click', () => sb?.auth.signOut());
 
-  // Nav dropdown
-  document.getElementById('nav-profile-trigger')?.addEventListener('click', e => {
-    e.stopPropagation();
-    document.getElementById('nav-dropdown').classList.toggle('open');
-  });
-  document.addEventListener('click', () => {
-    document.getElementById('nav-dropdown')?.classList.remove('open');
-  });
+  bindNavDropdown();
 }

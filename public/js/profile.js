@@ -1,30 +1,12 @@
 'use strict';
 
-const SUPABASE_URL      = window.ZIK_SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = window.ZIK_SUPABASE_ANON_KEY || '';
-const SB_OK = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20;
-const { createClient } = supabase;
-const sb = SB_OK ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// shared.js provides: esc, showErr, dicebear, getCachedProfile, setCachedProfile,
+// clearCachedProfile, showNavUser, showNavAuth, bindNavDropdown, openAuthModal,
+// closeAuthModal, showView, handleLogin, ZIK_SB
+
+const sb = ZIK_SB;
 
 let currentUser = null;
-
-// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
-const PROFILE_TTL = 5 * 60 * 1000;
-function getCachedProfile(uid) {
-  try {
-    const raw = sessionStorage.getItem('zik_profile_' + uid);
-    if (!raw) return null;
-    const { p, ts } = JSON.parse(raw);
-    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
-    return p;
-  } catch { return null; }
-}
-function setCachedProfile(uid, profile) {
-  try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
-}
-function clearCachedProfile(uid) {
-  try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
-}
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -75,18 +57,6 @@ async function applyUser(user) {
   }
 }
 
-function dicebear(name) {
-  return `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
-}
-
-function showNavUser(name, avatar) {
-  document.getElementById('nav-auth').style.display = 'none';
-  document.getElementById('nav-user').style.display = 'flex';
-  document.getElementById('nav-username').textContent = name;
-  const img = document.getElementById('nav-avatar');
-  if (avatar) img.src = avatar;
-}
-
 function showAuthWall() {
   document.getElementById('auth-wall').style.display = 'flex';
   document.getElementById('profile-page').style.display = 'none';
@@ -102,7 +72,6 @@ function showProfilePage(profile) {
   const avatar = profile?.avatar_url || dicebear(name);
   const level  = profile?.level || 1;
   const xp     = profile?.xp || 0;
-  const nextLvl = Math.pow(level, 2) * 100;
 
   document.getElementById('profile-username-display').textContent = name;
   document.getElementById('profile-level-display').textContent    = `Niveau ${level} — ${xp} XP`;
@@ -131,7 +100,7 @@ function renderBestScores(bestByRoom, roomInfo) {
   const el = document.getElementById('best-scores-list');
   const entries = Object.entries(bestByRoom).sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
-    el.innerHTML = '<p class="profile-empty">Aucune partie jouée sur les rooms officielles.</p>';
+    el.innerHTML = '<p class="profile-empty">Aucune partie jouee sur les rooms officielles.</p>';
     return;
   }
   el.innerHTML = entries.map(([roomId, score]) => {
@@ -173,13 +142,12 @@ async function saveProfile() {
   errEl.style.display = 'none';
 
   if (!username) return showErr(errEl, 'Le pseudo est requis.');
-  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) return showErr(errEl, 'Pseudo invalide (3-20 caractères, lettres/chiffres/_/-).');
+  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) return showErr(errEl, 'Pseudo invalide (3-20 caracteres, lettres/chiffres/_/-).');
 
-  // Vérif unicité si changement
   const oldUsername = currentUser?.profile?.username;
   if (username !== oldUsername) {
     const { data: exists } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-    if (exists) return showErr(errEl, 'Ce pseudo est déjà pris.');
+    if (exists) return showErr(errEl, 'Ce pseudo est deja pris.');
   }
 
   const btn = document.getElementById('saveProfileBtn');
@@ -194,7 +162,6 @@ async function saveProfile() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
 
-    // Mettre à jour localement + invalider le cache
     if (!currentUser.profile) currentUser.profile = {};
     currentUser.profile.username  = username;
     currentUser.profile.avatar_url = avatar_url || null;
@@ -206,7 +173,7 @@ async function saveProfile() {
     document.getElementById('profile-avatar-img').src = avatar;
 
     document.getElementById('modal-edit-profile').style.display = 'none';
-    toast('Profil mis à jour !', 'success');
+    toast('Profil mis a jour !', 'success');
   } catch (e) {
     showErr(errEl, e.message);
   } finally {
@@ -220,12 +187,7 @@ function bindNav() {
   document.getElementById('openLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
   document.getElementById('openLoginBtn2')?.addEventListener('click', () => openAuthModal('login'));
 
-  const trigger  = document.getElementById('nav-profile-trigger');
-  const dropdown = document.getElementById('nav-dropdown');
-  if (trigger && dropdown) {
-    trigger.onclick = e => { e.stopPropagation(); dropdown.classList.toggle('open'); };
-    document.addEventListener('click', () => dropdown.classList.remove('open'));
-  }
+  bindNavDropdown();
 }
 
 function bindModals() {
@@ -242,7 +204,6 @@ function bindModals() {
     if (e.target === e.currentTarget) document.getElementById('modal-edit-profile').style.display = 'none';
   });
 
-  // Live preview avatar URL
   document.getElementById('edit-avatar-url')?.addEventListener('input', e => {
     const val = e.target.value.trim();
     updateAvatarPreview(val || dicebear(document.getElementById('edit-username').value || '?'));
@@ -256,7 +217,6 @@ function bindModals() {
     updateAvatarPreview(dicebear(document.getElementById('edit-username').value || '?'));
   });
 
-  // Auth modal
   document.getElementById('closeModal')?.addEventListener('click', closeAuthModal);
   document.getElementById('auth-modal')?.addEventListener('click', e => {
     if (e.target === e.currentTarget) closeAuthModal();
@@ -271,30 +231,6 @@ function bindModals() {
   });
 }
 
-async function handleLogin() {
-  const errEl = document.getElementById('login-error');
-  errEl.style.display = 'none';
-  const email = document.getElementById('loginEmail').value.trim();
-  const pwd   = document.getElementById('loginPassword').value;
-  if (!email || !pwd) return showErr(errEl, 'Remplis tous les champs.');
-  const btn = document.getElementById('loginSubmit');
-  btn.disabled = true; btn.textContent = 'Connexion...';
-  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
-  btn.disabled = false; btn.textContent = 'Se connecter';
-  if (error) showErr(errEl, 'Email ou mot de passe incorrect.');
-}
-
-function openAuthModal(view) {
-  document.getElementById('view-login').style.display = view === 'login' ? 'block' : 'none';
-  document.getElementById('view-confirm').style.display = 'none';
-  document.getElementById('auth-modal').style.display = 'flex';
-  setTimeout(() => {
-    const f = document.querySelector(`#view-${view} input`);
-    if (f) f.focus();
-  }, 80);
-}
-function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
-
 // ─── Toast ────────────────────────────────────────────────────────────────────
 let _toastTimer = null;
 function toast(msg, type = '') {
@@ -305,7 +241,3 @@ function toast(msg, type = '') {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
-
-// ─── Utils ────────────────────────────────────────────────────────────────────
-function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

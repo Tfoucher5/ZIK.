@@ -1,34 +1,16 @@
 'use strict';
 
-const SUPABASE_URL      = window.ZIK_SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = window.ZIK_SUPABASE_ANON_KEY || '';
-const SB_OK = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20;
-const { createClient } = supabase;
-const sb = SB_OK ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// shared.js provides: esc, showErr, dicebear, getCachedProfile, setCachedProfile,
+// clearCachedProfile, showNavUser, showNavAuth, bindNavDropdown, openAuthModal,
+// closeAuthModal, showView, handleLogin, handleRegister, ZIK_SB
+
+const sb = ZIK_SB;
 
 let currentUser   = null;
-let editingPl     = null;   // playlist en cours d'édition
-let editorTracks  = [];     // tracks chargés dans l'éditeur
+let editingPl     = null;   // playlist en cours d'edition
+let editorTracks  = [];     // tracks charges dans l'editeur
 let searchSource  = 'deezer';
 let importPreviewTracks = []; // tracks issus d'un import en attente
-
-// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
-const PROFILE_TTL = 5 * 60 * 1000;
-function getCachedProfile(uid) {
-  try {
-    const raw = sessionStorage.getItem('zik_profile_' + uid);
-    if (!raw) return null;
-    const { p, ts } = JSON.parse(raw);
-    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
-    return p;
-  } catch { return null; }
-}
-function setCachedProfile(uid, profile) {
-  try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
-}
-function clearCachedProfile(uid) {
-  try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
-}
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -59,7 +41,6 @@ async function initAuth() {
     });
   } catch { showAuthWall(); }
 
-  // Rafraîchir le token quand l'onglet redevient actif (évite la désynchronisation RLS)
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible' && sb && currentUser) {
       const { data: { session } } = await sb.auth.getSession().catch(() => ({ data: {} }));
@@ -68,15 +49,14 @@ async function initAuth() {
   });
 }
 
-// Assure une session Supabase valide avant toute écriture critique
+// Assure une session Supabase valide avant toute ecriture critique
 async function ensureSession() {
   const { data: { session }, error } = await sb.auth.getSession();
-  if (error || !session) throw new Error('Session expirée — reconnecte-toi.');
-  // Si le token expire dans moins de 60s, rafraîchir
+  if (error || !session) throw new Error('Session expiree — reconnecte-toi.');
   const exp = session.expires_at * 1000;
   if (exp - Date.now() < 60_000) {
     const { data, error: rErr } = await sb.auth.refreshSession();
-    if (rErr || !data.session) throw new Error('Session expirée — reconnecte-toi.');
+    if (rErr || !data.session) throw new Error('Session expiree — reconnecte-toi.');
   }
   return session;
 }
@@ -91,7 +71,7 @@ async function applyUser(user) {
     }
     currentUser = { ...user, profile };
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
-    const avatar = profile?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
+    const avatar = profile?.avatar_url || dicebear(name);
     showNavUser(name, avatar);
     applyRoleUI(profile?.role);
     hideAuthWall();
@@ -107,17 +87,8 @@ async function applyUser(user) {
 
 function applyRoleUI(role) {
   const isSuperAdmin = role === 'super_admin';
-  // Onglet "Importer Spotify" visible uniquement pour les super_admins
   const spotifyTab = document.querySelector('[data-tab="import-spotify"]');
   if (spotifyTab) spotifyTab.style.display = isSuperAdmin ? '' : 'none';
-}
-
-function showNavUser(name, avatar) {
-  document.getElementById('nav-auth').style.display = 'none';
-  document.getElementById('nav-user').style.display = 'flex';
-  document.getElementById('nav-username').textContent = name;
-  const img = document.getElementById('nav-avatar');
-  if (avatar) img.src = avatar;
 }
 
 function showAuthWall() {
@@ -151,7 +122,6 @@ async function loadPlaylists() {
 
   grid.innerHTML = '';
 
-  // Carte "nouvelle playlist"
   const newCard = document.createElement('div');
   newCard.className = 'pl-card pl-card-new';
   newCard.innerHTML = `<span class="pl-card-new-icon">+</span><span>Nouvelle playlist</span>`;
@@ -164,28 +134,28 @@ async function loadPlaylists() {
 function buildPlCard(pl) {
   const card = document.createElement('div');
   card.className = 'pl-card';
-  card.dataset.plId = pl.id; // pour retrait immédiat lors de la suppression
+  card.dataset.plId = pl.id;
   card.innerHTML = `
     <span class="pl-card-emoji">${esc(pl.emoji)}</span>
     <div class="pl-card-name">${esc(pl.name)}</div>
     <div class="pl-card-meta">${pl.track_count} titre${pl.track_count !== 1 ? 's' : ''}</div>
     <div class="pl-card-footer">
-      <span class="pl-card-badge ${pl.is_public ? '' : 'private'}">${pl.is_public ? 'Publique' : 'Privée'}</span>
-      <button class="pl-card-edit">Modifier →</button>
+      <span class="pl-card-badge ${pl.is_public ? '' : 'private'}">${pl.is_public ? 'Publique' : 'Privee'}</span>
+      <button class="pl-card-edit">Modifier &rarr;</button>
     </div>`;
   card.querySelector('.pl-card-edit').onclick = e => { e.stopPropagation(); openEditor(pl); };
   card.onclick = () => openEditor(pl);
   return card;
 }
 
-// ─── Playlist modal (créer / éditer infos) ────────────────────────────────────
+// ─── Playlist modal (creer / editer infos) ────────────────────────────────────
 function openPlaylistModal(pl = null) {
   editingPl = pl;
   document.getElementById('modal-pl-title').textContent = pl ? 'Modifier la playlist' : 'Nouvelle playlist';
   document.getElementById('pl-emoji').value    = pl?.emoji    ?? '🎵';
   document.getElementById('pl-name').value     = pl?.name     ?? '';
   document.getElementById('pl-public').checked = pl?.is_public ?? false;
-  document.getElementById('savePlaylistBtn').textContent = pl ? 'Enregistrer' : 'Créer';
+  document.getElementById('savePlaylistBtn').textContent = pl ? 'Enregistrer' : 'Creer';
   document.getElementById('pl-form-error').style.display = 'none';
   document.getElementById('modal-playlist').style.display = 'flex';
   setTimeout(() => document.getElementById('pl-name').focus(), 80);
@@ -210,8 +180,7 @@ async function savePlaylist() {
       .update({ name, emoji, is_public, updated_at: new Date().toISOString() })
       .eq('id', editingPl.id);
     if (error) { showErr(errEl, error.message); btn.disabled = false; return; }
-    toast('Playlist mise à jour', 'success');
-    // Mettre à jour l'éditeur si ouvert
+    toast('Playlist mise a jour', 'success');
     if (document.getElementById('modal-editor').style.display === 'flex') {
       editingPl = { ...editingPl, name, emoji, is_public };
       document.getElementById('editor-pl-name').textContent = name;
@@ -222,7 +191,7 @@ async function savePlaylist() {
       .insert({ owner_id: currentUser.id, name, emoji, is_public })
       .select().single();
     if (error) { showErr(errEl, error.message); btn.disabled = false; return; }
-    toast('Playlist créée !', 'success');
+    toast('Playlist creee !', 'success');
     closePlaylistModal();
     openEditor(data);
     await loadPlaylists();
@@ -246,7 +215,6 @@ async function openEditor(pl) {
   document.getElementById('modal-editor').style.display = 'flex';
   openAdminSection(pl);
 
-  // Reset tabs
   switchTab('search');
   document.getElementById('search-results').innerHTML     = '';
   document.getElementById('import-spotify-preview').innerHTML = '';
@@ -286,7 +254,7 @@ function renderEditorTracks() {
         <div class="track-artist">${esc(t.artist)}</div>
       </div>
       <span class="track-source">${t.source}</span>
-      <button class="track-remove-btn" onclick="removeTrack('${t.id}')">✕</button>
+      <button class="track-remove-btn" onclick="removeTrack('${t.id}')">&#x2715;</button>
     </div>`).join('');
 }
 
@@ -306,14 +274,13 @@ async function removeTrack(trackId) {
 function normalize(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
 async function addTrack(trackData) {
-  // Doublons : external_id ou (artist+title normalisés)
   const extId = trackData.external_id;
   const norm  = normalize(trackData.artist) + '|' + normalize(trackData.title);
   const isDup = editorTracks.some(t =>
     (extId && t.external_id === extId) ||
     (normalize(t.artist) + '|' + normalize(t.title)) === norm
   );
-  if (isDup) { toast('Ce titre est déjà dans la playlist.', 'error'); return false; }
+  if (isDup) { toast('Ce titre est deja dans la playlist.', 'error'); return false; }
   try { await ensureSession(); } catch (e) { toast(e.message, 'error'); return false; }
   const { data, error } = await sb.from('custom_playlist_tracks').insert({
     playlist_id: editingPl.id,
@@ -336,15 +303,13 @@ async function addTrack(trackData) {
 // ─── Delete playlist ──────────────────────────────────────────────────────────
 async function deletePlaylist() {
   if (!editingPl) return;
-  if (!confirm(`Supprimer "${editingPl.name}" ? Cette action est irréversible.`)) return;
+  if (!confirm(`Supprimer "${editingPl.name}" ? Cette action est irreversible.`)) return;
 
   const btn = document.getElementById('deletePlaylistBtn');
   btn.disabled = true; btn.textContent = '...';
 
   try {
-    // Endpoint serveur avec auth token explicite (plus fiable que client-side Supabase)
     const deletedId = editingPl.id;
-    // Fermer le modal + retirer la carte AVANT la requête pour feedback immédiat
     closeEditorModal();
     editingPl = null;
     document.querySelector(`[data-pl-id="${deletedId}"]`)?.remove();
@@ -357,8 +322,8 @@ async function deletePlaylist() {
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
 
-    toast('Playlist supprimée.', 'success');
-    loadPlaylists(); // refresh silencieux (pas de await pour ne pas bloquer)
+    toast('Playlist supprimee.', 'success');
+    loadPlaylists();
   } catch (e) {
     toast('Erreur suppression : ' + e.message, 'error');
     btn.disabled = false; btn.textContent = 'Supprimer';
@@ -379,7 +344,6 @@ async function openAdminSection(pl) {
   document.getElementById('admin-is-official').checked = !!pl.is_official;
   document.getElementById('admin-linked-room').value   = pl.linked_room_id || '';
 
-  // Peupler le select des rooms si pas encore fait
   const sel = document.getElementById('admin-linked-room');
   if (sel.options.length <= 1) {
     try {
@@ -414,7 +378,7 @@ async function saveOfficialStatus() {
     const body = await r.json();
     if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
     editingPl = { ...editingPl, is_official, linked_room_id };
-    toast('Statut officiel mis à jour.', 'success');
+    toast('Statut officiel mis a jour.', 'success');
   } catch (e) {
     toast('Erreur : ' + e.message, 'error');
   } finally {
@@ -452,7 +416,7 @@ async function doSearch() {
 
 function renderSearchResults(tracks) {
   const res = document.getElementById('search-results');
-  if (!tracks.length) { res.innerHTML = '<p style="color:var(--dim);font-size:.83rem;padding:8px 0">Aucun résultat.</p>'; return; }
+  if (!tracks.length) { res.innerHTML = '<p style="color:var(--dim);font-size:.83rem;padding:8px 0">Aucun resultat.</p>'; return; }
   res.innerHTML = tracks.map((t, i) => `
     <div class="track-row">
       <img class="track-cover" src="${t.cover_url || ''}" alt="" onerror="this.style.display='none'">
@@ -463,7 +427,6 @@ function renderSearchResults(tracks) {
       <span class="track-source">${t.source}</span>
       <button class="track-add-btn" id="sr-btn-${i}" onclick="addFromSearch(${i}, this)">+ Ajouter</button>
     </div>`).join('');
-  // Stocker les tracks dans l'objet window temporairement
   window._searchResults = tracks;
 }
 
@@ -472,7 +435,7 @@ async function addFromSearch(idx, btn) {
   if (!track) return;
   btn.disabled = true; btn.textContent = '...';
   const ok = await addTrack(track);
-  if (ok) { btn.textContent = '✓ Ajouté'; btn.classList.add('added'); }
+  if (ok) { btn.textContent = '&#x2713; Ajoute'; btn.classList.add('added'); }
   else { btn.disabled = false; btn.textContent = '+ Ajouter'; }
 }
 
@@ -510,7 +473,7 @@ function updateSpotifyUI() {
 
 async function connectSpotify() {
   const clientId = window.ZIK_SPOTIFY_CLIENT_ID;
-  if (!clientId) { toast('SPOTIFY_CLIENT_ID non configuré.', 'error'); return; }
+  if (!clientId) { toast('SPOTIFY_CLIENT_ID non configure.', 'error'); return; }
   const verifier  = genVerifier();
   const challenge = await genChallenge(verifier);
   sessionStorage.setItem('sp_verifier', verifier);
@@ -552,7 +515,7 @@ async function handleSpotifyCallback() {
     sessionStorage.setItem('sp_token_exp', Date.now() + json.expires_in * 1000);
     sessionStorage.removeItem('sp_verifier');
     updateSpotifyUI();
-    toast('Spotify connecté !', 'success');
+    toast('Spotify connecte !', 'success');
   } catch (e) {
     toast('Erreur Spotify : ' + e.message, 'error');
   }
@@ -562,7 +525,7 @@ function disconnectSpotify() {
   sessionStorage.removeItem('sp_token');
   sessionStorage.removeItem('sp_token_exp');
   updateSpotifyUI();
-  toast('Spotify déconnecté.', 'success');
+  toast('Spotify deconnecte.', 'success');
 }
 
 // ─── Import Spotify ───────────────────────────────────────────────────────────
@@ -596,14 +559,12 @@ async function importSpotify() {
   prev.innerHTML = '<p style="color:var(--dim);font-size:.83rem">Chargement...</p>';
 
   try {
-    // Appel via le proxy serveur (évite CORS, logs disponibles côté Node)
     const r = await fetch(`/api/spotify/playlist-user/${id}`, {
       headers: { 'X-Spotify-Token': token },
     });
     const data = await r.json();
 
     if (!r.ok) {
-      // Token expiré → déconnecter pour forcer une reconnexion
       if (r.status === 401) { sessionStorage.removeItem('sp_token'); updateSpotifyUI(); }
       throw new Error(data.error || `Erreur serveur HTTP ${r.status}`);
     }
@@ -617,7 +578,7 @@ async function importSpotify() {
           <div class="import-preview-count">${data.tracks.length} titres${data.truncated ? ` / ${data.total}` : ''}</div>
         </div>
       </div>
-      ${data.limited ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">⚠️ Limité aux ${data.tracks.length} premiers titres sur ${data.total} — l'app Spotify nécessite <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:#fbbf24">Extended Access</a> pour importer des playlists complètes.</p>` : data.truncated ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">⚠️ Limité aux ${data.tracks.length} premiers titres (total: ${data.total})</p>` : ''}
+      ${data.limited ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">&#x26A0;&#xFE0F; Limite aux ${data.tracks.length} premiers titres sur ${data.total}.</p>` : data.truncated ? `<p style="color:#fbbf24;font-size:.75rem;margin-top:6px">&#x26A0;&#xFE0F; Limite aux ${data.tracks.length} premiers titres (total: ${data.total})</p>` : ''}
       <div class="import-actions">
         <button class="btn-accent sm" onclick="confirmImport('spotify')">Tout importer (${data.tracks.length} titres)</button>
         <button class="btn-ghost sm" onclick="document.getElementById('import-spotify-preview').innerHTML=''">Annuler</button>
@@ -679,12 +640,11 @@ async function confirmImport(source) {
   const previewEl = document.getElementById(`import-${source}-preview`);
   previewEl.innerHTML = '<p style="color:var(--dim);font-size:.83rem">Import en cours...</p>';
 
-  // Filtrer les doublons sur external_id déjà présents
   const existingIds = new Set(editorTracks.map(t => t.external_id).filter(Boolean));
   const newTracks   = importPreviewTracks.filter(t => !existingIds.has(t.external_id));
 
   if (!newTracks.length) {
-    previewEl.innerHTML = '<p style="color:var(--dim);font-size:.83rem">Tous les titres sont déjà dans la playlist.</p>';
+    previewEl.innerHTML = '<p style="color:var(--dim);font-size:.83rem">Tous les titres sont deja dans la playlist.</p>';
     return;
   }
 
@@ -713,7 +673,7 @@ async function confirmImport(source) {
   updateEditorCount();
   previewEl.innerHTML = '';
   importPreviewTracks = [];
-  toast(`${data.length} titre${data.length !== 1 ? 's' : ''} importé${data.length !== 1 ? 's' : ''} !`, 'success');
+  toast(`${data.length} titre${data.length !== 1 ? 's' : ''} importe${data.length !== 1 ? 's' : ''} !`, 'success');
 }
 
 // ─── Add manual track ─────────────────────────────────────────────────────────
@@ -735,7 +695,7 @@ async function addManual() {
     document.getElementById('manual-title').value   = '';
     document.getElementById('manual-preview').value = '';
     errEl.style.display = 'none';
-    toast('Titre ajouté !', 'success');
+    toast('Titre ajoute !', 'success');
   }
 }
 
@@ -747,12 +707,7 @@ function bindNavAuth() {
   document.getElementById('wallLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
   document.getElementById('wallRegisterBtn')?.addEventListener('click', () => openAuthModal('register'));
 
-  const trigger  = document.getElementById('nav-profile-trigger');
-  const dropdown = document.getElementById('nav-dropdown');
-  if (trigger && dropdown) {
-    trigger.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.toggle('open'); });
-    document.addEventListener('click', () => dropdown.classList.remove('open'));
-  }
+  bindNavDropdown();
 }
 
 function bindModals() {
@@ -763,7 +718,6 @@ function bindModals() {
   document.getElementById('pl-name').addEventListener('keypress', e => { if (e.key === 'Enter') savePlaylist(); });
   document.getElementById('modal-playlist').addEventListener('click', e => { if (e.target === e.currentTarget) closePlaylistModal(); });
 
-  // Auth modal
   document.getElementById('closeModal').addEventListener('click', closeAuthModal);
   document.getElementById('auth-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAuthModal(); });
   document.getElementById('switchToRegister').addEventListener('click', e => { e.preventDefault(); showView('register'); });
@@ -784,13 +738,11 @@ function bindEditor() {
   document.getElementById('deletePlaylistBtn').addEventListener('click', deletePlaylist);
   document.getElementById('launchRoomBtn').addEventListener('click', openRoomSettings);
 
-  // Room settings modal
   document.getElementById('closeRoomSettingsModal').addEventListener('click', closeRoomSettings);
   document.getElementById('cancelRoomSettings').addEventListener('click', closeRoomSettings);
   document.getElementById('confirmRoomSettings').addEventListener('click', createRoom);
   document.getElementById('modal-room-settings').addEventListener('click', e => { if (e.target === e.currentTarget) closeRoomSettings(); });
 
-  // Range labels
   const mkRange = (id, valId, suffix = '') => {
     const el  = document.getElementById(id);
     const val = document.getElementById(valId);
@@ -800,17 +752,14 @@ function bindEditor() {
   mkRange('rs-duration', 'rs-duration-val', 's');
   mkRange('rs-break',    'rs-break-val',    's');
 
-  // Room code modal
   document.getElementById('closeRoomCodeModal').addEventListener('click', () => { document.getElementById('modal-room-code').style.display = 'none'; });
   document.getElementById('copyRoomCodeBtn').addEventListener('click', copyRoomLink);
   document.getElementById('joinRoomNowBtn').addEventListener('click', joinRoomNow);
 
-  // Tabs
   document.querySelectorAll('.etab').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // Search
   document.getElementById('searchBtn').addEventListener('click', doSearch);
   document.getElementById('search-query').addEventListener('keypress', e => { if (e.key === 'Enter') doSearch(); });
   document.querySelectorAll('.src-btn').forEach(btn => {
@@ -821,20 +770,16 @@ function bindEditor() {
     });
   });
 
-  // Import
   document.getElementById('importSpotifyBtn').addEventListener('click', importSpotify);
   document.getElementById('importDeezerBtn').addEventListener('click', importDeezer);
   document.getElementById('spotify-pl-url').addEventListener('keypress', e => { if (e.key === 'Enter') importSpotify(); });
   document.getElementById('deezer-pl-url').addEventListener('keypress', e => { if (e.key === 'Enter') importDeezer(); });
 
-  // Spotify PKCE
   document.getElementById('connectSpotifyBtn')?.addEventListener('click', connectSpotify);
   document.getElementById('disconnectSpotifyBtn')?.addEventListener('click', disconnectSpotify);
 
-  // Admin
   document.getElementById('saveOfficialBtn')?.addEventListener('click', saveOfficialStatus);
 
-  // Manual
   document.getElementById('addManualBtn').addEventListener('click', addManual);
 }
 
@@ -845,7 +790,6 @@ function openRoomSettings() {
   if (!editingPl) return;
   if (editorTracks.length < 3) { toast('Il faut au moins 3 titres dans la playlist.', 'error'); return; }
 
-  // Ajuster le max des manches au nb de titres
   const maxEl = document.getElementById('rs-rounds');
   maxEl.max = editorTracks.length;
   maxEl.value = Math.min(10, editorTracks.length);
@@ -863,7 +807,7 @@ async function createRoom() {
   const btn = document.getElementById('confirmRoomSettings');
   const errEl = document.getElementById('room-settings-error');
   errEl.style.display = 'none';
-  btn.disabled = true; btn.textContent = 'Création...';
+  btn.disabled = true; btn.textContent = 'Creation...';
 
   try {
     const r = await fetch('/api/rooms/custom', {
@@ -887,7 +831,7 @@ async function createRoom() {
   } catch (e) {
     showErr(errEl, e.message);
   } finally {
-    btn.disabled = false; btn.textContent = 'Créer la room';
+    btn.disabled = false; btn.textContent = 'Creer la room';
   }
 }
 
@@ -901,7 +845,7 @@ function showRoomCode(code) {
 function copyRoomLink() {
   if (!_createdRoomCode) return;
   const url = `${location.origin}/game?roomId=${_createdRoomCode}`;
-  navigator.clipboard.writeText(url).then(() => toast('Lien copié !', 'success')).catch(() => toast('Copie échouée', 'error'));
+  navigator.clipboard.writeText(url).then(() => toast('Lien copie !', 'success')).catch(() => toast('Copie echouee', 'error'));
 }
 
 function joinRoomNow() {
@@ -910,55 +854,6 @@ function joinRoomNow() {
   const uid  = currentUser?.id || '';
   const p    = new URLSearchParams({ roomId: _createdRoomCode, username: name, userId: uid, isGuest: uid ? '0' : '1' });
   window.location.href = `/game?${p}`;
-}
-
-// ─── Auth actions ─────────────────────────────────────────────────────────────
-async function handleLogin() {
-  const errEl = document.getElementById('login-error');
-  errEl.style.display = 'none';
-  if (!sb) return showErr(errEl, 'Supabase non configuré.');
-  const email = document.getElementById('loginEmail').value.trim();
-  const pwd   = document.getElementById('loginPassword').value;
-  if (!email || !pwd) return showErr(errEl, 'Remplis tous les champs.');
-  const btn = document.getElementById('loginSubmit');
-  btn.disabled = true; btn.textContent = 'Connexion...';
-  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
-  btn.disabled = false; btn.textContent = 'Se connecter';
-  if (error) showErr(errEl, error.message.includes('invalid') ? 'Email ou mot de passe incorrect.' : error.message);
-}
-
-async function handleRegister() {
-  const errEl = document.getElementById('register-error');
-  errEl.style.display = 'none';
-  if (!sb) return showErr(errEl, 'Supabase non configuré.');
-  const username = document.getElementById('regUsername').value.trim();
-  const email    = document.getElementById('regEmail').value.trim();
-  const pwd      = document.getElementById('regPassword').value;
-  if (!username || !email || !pwd) return showErr(errEl, 'Remplis tous les champs.');
-  if (username.length < 3) return showErr(errEl, 'Pseudo trop court.');
-  if (pwd.length < 6)      return showErr(errEl, 'Mot de passe trop court (min. 6 caractères).');
-  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) return showErr(errEl, 'Pseudo invalide.');
-  const { data: exists } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-  if (exists) return showErr(errEl, 'Ce pseudo est déjà pris.');
-  const btn = document.getElementById('registerSubmit');
-  btn.disabled = true; btn.textContent = 'Création...';
-  const { error } = await sb.auth.signUp({ email, password: pwd, options: { data: { username } } });
-  btn.disabled = false; btn.textContent = 'Créer mon compte';
-  if (error) showErr(errEl, error.message);
-  else showView('confirm');
-}
-
-// ─── Auth modal helpers ────────────────────────────────────────────────────────
-function openAuthModal(view) {
-  showView(view);
-  document.getElementById('auth-modal').style.display = 'flex';
-  setTimeout(() => { const f = document.querySelector(`#view-${view} input`); if (f) f.focus(); }, 80);
-}
-function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
-function showView(v) {
-  ['login', 'register', 'confirm'].forEach(n => {
-    document.getElementById(`view-${n}`).style.display = n === v ? 'block' : 'none';
-  });
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -971,7 +866,3 @@ function toast(msg, type = '') {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
-
-// ─── Utils ────────────────────────────────────────────────────────────────────
-function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

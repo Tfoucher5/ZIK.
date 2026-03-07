@@ -1,21 +1,9 @@
 'use strict';
 
-const SUPABASE_URL      = window.ZIK_SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = window.ZIK_SUPABASE_ANON_KEY || '';
-const SB_OK = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length > 20;
-const sb = SB_OK ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// shared.js provides: dicebear, getCachedProfile, showNavUser, showNavAuth,
+// bindNavDropdown, ZIK_SB
 
-// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
-const PROFILE_TTL = 5 * 60 * 1000;
-function getCachedProfile(uid) {
-  try {
-    const raw = sessionStorage.getItem('zik_profile_' + uid);
-    if (!raw) return null;
-    const { p, ts } = JSON.parse(raw);
-    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
-    return p;
-  } catch { return null; }
-}
+const sb = ZIK_SB;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // ── Preferences ─────────────────────────────────────────────────────────────
@@ -40,30 +28,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ── Nav auth state ───────────────────────────────────────────────────────────
-  if (!sb) return;
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) applyNavUser(session.user);
-    sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN'  && session?.user) applyNavUser(session.user);
-      if (event === 'SIGNED_OUT') clearNavUser();
-    });
-  } catch { /* nav stays hidden */ }
-
-  document.getElementById('nav-profile-trigger')?.addEventListener('click', e => {
-    e.stopPropagation();
-    document.getElementById('nav-dropdown')?.classList.toggle('open');
-  });
-  document.addEventListener('click', () => document.getElementById('nav-dropdown')?.classList.remove('open'));
+  bindNavDropdown();
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await sb.auth.signOut();
+    await sb?.auth.signOut();
     window.location.href = '/';
   });
 
   document.getElementById('openLoginBtn')?.addEventListener('click', () => {
     window.location.href = '/';
   });
+
+  if (!sb) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) await applyNavUser(session.user);
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN'  && session?.user) await applyNavUser(session.user);
+      if (event === 'SIGNED_OUT') showNavAuth();
+    });
+  } catch { /* nav stays hidden */ }
 });
 
 async function applyNavUser(user) {
@@ -74,17 +58,7 @@ async function applyNavUser(user) {
       profile = data;
     }
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
-    const avatar = profile?.avatar_url ||
-      `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;
-    document.getElementById('nav-username').textContent = name;
-    const img = document.getElementById('nav-avatar');
-    if (img) { img.src = avatar; img.style.display = 'block'; }
+    const avatar = profile?.avatar_url || dicebear(name);
+    showNavUser(name, avatar);
   } catch { /* best effort */ }
-  document.getElementById('nav-auth').style.display = 'none';
-  document.getElementById('nav-user').style.display = 'flex';
-}
-
-function clearNavUser() {
-  document.getElementById('nav-auth').style.display = '';
-  document.getElementById('nav-user').style.display = 'none';
 }

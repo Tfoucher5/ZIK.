@@ -387,10 +387,6 @@ function clearFeedback() {
   ui.feedback.textContent = '';
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 // Mirror of server parseFeaturing — used to split the answer string for display
 function _parseFeat(artistStr) {
   if (!artistStr) return { main: '', feat: null };
