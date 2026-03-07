@@ -1,7 +1,8 @@
 require('dotenv').config();
-const express = require('express');
-const http    = require('http');
-const path    = require('path');
+const express     = require('express');
+const http        = require('http');
+const path        = require('path');
+const compression = require('compression');
 const { Server } = require('socket.io');
 const { createClient } = require('@supabase/supabase-js');
 const yts = require('yt-search');
@@ -10,7 +11,13 @@ const ROOMS = require('./rooms');
 
 const app    = express();
 const server = http.createServer(app);
-const io     = new Server(server);
+const io     = new Server(server, {
+  transports:        ['websocket', 'polling'],
+  perMessageDeflate: { threshold: 1024 },
+  httpCompression:   { threshold: 1024 },
+});
+
+app.use(compression());
 
 // ─── Config JS (avant static) ─────────────────────────────────────────────────
 app.get('/config.js', (req, res) => {
@@ -35,7 +42,11 @@ app.get('/favicon.svg', (req, res) => {
 });
 
 // ─── Static assets (CSS, JS, images) ─────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '5m',
+  etag:   true,
+  lastModified: true,
+}));
 app.use(express.json({ limit: '2mb' }));
 
 // Gestionnaire d'erreur JSON malformé (retourne du JSON, pas du HTML)
@@ -70,7 +81,7 @@ const supabase = createClient(
 
 // ─── Cache de tokens JWT (évite un appel Supabase par requête) ────────────────
 const _tokenCache = new Map(); // token -> { user, exp }
-const TOKEN_TTL   = 30_000;   // 30s
+const TOKEN_TTL   = 60_000;   // 60s
 
 async function verifyToken(token) {
   const cached = _tokenCache.get(token);
@@ -112,12 +123,10 @@ setInterval(() => {
 let _fetch;
 async function getFetch() {
   if (_fetch) return _fetch;
-  // Node 18+ a fetch natif
   if (typeof globalThis.fetch === 'function') {
     _fetch = globalThis.fetch;
     return _fetch;
   }
-  // Fallback node-fetch pour Node < 18
   try {
     const mod = await import('node-fetch');
     _fetch = mod.default;
@@ -128,6 +137,8 @@ async function getFetch() {
   }
   return _fetch;
 }
+// Init fetch au démarrage (évite la latence lazy-init sur la 1ère requête)
+getFetch().catch(() => {});
 
 // ─── Playlists cache ──────────────────────────────────────────────────────────
 const playlistCache = {}; // roomId -> tracks[]
@@ -328,27 +339,47 @@ function calcSpeedBonus(timeTaken) {
   return 0;
 }
 
+// ─── Cache mémoire générique ───────────────────────────────────────────────────
+function makeCache(ttlMs) {
+  let _data = null, _exp = 0;
+  return {
+    get()  { return _exp > Date.now() ? _data : null; },
+    set(v) { _data = v; _exp = Date.now() + ttlMs; },
+    clear(){ _exp = 0; },
+  };
+}
+const _officialRoomsCache = makeCache(30_000);  // 30s — liste statique, online recalculé live
+const _lbWeeklyCache      = makeCache(60_000);  // 60s
+const _lbEloCache         = makeCache(60_000);  // 60s
+
 // ─── REST API ─────────────────────────────────────────────────────────────────
 
 // Liste des rooms officielles depuis la BDD (+ compte joueurs en ligne)
 app.get('/api/rooms/official', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('rooms')
-      .select('code, name, emoji, description, is_official')
-      .eq('is_official', true)
-      .order('created_at');
-    if (error) throw error;
-
-    const result = (data || []).map(r => ({
-      id:          r.code,
-      name:        r.name,
-      emoji:       r.emoji,
-      description: r.description || '',
-      color:       'var(--accent)',
-      gradient:    'linear-gradient(135deg,rgba(62,207,255,.12),transparent)',
-      online:      Object.values(roomGames)
-        .filter(g => g.roomId === r.code)
+    let base = _officialRoomsCache.get();
+    if (!base) {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('code, name, emoji, description, is_official')
+        .eq('is_official', true)
+        .order('created_at');
+      if (error) throw error;
+      base = (data || []).map(r => ({
+        id:          r.code,
+        name:        r.name,
+        emoji:       r.emoji,
+        description: r.description || '',
+        color:       'var(--accent)',
+        gradient:    'linear-gradient(135deg,rgba(62,207,255,.12),transparent)',
+      }));
+      _officialRoomsCache.set(base);
+    }
+    // Online count toujours recalculé (état live)
+    const result = base.map(r => ({
+      ...r,
+      online: Object.values(roomGames)
+        .filter(g => g.roomId === r.id)
         .reduce((acc, g) => acc + Object.values(g.players).filter(p => !p._dcTimer).length, 0),
     }));
     res.json(result);
@@ -370,8 +401,11 @@ app.get('/api/profile/:username', async (req, res) => {
 
 // Classement hebdomadaire
 app.get('/api/leaderboard/weekly', async (req, res) => {
+  const cached = _lbWeeklyCache.get();
+  if (cached) return res.json(cached);
   const { data, error } = await supabase.rpc('weekly_leaderboard');
   if (error) return res.status(500).json({ error: error.message });
+  _lbWeeklyCache.set(data);
   res.json(data);
 });
 
@@ -384,12 +418,15 @@ app.get('/api/leaderboard/weekly/room/:code', async (req, res) => {
 
 // Classement ELO global
 app.get('/api/leaderboard/elo', async (req, res) => {
+  const cached = _lbEloCache.get();
+  if (cached) return res.json(cached);
   const { data, error } = await supabase
     .from('profiles')
     .select('username, avatar_url, elo, level, games_played')
     .order('elo', { ascending: false })
     .limit(20);
   if (error) return res.status(500).json({ error: error.message });
+  _lbEloCache.set(data);
   res.json(data);
 });
 
@@ -713,25 +750,26 @@ app.post('/api/profile/update', async (req, res) => {
 // ─── Stats : meilleurs scores par room officielle ─────────────────────────────
 app.get('/api/stats/:userId', async (req, res) => {
   try {
-    // Récupérer les rooms officielles pour filtrer
-    const { data: officialRooms } = await supabase
-      .from('rooms').select('code, name, emoji').eq('is_official', true);
-    const officialCodes = new Set((officialRooms || []).map(r => r.code));
+    // Les deux requêtes en parallèle
+    const [roomsRes, playersRes] = await Promise.all([
+      supabase.from('rooms').select('code, name, emoji').eq('is_official', true),
+      supabase.from('game_players')
+        .select('score, games!inner(room_id, ended_at)')
+        .eq('user_id', req.params.userId)
+        .eq('is_guest', false)
+        .not('games.ended_at', 'is', null)
+        .order('score', { ascending: false }),
+    ]);
+
+    const officialRooms = roomsRes.data || [];
+    const officialCodes = new Set(officialRooms.map(r => r.code));
     const roomInfo = {};
-    (officialRooms || []).forEach(r => { roomInfo[r.code] = r; });
+    officialRooms.forEach(r => { roomInfo[r.code] = r; });
 
-    const { data, error } = await supabase
-      .from('game_players')
-      .select('score, games!inner(room_id, ended_at)')
-      .eq('user_id', req.params.userId)
-      .eq('is_guest', false)
-      .not('games.ended_at', 'is', null)
-      .order('score', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
+    if (playersRes.error) return res.status(500).json({ error: playersRes.error.message });
 
-    // Meilleur score par room officielle uniquement
     const bestByRoom = {};
-    (data || []).forEach(row => {
+    (playersRes.data || []).forEach(row => {
       const roomId = row.games?.room_id;
       if (!roomId || !officialCodes.has(roomId)) return;
       if (!bestByRoom[roomId] || row.score > bestByRoom[roomId]) {

@@ -8,6 +8,24 @@ const sb = SB_OK ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 let currentUser = null;
 
+// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
+const PROFILE_TTL = 5 * 60 * 1000;
+function getCachedProfile(uid) {
+  try {
+    const raw = sessionStorage.getItem('zik_profile_' + uid);
+    if (!raw) return null;
+    const { p, ts } = JSON.parse(raw);
+    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
+    return p;
+  } catch { return null; }
+}
+function setCachedProfile(uid, profile) {
+  try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
+}
+function clearCachedProfile(uid) {
+  try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   bindNav();
@@ -28,6 +46,7 @@ async function initAuth() {
         await applyUser(session.user);
         closeAuthModal();
       } else if (event === 'SIGNED_OUT') {
+        clearCachedProfile(currentUser?.id);
         currentUser = null;
         showAuthWall();
       }
@@ -37,7 +56,12 @@ async function initAuth() {
 
 async function applyUser(user) {
   try {
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    let profile = getCachedProfile(user.id);
+    if (!profile) {
+      const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+      profile = data;
+      if (profile) setCachedProfile(user.id, profile);
+    }
     currentUser = { ...user, profile };
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
     const avatar = profile?.avatar_url || dicebear(name);
@@ -170,10 +194,11 @@ async function saveProfile() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
 
-    // Mettre à jour localement
+    // Mettre à jour localement + invalider le cache
     if (!currentUser.profile) currentUser.profile = {};
     currentUser.profile.username  = username;
     currentUser.profile.avatar_url = avatar_url || null;
+    setCachedProfile(currentUser.id, currentUser.profile);
 
     const avatar = avatar_url || dicebear(username);
     showNavUser(username, avatar);

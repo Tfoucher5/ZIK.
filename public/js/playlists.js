@@ -12,6 +12,24 @@ let editorTracks  = [];     // tracks chargés dans l'éditeur
 let searchSource  = 'deezer';
 let importPreviewTracks = []; // tracks issus d'un import en attente
 
+// ─── Profile cache (sessionStorage, TTL 5 min) ───────────────────────────────
+const PROFILE_TTL = 5 * 60 * 1000;
+function getCachedProfile(uid) {
+  try {
+    const raw = sessionStorage.getItem('zik_profile_' + uid);
+    if (!raw) return null;
+    const { p, ts } = JSON.parse(raw);
+    if (Date.now() - ts > PROFILE_TTL) { sessionStorage.removeItem('zik_profile_' + uid); return null; }
+    return p;
+  } catch { return null; }
+}
+function setCachedProfile(uid, profile) {
+  try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
+}
+function clearCachedProfile(uid) {
+  try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   bindNavAuth();
@@ -34,6 +52,7 @@ async function initAuth() {
         await applyUser(session.user);
         closeAuthModal();
       } else if (event === 'SIGNED_OUT') {
+        clearCachedProfile(currentUser?.id);
         currentUser = null;
         showAuthWall();
       }
@@ -64,7 +83,12 @@ async function ensureSession() {
 
 async function applyUser(user) {
   try {
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    let profile = getCachedProfile(user.id);
+    if (!profile) {
+      const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+      profile = data;
+      if (profile) setCachedProfile(user.id, profile);
+    }
     currentUser = { ...user, profile };
     const name   = profile?.username || user.email?.split('@')[0] || 'Joueur';
     const avatar = profile?.avatar_url || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0c1018&textColor=3ecfff`;

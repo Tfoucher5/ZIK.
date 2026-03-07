@@ -9,6 +9,7 @@ const IS_GUEST = P.get('isGuest') === '1';
 
 // ─── Socket.IO ────────────────────────────────────────────────────────────────
 const socket = io({
+  transports:           ['websocket', 'polling'],
   reconnectionAttempts: Infinity,
   reconnectionDelay:    1000,
   reconnectionDelayMax: 5000,
