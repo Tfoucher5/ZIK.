@@ -18,7 +18,7 @@
 /* ── Reset ──────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column}
 a{text-decoration:none;color:inherit}
 img{display:block;max-width:100%}
 
@@ -227,6 +227,9 @@ h1 em{
 .private-room-bar input:focus{border-color:var(--accent)}
 .private-room-bar input::placeholder{letter-spacing:0;font-weight:400;text-transform:none}
 .private-room-err{font-size:.78rem;color:#f87171;margin-top:4px;width:100%}
+
+/* ── Sticky footer: page content areas grow to fill available space ────────── */
+main,.pl-main{flex:1}
 
 /* ── Footer ─────────────────────────────────────────────────────────────────── */
 footer,.site-footer{

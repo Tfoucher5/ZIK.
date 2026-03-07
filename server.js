@@ -265,6 +265,17 @@ function cleanString(str) {
     .trim().toLowerCase();
 }
 
+// Display string: strips parenthetical/bracket content for UI reveal
+// (e.g. "22 (Prod. by Diabi)" → "22", "Savage (feat. Beyoncé)" → "Savage")
+function displayString(str) {
+  if (!str) return '';
+  return str
+    .replace(/ *\([^)]*\) */g, ' ')
+    .replace(/ *\[[^\]]*\] */g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Extracts main artist and featuring artists from an artist string.
 // Always returns { main: string, feats: string[] }.
 // Handles: "A feat. B & C", "A (feat. B, C)", "A, B, C" (Spotify), "A & B"
@@ -1147,9 +1158,9 @@ io.on('connection', (socket) => {
 
     // Un mot doit matcher ET représenter ≥ 50 % du contenu du champ (sinon trop facile)
     function wordMatch(input, target) {
-      if (input.length < 3) return false;
+      if (input.length < 2) return false;
       const totalLen = target.replace(/\s+/g, '').length || 1;
-      const words = target.split(/\s+/).filter(w => w.length >= 3);
+      const words = target.split(/\s+/).filter(w => w.length >= 2);
       return words.some(w =>
         stringSimilarity.compareTwoStrings(input, w) > 0.88 &&
         w.length / totalLen >= 0.50          // le mot doit couvrir ≥ 50 % du contenu
@@ -1160,14 +1171,14 @@ io.on('connection', (socket) => {
 
     // Check artiste principal
     if (!user.foundArtist) {
-      const match = input.length >= 3 && (
+      const match = input.length >= 1 && (
         simArtist > 0.75 ||
-        (input.length >= 5 && simArtist > 0.65 && wordMatch(input, track.cleanArtist))
+        (input.length >= 3 && simArtist > 0.65 && wordMatch(input, track.cleanArtist))
       );
       if (match) {
         user.foundArtist = true;
         user.score += 1 + speedBonus;
-        socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: track.mainArtist || track.artist, cover });
+        socket.emit('feedback', { type: 'success_artist', msg: `✅ Artiste ! (+${1 + speedBonus} pts)`, val: displayString(track.mainArtist || track.artist), cover });
         hit = true;
       } else if (simArtist > 0.50) {
         socket.emit('feedback', { type: 'close', msg: "🔥 Tu chauffes sur l'artiste !" });
@@ -1180,14 +1191,14 @@ io.on('connection', (socket) => {
       if (user.foundFeats[fi]) continue;
       const cleanFeat = track.cleanFeatArtists[fi];
       const simFeat = stringSimilarity.compareTwoStrings(input, cleanFeat);
-      const matchFeat = input.length >= 3 && (
+      const matchFeat = input.length >= 1 && (
         simFeat > 0.75 ||
-        (input.length >= 5 && simFeat > 0.65 && wordMatch(input, cleanFeat))
+        (input.length >= 3 && simFeat > 0.65 && wordMatch(input, cleanFeat))
       );
       if (matchFeat) {
         user.foundFeats[fi] = true;
         user.score += 1 + speedBonus;
-        socket.emit('feedback', { type: 'success_feat', featIndex: fi, msg: `✅ Feat ! (+${1 + speedBonus} pts)`, val: track.featArtists[fi], cover });
+        socket.emit('feedback', { type: 'success_feat', featIndex: fi, msg: `✅ Feat ! (+${1 + speedBonus} pts)`, val: displayString(track.featArtists[fi]), cover });
         hit = true;
         break; // only one feat revealed per guess
       } else if (simFeat > 0.50 && !hit) {
@@ -1198,14 +1209,14 @@ io.on('connection', (socket) => {
 
     // Check titre
     if (!user.foundTitle) {
-      const match = input.length >= 3 && (
+      const match = input.length >= 1 && (
         simTitle > 0.75 ||
-        (input.length >= 5 && simTitle > 0.65 && wordMatch(input, track.cleanTitle))
+        (input.length >= 3 && simTitle > 0.65 && wordMatch(input, track.cleanTitle))
       );
       if (match) {
         user.foundTitle = true;
         user.score += 1 + speedBonus;
-        socket.emit('feedback', { type: 'success_title', msg: `✅ Titre ! (+${1 + speedBonus} pts)`, val: track.title, cover });
+        socket.emit('feedback', { type: 'success_title', msg: `✅ Titre ! (+${1 + speedBonus} pts)`, val: displayString(track.title), cover });
         hit = true;
       } else if (simTitle > 0.50 && !hit) {
         socket.emit('feedback', { type: 'close', msg: '🔥 Tu chauffes sur le titre !' });
@@ -1364,12 +1375,12 @@ function endRound(roomId, reason) {
   game.isActive = false;
 
   const summary = {
-    answer:      `${game.currentTrack.artist} - ${game.currentTrack.title}`,
+    answer:      `${displayString(game.currentTrack.artist)} - ${displayString(game.currentTrack.title)}`,
     cover:       game.currentTrack.cover,
     reason,
     firstFinder:  game.firstFullFinder,
     totalFound:   game.totalFullFound,
-    featArtists:  game.currentTrack.featArtists || [],
+    featArtists:  (game.currentTrack.featArtists || []).map(displayString),
   };
   game.history.push(summary);
 

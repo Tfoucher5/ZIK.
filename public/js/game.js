@@ -108,8 +108,12 @@ const ui = {
 // ── Dynamic feat slots ────────────────────────────────────────────────────────
 // Creates/removes #slot-feat-N elements between artist and title slots.
 function setFeatSlots(count) {
-  // Remove all existing feat slots
-  ui.slotsWrap.querySelectorAll('.slot-feat').forEach(el => el.remove());
+  // Remove all existing feat slots (by ID prefix, since setSlot may strip .slot-feat class)
+  let idx = 0;
+  while (document.getElementById(`slot-feat-${idx}`)) {
+    document.getElementById(`slot-feat-${idx}`).remove();
+    idx++;
+  }
   for (let i = 0; i < count; i++) {
     const slot = document.createElement('div');
     slot.className = 'slot slot-feat';
@@ -359,7 +363,8 @@ socket.on('server_error', msg => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function setSlot(el, text, state) {
-  el.className = 'slot' + (state ? ' ' + state : '');
+  const isFeat = el.id && el.id.startsWith('slot-feat-');
+  el.className = 'slot' + (isFeat ? ' slot-feat' : '') + (state ? ' ' + state : '');
   el.querySelector('.slot-val').textContent = text;
 }
 
