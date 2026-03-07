@@ -89,7 +89,7 @@ const ui = {
   placeholder: $('cover-placeholder'),
   coverImg:    $('cover-img'),
   slotArtist:  $('slot-artist'),
-  slotFeat:    $('slot-feat'),
+  slotsWrap:   $('slots-wrap'),
   slotTitle:   $('slot-title'),
   feedback:    $('feedback'),
   summary:     $('round-summary'),
@@ -105,7 +105,23 @@ const ui = {
   volSlider:   $('volSlider'),
 };
 
-let personalFound = { artist: false, feat: false, title: false };
+// ── Dynamic feat slots ────────────────────────────────────────────────────────
+// Creates/removes #slot-feat-N elements between artist and title slots.
+function setFeatSlots(count) {
+  // Remove all existing feat slots
+  ui.slotsWrap.querySelectorAll('.slot-feat').forEach(el => el.remove());
+  for (let i = 0; i < count; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot slot-feat';
+    slot.id = `slot-feat-${i}`;
+    const label = count > 1 ? `Feat. ${i + 1}` : 'Feat.';
+    slot.innerHTML = `<span class="slot-label">${label}</span><div class="slot-val">???</div>`;
+    ui.slotsWrap.insertBefore(slot, ui.slotTitle);
+  }
+}
+function getFeatSlot(i) { return document.getElementById(`slot-feat-${i}`); }
+
+let personalFound = { artist: false, feats: [], title: false };
 let feedTimer;
 let _prevScores = {}; // name → score, to detect score changes for flash
 
@@ -193,7 +209,8 @@ socket.on('game_starting', () => {
 });
 
 socket.on('start_round', data => {
-  personalFound = { artist: false, feat: false, title: false };
+  const featCount = data.featCount || 0;
+  personalFound = { artist: false, feats: new Array(featCount).fill(false), title: false };
 
   ui.roundInfo.textContent = `Manche ${data.round} / ${data.total}`;
 
@@ -202,13 +219,8 @@ socket.on('start_round', data => {
   ui.coverImg.src = '';
   ui.placeholder.style.display = 'flex';
 
-  // Show/hide feat slot and reset all slots
-  if (data.hasFeat) {
-    ui.slotFeat.style.display = '';
-    setSlot(ui.slotFeat, '???', null);
-  } else {
-    ui.slotFeat.style.display = 'none';
-  }
+  // Rebuild feat slots
+  setFeatSlots(featCount);
   setSlot(ui.slotArtist, '???', null);
   setSlot(ui.slotTitle,  '???', null);
 
@@ -252,8 +264,10 @@ socket.on('feedback', data => {
     personalFound.artist = true;
   }
   if (data.type === 'success_feat') {
-    setSlot(ui.slotFeat, data.val, 'found');
-    personalFound.feat = true;
+    const fi = data.featIndex ?? 0;
+    const slot = getFeatSlot(fi);
+    if (slot) setSlot(slot, data.val, 'found');
+    personalFound.feats[fi] = true;
   }
   if (data.type === 'success_title') {
     setSlot(ui.slotTitle, data.val, 'found');
@@ -274,21 +288,21 @@ socket.on('reveal_cover', ({ cover }) => {
 });
 
 socket.on('round_end', data => {
-  // answer = "FullArtist - Title"; use server-provided featArtist for correctness
-  const dashIdx = data.answer.indexOf(' - ');
+  const dashIdx    = data.answer.indexOf(' - ');
   const fullArtist = dashIdx > -1 ? data.answer.slice(0, dashIdx) : data.answer;
   const title      = dashIdx > -1 ? data.answer.slice(dashIdx + 3) : '—';
-
-  const featArtist = data.featArtist || null;
-  const mainArtist = featArtist ? _parseFeat(fullArtist).main : fullArtist;
+  const feats      = data.featArtists || [];
+  const mainArtist = feats.length ? _parseFeat(fullArtist).main : fullArtist;
 
   setSlot(ui.slotArtist, mainArtist, data.foundArtist ? 'found' : 'missed');
-  if (featArtist) {
-    ui.slotFeat.style.display = '';
-    setSlot(ui.slotFeat, featArtist, data.foundFeat ? 'found' : 'missed');
-  } else {
-    ui.slotFeat.style.display = 'none';
-  }
+
+  // Ensure the right number of feat slots exist, then reveal each
+  setFeatSlots(feats.length);
+  feats.forEach((fa, i) => {
+    const slot = getFeatSlot(i);
+    if (slot) setSlot(slot, fa, (data.foundFeats || [])[i] ? 'found' : 'missed');
+  });
+
   setSlot(ui.slotTitle, title || '—', data.foundTitle ? 'found' : 'missed');
 
   if (data.cover) {
