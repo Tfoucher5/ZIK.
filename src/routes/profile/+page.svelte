@@ -6,6 +6,7 @@
   const sb = _ctx.sb;
   const openAuthModal = _ctx.openAuthModal;
   const user = $derived(_ctx.user);
+  const authReady = $derived(_ctx.authReady);
 
   let profile     = $state(null);
   let stats       = $state(null);
@@ -113,7 +114,7 @@
 </svelte:head>
 
 <div id="profile-page">
-{#if loading}
+{#if loading || !authReady}
   <div class="pl-loading">Chargement...</div>
 {:else if !user}
   <div class="profile-auth-wall">

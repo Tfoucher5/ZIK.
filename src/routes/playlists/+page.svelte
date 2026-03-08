@@ -7,6 +7,7 @@
   const openAuthModal = _ctx.openAuthModal;
   const spotifyClientId = _ctx.spotifyClientId;
   const user = $derived(_ctx.user);
+  const authReady = $derived(_ctx.authReady);
 
   // Playlists list
   let playlists = $state([]);
@@ -159,7 +160,8 @@
 
   async function loadPlaylists() {
     plLoading = true;
-    const { data, error } = await sb.from('custom_playlists').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false });
+    const { data, error } = await sb.from('custom_playlists').select('*, custom_playlist_tracks!playlist_id(count)').eq('owner_id', user.id).order('updated_at', { ascending: false });
+    if (data) data.forEach(pl => { pl.track_count = pl.custom_playlist_tracks?.[0]?.count ?? 0; });
     plLoading = false;
     playlists = error ? [] : (data || []);
   }
@@ -454,7 +456,9 @@
 </div>
 
 <div class="pl-main">
-  {#if !user}
+  {#if !authReady && !user}
+    <div class="pl-loading">Chargement...</div>
+  {:else if !user}
     <div class="auth-wall">
       <div class="auth-wall-icon">&#x1F3B5;</div>
       <h2>Connecte-toi pour accéder à tes playlists</h2>
@@ -476,7 +480,7 @@
         <div class="pl-card" onclick={() => openEditor(pl)}>
           <span class="pl-card-emoji">{pl.emoji}</span>
           <div class="pl-card-name">{pl.name}</div>
-          <div class="pl-card-meta">{pl.track_count} titre{pl.track_count !== 1 ? 's' : ''}</div>
+          <div class="pl-card-meta">{pl.track_count ?? 0} titre{(pl.track_count ?? 0) !== 1 ? 's' : ''}</div>
           <div class="pl-card-footer">
             <span class="pl-card-badge {pl.is_public ? '' : 'private'}">{pl.is_public ? 'Publique' : 'Privée'}</span>
             <button class="pl-card-edit" onclick={e => { e.stopPropagation(); openEditor(pl); }}>Modifier &rarr;</button>

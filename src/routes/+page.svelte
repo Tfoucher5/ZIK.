@@ -145,7 +145,7 @@
         oninput={e => { roomCodeVal = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); }}
         onkeypress={e => { if (e.key === 'Enter') joinByCode(); }}>
       <button class="btn-accent sm" onclick={joinByCode} disabled={roomCodeLoading}>
-        {roomCodeLoading ? '...' : 'Rejoindre &rarr;'}
+        {roomCodeLoading ? '...' : 'Rejoindre →'}
       </button>
     </div>
     {#if roomCodeErr}<p class="private-room-err">{roomCodeErr}</p>{/if}

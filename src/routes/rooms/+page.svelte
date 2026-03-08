@@ -5,6 +5,7 @@
   const sb = _ctx.sb;
   const openAuthModal = _ctx.openAuthModal;
   const user = $derived(_ctx.user);
+  const authReady = $derived(_ctx.authReady);
 
   let tab          = $state('public');
   let pubSearch    = $state('');
@@ -186,7 +187,9 @@
 </div>
 
 <div class="pl-main">
-  {#if !user}
+  {#if !authReady}
+    <div class="pl-loading">Chargement...</div>
+  {:else if !user}
     <div class="auth-wall">
       <div class="auth-wall-icon">&#x1F512;</div>
       <h2>Connecte-toi pour acc&eacute;der aux rooms</h2>

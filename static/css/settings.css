@@ -66,8 +66,9 @@
 }
 #pref-volume {
   -webkit-appearance: none; appearance: none;
-  width: 120px; height: 4px; cursor: pointer; border-radius: 99px;
-  background: rgba(255,255,255,.12); outline: none; border: none;
+  width: 140px; height: 4px; cursor: pointer; border-radius: 99px;
+  background: linear-gradient(to right, var(--accent) var(--vol, 50%), rgba(255,255,255,.12) var(--vol, 50%));
+  outline: none; border: none;
 }
 #pref-volume::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;

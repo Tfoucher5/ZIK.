@@ -7,6 +7,8 @@
   onMount(() => {
     animOn = localStorage.getItem('zik_animations') !== 'off';
     volVal = parseInt(localStorage.getItem('zik_vol') ?? '50');
+    const el = document.getElementById('pref-volume');
+    if (el) el.style.setProperty('--vol', volVal + '%');
   });
 
   function toggleAnim(e) {
@@ -17,6 +19,7 @@
 
   function changeVol(e) {
     volVal = parseInt(e.target.value);
+    e.target.style.setProperty('--vol', volVal + '%');
     localStorage.setItem('zik_vol', volVal);
   }
 </script>

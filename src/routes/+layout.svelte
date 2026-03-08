@@ -10,12 +10,14 @@
   const sb = createSupabaseClient(supabaseUrl, supabaseAnonKey);
 
   let currentUser = $state(null);
+  let authReady   = $state(false);
   let authOpen    = $state(false);
   let authView    = $state('login');
 
   setContext('zik', {
-    get sb()   { return sb; },
-    get user() { return currentUser; },
+    get sb()          { return sb; },
+    get user()        { return currentUser; },
+    get authReady()   { return authReady; },
     openAuthModal,
     get spotifyClientId() { return spotifyClientId; },
   });
@@ -65,6 +67,7 @@
     const { data: { session } } = await sb.auth.getSession();
     if (session?.user) await applyUser(session.user);
 
+    authReady = true;
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         await applyUser(session.user);

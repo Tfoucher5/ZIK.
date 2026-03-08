@@ -31,20 +31,36 @@
 .auth-wall p { color: var(--mid); font-size: .9rem; }
 
 /* ── Playlists grid ──────────────────────────────────────────────────────────── */
-.playlists-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.playlists-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+}
+@media (min-width: 480px) {
+  .playlists-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 800px) {
+  .playlists-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1100px) {
+  .playlists-grid { grid-template-columns: repeat(4, 1fr); }
+}
 
 .pl-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-  padding: 22px; cursor: pointer;
+  padding: 20px; cursor: pointer;
   transition: transform .2s, border-color .2s, box-shadow .2s;
   position: relative;
+  display: flex; flex-direction: column;
+  min-height: 140px;
 }
 .pl-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.15); box-shadow: 0 16px 40px rgba(0,0,0,.4); }
 
 .pl-card-emoji { font-size: 2rem; margin-bottom: 12px; display: block; }
 .pl-card-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
-.pl-card-meta { font-size: .75rem; color: var(--dim); margin-bottom: 16px; }
-.pl-card-footer { display: flex; align-items: center; justify-content: space-between; }
+.pl-card-meta { font-size: .75rem; color: var(--dim); margin-bottom: 8px; }
+.pl-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 12px; }
 .pl-card-badge {
   font-size: .65rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
   padding: 3px 8px; border-radius: 4px;
