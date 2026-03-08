@@ -224,16 +224,6 @@
   </div>
 </section>
 
-<footer class="site-footer">
-  <span class="nav-logo">ZIK<span>.</span></span>
-  <span>&copy; 2025 ZIK &mdash; Blind Test Multijoueur</span>
-  <div class="footer-links">
-    <a href="/cgu">CGU</a>
-    <a href="/confidentialite">Confidentialit&eacute;</a>
-    <a href="mailto:contact@zik.app">Contact</a>
-  </div>
-</footer>
-
 <!-- Guest modal -->
 {#if guestOpen}
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
