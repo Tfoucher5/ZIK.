@@ -1,9 +1,21 @@
 <script>
   import { onMount, getContext } from 'svelte';
 
-  const { sb, user, openAuthModal } = getContext('zik');
+  const _ctx = getContext('zik');
+  const sb = _ctx.sb;
+  const openAuthModal = _ctx.openAuthModal;
+  const user = $derived(_ctx.user);
 
   let tab          = $state('public');
+  let pubSearch    = $state('');
+  const filteredPublic = $derived(
+    pubSearch.trim()
+      ? publicRooms.filter(r =>
+          r.name?.toLowerCase().includes(pubSearch.toLowerCase()) ||
+          r.profiles?.username?.toLowerCase().includes(pubSearch.toLowerCase())
+        )
+      : publicRooms
+  );
   let publicRooms  = $state([]);
   let myRooms      = $state([]);
   let userPlaylists = $state([]);
@@ -191,13 +203,16 @@
     </div>
 
     {#if tab === 'public'}
+      <div class="rooms-search-wrap">
+        <input class="rooms-search" type="search" bind:value={pubSearch} placeholder="Rechercher une room..." />
+      </div>
       {#if pubLoading}
         <div class="pl-loading">Chargement...</div>
       {:else if !publicRooms.length}
         <div class="rooms-empty"><span>&#x1F30E;</span><p>Aucune room publique pour l&apos;instant.<br>Sois le premier &agrave; en cr&eacute;er une !</p></div>
       {:else}
-        <div class="playlists-grid">
-          {#each publicRooms as r (r.id)}
+        <div class="rooms-grid">
+          {#each filteredPublic as r (r.id)}
             <div class="room-card">
               <div class="room-card-head">
                 <span class="room-card-emoji">{r.emoji}</span>
@@ -231,7 +246,7 @@
           <button class="btn-accent sm" onclick={openCreate} style="margin-top:16px">+ Cr&eacute;er une room</button>
         </div>
       {:else}
-        <div class="playlists-grid">
+        <div class="rooms-grid">
           {#each myRooms as r (r.id)}
             <div class="room-card">
               <div class="room-card-head">

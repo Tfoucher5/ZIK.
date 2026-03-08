@@ -2,7 +2,11 @@
   import { onMount, getContext } from 'svelte';
   import { page } from '$app/stores';
 
-  const { sb, user, openAuthModal, spotifyClientId } = getContext('zik');
+  const _ctx = getContext('zik');
+  const sb = _ctx.sb;
+  const openAuthModal = _ctx.openAuthModal;
+  const spotifyClientId = _ctx.spotifyClientId;
+  const user = $derived(_ctx.user);
 
   // Playlists list
   let playlists = $state([]);
@@ -34,7 +38,7 @@
   let spotifyUrl       = $state('');
   let spImportPreview  = $state(null);
   let spLoading        = $state(false);
-  let spConnected      = $derived(!!getSpotifyToken());
+  let spConnected      = $state(false);
 
   // Import Deezer
   let deezerUrl       = $state('');
@@ -105,7 +109,7 @@
     window.location.href = 'https://accounts.spotify.com/authorize?' + params;
   }
 
-  function disconnectSpotify() { clearSpotifyToken(); toast('Spotify d\u00e9connect\u00e9.', 'success'); }
+  function disconnectSpotify() { clearSpotifyToken(); spConnected = false; toast('Spotify d\u00e9connect\u00e9.', 'success'); }
 
   async function handleSpotifyCallback() {
     const params = new URLSearchParams(window.location.search);
@@ -129,6 +133,7 @@
       sessionStorage.setItem('sp_token',     json.access_token);
       sessionStorage.setItem('sp_token_exp', Date.now() + json.expires_in * 1000);
       sessionStorage.removeItem('sp_verifier');
+      spConnected = true;
       toast('Spotify connect\u00e9 !', 'success');
     } catch (e) { toast('Erreur Spotify : ' + e.message, 'error'); }
   }
@@ -136,6 +141,7 @@
   // ─── Init ──────────────────────────────────────────────────────────────────
   onMount(async () => {
     await handleSpotifyCallback();
+    spConnected = !!getSpotifyToken();
     if (!sb || !user) { plLoading = false; return; }
     await loadPlaylists();
   });
@@ -440,7 +446,7 @@
 <div class="pl-header">
   <div class="pl-header-inner">
     <h1>Mes <em>Playlists</em></h1>
-    <p class="pl-sub">Cr\u00e9e et g\u00e8re tes playlists personnalis\u00e9es pour le blind test.</p>
+    <p class="pl-sub">Crée et gère tes playlists personnalisées pour le blind test.</p>
     {#if user}
       <button class="btn-accent" onclick={() => openPlModal()}>+ Nouvelle playlist</button>
     {/if}
@@ -451,11 +457,11 @@
   {#if !user}
     <div class="auth-wall">
       <div class="auth-wall-icon">&#x1F3B5;</div>
-      <h2>Connecte-toi pour acc\u00e9der \u00e0 tes playlists</h2>
-      <p>Cr\u00e9e un compte gratuit pour sauvegarder et partager tes playlists.</p>
+      <h2>Connecte-toi pour accéder à tes playlists</h2>
+      <p>Crée un compte gratuit pour sauvegarder et partager tes playlists.</p>
       <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
         <button class="btn-ghost" onclick={() => openAuthModal('login')}>Se connecter</button>
-        <button class="btn-accent" onclick={() => openAuthModal('register')}>Cr\u00e9er un compte</button>
+        <button class="btn-accent" onclick={() => openAuthModal('register')}>Créer un compte</button>
       </div>
     </div>
   {:else if plLoading}
@@ -472,7 +478,7 @@
           <div class="pl-card-name">{pl.name}</div>
           <div class="pl-card-meta">{pl.track_count} titre{pl.track_count !== 1 ? 's' : ''}</div>
           <div class="pl-card-footer">
-            <span class="pl-card-badge {pl.is_public ? '' : 'private'}">{pl.is_public ? 'Publique' : 'Priv\u00e9e'}</span>
+            <span class="pl-card-badge {pl.is_public ? '' : 'private'}">{pl.is_public ? 'Publique' : 'Privée'}</span>
             <button class="pl-card-edit" onclick={e => { e.stopPropagation(); openEditor(pl); }}>Modifier &rarr;</button>
           </div>
         </div>
@@ -487,7 +493,7 @@
   <div class="modal modal-lg">
     <button class="close-btn" onclick={() => plModalOpen = false}>&#x2715;</button>
     <h2>{editingPl ? 'Modifier la playlist' : 'Nouvelle playlist'}</h2>
-    <p class="mdesc">Donne un nom et un emoji \u00e0 ta playlist.</p>
+    <p class="mdesc">Donne un nom et un emoji à ta playlist.</p>
     <div class="pl-form-row">
       <div class="field" style="flex:0 0 80px"><label>Emoji</label><input type="text" bind:value={plEmoji} maxlength="4" class="emoji-input"></div>
       <div class="field" style="flex:1"><label>Nom</label><input id="pl-name-input" type="text" bind:value={plName} placeholder="Ma playlist rap" maxlength="60"
@@ -502,7 +508,7 @@
     {#if plError}<div class="alert-err">{plError}</div>{/if}
     <div class="modal-footer">
       <button class="btn-ghost" onclick={() => plModalOpen = false}>Annuler</button>
-      <button class="btn-accent" onclick={savePl} disabled={plSaving}>{plSaving ? '...' : editingPl ? 'Enregistrer' : 'Cr\u00e9er'}</button>
+      <button class="btn-accent" onclick={savePl} disabled={plSaving}>{plSaving ? '...' : editingPl ? 'Enregistrer' : 'Créer'}</button>
     </div>
   </div>
 </div>
@@ -538,7 +544,7 @@
         </label>
       </div>
       <div class="admin-row">
-        <label class="admin-label" style="flex:1">Room li\u00e9e</label>
+        <label class="admin-label" style="flex:1">Room liée</label>
         <select bind:value={adminLinkedRoom} class="admin-select">
           <option value="">&mdash; Aucune &mdash;</option>
           {#each adminOfficials as r (r.id)}
@@ -582,7 +588,7 @@
             <span class="track-source">{t.source}</span>
             <button class="track-add-btn" class:added={_addingIdx[i] === 'done'}
               onclick={() => addFromSearch(i)} disabled={!!_addingIdx[i]}>
-              {_addingIdx[i] === 'done' ? '&#x2713; Ajout\u00e9' : _addingIdx[i] ? '...' : '+ Ajouter'}
+              {_addingIdx[i] === 'done' ? '&#x2713; Ajouté' : _addingIdx[i] ? '...' : '+ Ajouter'}
             </button>
           </div>
         {/each}
@@ -593,16 +599,16 @@
     {:else if editorTab === 'import-spotify'}
     <div class="tab-pane">
       {#if !spotifyClientId}
-        <p class="import-hint" style="color:#f87171">Spotify non configur\u00e9. Ajoute <code>SPOTIFY_CLIENT_ID</code> dans ton fichier <code>.env</code>.</p>
+        <p class="import-hint" style="color:#f87171">Spotify non configuré. Ajoute <code>SPOTIFY_CLIENT_ID</code> dans ton fichier <code>.env</code>.</p>
       {:else if !spConnected}
-        <p class="import-hint">Connecte ton compte Spotify pour importer tes playlists (publiques et priv\u00e9es).</p>
+        <p class="import-hint">Connecte ton compte Spotify pour importer tes playlists (publiques et privées).</p>
         <button class="btn-spotify" onclick={connectSpotify}>Connecter Spotify</button>
       {:else}
         <div class="spotify-connected-bar">
-          <span class="spotify-connected-label">&#x2713; Spotify connect\u00e9</span>
-          <button class="btn-link-sm" onclick={disconnectSpotify}>D\u00e9connecter</button>
+          <span class="spotify-connected-label">&#x2713; Spotify connecté</span>
+          <button class="btn-link-sm" onclick={disconnectSpotify}>Déconnecter</button>
         </div>
-        <p class="import-hint">Colle l\u2019URL ou l\u2019ID d\u2019une playlist Spotify.</p>
+        <p class="import-hint">Colle l’URL ou l’ID d’une playlist Spotify.</p>
         <div class="search-bar">
           <input type="text" bind:value={spotifyUrl} placeholder="https://open.spotify.com/playlist/... ou ID"
             onkeypress={e => { if (e.key === 'Enter') importSpotify(); }}>
@@ -629,7 +635,7 @@
     <!-- Tab: import-deezer -->
     {:else if editorTab === 'import-deezer'}
     <div class="tab-pane">
-      <p class="import-hint">Colle l\u2019URL ou l\u2019ID d\u2019une playlist Deezer publique.</p>
+      <p class="import-hint">Colle l’URL ou l’ID d’une playlist Deezer publique.</p>
       <div class="search-bar">
         <input type="text" bind:value={deezerUrl} placeholder="https://www.deezer.com/playlist/... ou ID"
           onkeypress={e => { if (e.key === 'Enter') importDeezer(); }}>
@@ -665,7 +671,7 @@
           <input type="url" bind:value={manPreview} placeholder="https://...mp3">
         </div>
         {#if manError}<div class="alert-err">{manError}</div>{/if}
-        <button class="btn-accent" onclick={addManual}>Ajouter \u00e0 la playlist</button>
+        <button class="btn-accent" onclick={addManual}>Ajouter à la playlist</button>
       </div>
     </div>
     {/if}
@@ -702,14 +708,14 @@
   <div class="modal modal-lg">
     <button class="close-btn" onclick={() => rsOpen = false}>&#x2715;</button>
     <div class="room-eph-header">
-      <span class="room-eph-badge">&#x26A1; Room \u00e9ph\u00e9m\u00e8re</span>
+      <span class="room-eph-badge">&#x26A1; Room éphémère</span>
       <h2>Lancer une room</h2>
       <p class="mdesc">Playlist : {editorPl?.emoji} {editorPl?.name} &mdash; {editorTracks.length} titre{editorTracks.length !== 1 ? 's' : ''}</p>
     </div>
     <div class="room-eph-notice">
       <span class="room-eph-icon">&#x1F4A1;</span>
-      <div>Cette room est <strong>temporaire</strong> &mdash; elle dispara\u00eetra automatiquement apr\u00e8s 4h d&apos;inactivit\u00e9.
-        Pour cr\u00e9er une room permanente, <a href="/rooms" class="room-eph-link">rendez-vous sur la page Rooms</a>.</div>
+      <div>Cette room est <strong>temporaire</strong> &mdash; elle disparaîtra automatiquement après 4h d&apos;inactivité.
+        Pour créer une room permanente, <a href="/rooms" class="room-eph-link">rendez-vous sur la page Rooms</a>.</div>
     </div>
     <div class="room-settings">
       <div class="room-setting-row">
@@ -718,7 +724,7 @@
         <span class="room-setting-val">{rsRounds}</span>
       </div>
       <div class="room-setting-row">
-        <label>Dur\u00e9e d\u2019une manche (sec)</label>
+        <label>Durée d’une manche (sec)</label>
         <input type="range" bind:value={rsDuration} min="10" max="60" step="5">
         <span class="room-setting-val">{rsDuration}s</span>
       </div>
@@ -731,7 +737,7 @@
     {#if rsError}<div class="alert-err">{rsError}</div>{/if}
     <div class="modal-footer">
       <button class="btn-ghost" onclick={() => rsOpen = false}>Annuler</button>
-      <button class="btn-accent" onclick={createRoom} disabled={rsSaving}>{rsSaving ? 'Cr\u00e9ation...' : 'Cr\u00e9er la room'}</button>
+      <button class="btn-accent" onclick={createRoom} disabled={rsSaving}>{rsSaving ? 'Création...' : 'Créer la room'}</button>
     </div>
   </div>
 </div>
@@ -742,8 +748,8 @@
 <div class="overlay" role="dialog" aria-modal="true" onclick={e => { if (e.target === e.currentTarget) rcOpen = false; }}>
   <div class="modal modal-lg">
     <button class="close-btn" onclick={() => rcOpen = false}>&#x2715;</button>
-    <h2>Room cr\u00e9\u00e9e !</h2>
-    <p class="mdesc">Partage ce code \u00e0 tes amis pour qu\u2019ils rejoignent la room.</p>
+    <h2>Room créée !</h2>
+    <p class="mdesc">Partage ce code à tes amis pour qu’ils rejoignent la room.</p>
     <div class="room-code-box">
       <div class="room-code-label">Code de la room</div>
       <div class="room-code">{rcCode}</div>

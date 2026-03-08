@@ -2,7 +2,10 @@
   import { onMount, getContext } from 'svelte';
   import { dicebear } from '$lib/utils.js';
 
-  const { sb, user, openAuthModal } = getContext('zik');
+  const _ctx = getContext('zik');
+  const sb = _ctx.sb;
+  const openAuthModal = _ctx.openAuthModal;
+  const user = $derived(_ctx.user);
 
   let profile     = $state(null);
   let stats       = $state(null);
@@ -85,10 +88,11 @@
 
     editLoading = true;
     try {
+      const { data: { session } } = await sb.auth.getSession();
       const r = await fetch('/api/profile/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, username, avatar_url: avatar_url || null }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ username, avatar_url: avatar_url || null }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
@@ -108,6 +112,7 @@
   <link rel="stylesheet" href="/css/profile.css">
 </svelte:head>
 
+<div id="profile-page">
 {#if loading}
   <div class="pl-loading">Chargement...</div>
 {:else if !user}
@@ -164,6 +169,8 @@
     </div>
   </div>
 {/if}
+
+</div>
 
 <!-- Edit profile modal -->
 {#if editOpen}

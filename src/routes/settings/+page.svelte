@@ -28,7 +28,7 @@
 
 <main class="settings-page">
   <div class="settings-container">
-    <a href="javascript:history.back()" class="settings-back">&larr; Retour</a>
+    <button class="settings-back" onclick={() => history.back()}>&larr; Retour</button>
     <h1 class="settings-title">Param&egrave;tres</h1>
     <p class="settings-sub">Personnalise ton exp&eacute;rience ZIK.</p>
 
@@ -54,7 +54,7 @@
           <div class="settings-row-desc">Volume de la musique au d&eacute;marrage d&apos;une partie.</div>
         </div>
         <div class="settings-vol-wrap">
-          <input type="range" min="0" max="100" step="5" value={volVal} oninput={changeVol}>
+          <input id="pref-volume" type="range" min="0" max="100" step="5" value={volVal} oninput={changeVol}>
           <span class="settings-vol-val">{volVal}%</span>
         </div>
       </div>

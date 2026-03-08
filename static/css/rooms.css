@@ -96,3 +96,28 @@
   transition: background .15s;
 }
 .btn-delete-room:hover { background: rgba(239,68,68,.1); }
+
+/* ── Rooms grid (wider than playlists) ───────────────────────────────────── */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+@media (min-width: 960px)  { .rooms-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); } }
+@media (min-width: 1280px) { .rooms-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* ── Search bar ───────────────────────────────────────────────────────────── */
+.rooms-search-wrap { margin-bottom: 20px; }
+.rooms-search {
+  width: 100%; max-width: 420px;
+  padding: 10px 16px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font: .875rem/1 'Inter', sans-serif;
+  outline: none;
+  transition: border-color .2s;
+}
+.rooms-search:focus { border-color: var(--accent); }
+.rooms-search::placeholder { color: var(--dim); }
