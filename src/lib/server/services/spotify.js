@@ -32,7 +32,9 @@ export function normalizeSpotifyItem(i) {
   return {
     external_id: t.id,
     source:      'spotify',
-    artist:      t.artists?.map(a => a.name).join(', ') || '?',
+    artist:      t.artists?.length > 1
+      ? `${t.artists[0].name} (feat. ${t.artists.slice(1).map(a => a.name).join(', ')})`
+      : (t.artists?.[0]?.name || '?'),
     title:       t.name,
     preview_url: t.preview_url || null,
     cover_url:   t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || null,

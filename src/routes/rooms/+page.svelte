@@ -54,6 +54,16 @@
 
   onMount(() => { loadPublicRooms(); });
 
+  // Reload my rooms when user auth resolves after page load
+  let _lastRoomsUid = null;
+  $effect(() => {
+    const uid = user?.id;
+    if (uid && uid !== _lastRoomsUid && sb) {
+      _lastRoomsUid = uid;
+      if (tab === 'mine') loadMyRooms();
+    }
+  });
+
   async function getToken() {
     const { data: { session } } = await sb.auth.getSession();
     return session?.access_token || null;

@@ -147,6 +147,16 @@
     await loadPlaylists();
   });
 
+  // Reload playlists when user logs in after page load (async auth resolution)
+  let _lastLoadedUid = null;
+  $effect(() => {
+    const uid = user?.id;
+    if (uid && uid !== _lastLoadedUid && sb) {
+      _lastLoadedUid = uid;
+      loadPlaylists();
+    }
+  });
+
   async function ensureSession() {
     const { data: { session }, error } = await sb.auth.getSession();
     if (error || !session) throw new Error('Session expir\u00e9e \u2014 reconnecte-toi.');

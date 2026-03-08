@@ -51,6 +51,9 @@
   function setVol(v) {
     volValue = v;
     if (ytPlayer?.setVolume) ytPlayer.setVolume(v);
+    const previewAudio = browser ? document.getElementById('previewAudio') : null;
+    if (previewAudio) previewAudio.volume = v / 100;
+    document.getElementById('volSlider')?.style.setProperty('--vol', v + '%');
     if (browser) localStorage.setItem('zik_vol', v);
   }
 
@@ -59,6 +62,17 @@
     ytPlayer.mute();
     ytPlayer.loadVideoById({ videoId, startSeconds });
   }
+  function loadPreview(previewUrl) {
+    const audio = document.getElementById('previewAudio');
+    if (!audio) return;
+    if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
+    audio.pause();
+    audio.src = previewUrl;
+    audio.volume = savedVol() / 100;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+
   function stopVideo() { if (ytReady && ytPlayer) ytPlayer.stopVideo(); }
 
   function showFeedback(msg, cls) {
@@ -101,6 +115,7 @@
     IS_GUEST = P.get('isGuest') === '1' || !USER_ID;
 
     volValue = savedVol();
+    setTimeout(() => document.getElementById('volSlider')?.style.setProperty('--vol', volValue + '%'), 50);
 
     // Load socket.io dynamically
     const { io } = await import('socket.io-client');
@@ -149,7 +164,12 @@
       showStart = false; startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
       _roundActive = true;
       _lastVideo = { videoId: data.videoId, startSeconds: data.startSeconds, startedAt: Date.now() };
-      loadVideo(data.videoId, data.startSeconds);
+      if (data.previewUrl) {
+        loadPreview(data.previewUrl);
+      } else {
+        loadVideo(data.videoId, data.startSeconds);
+      }
+      setTimeout(() => document.getElementById('guessInput')?.focus(), 200);
     });
     socket.on('timer_update', ({ current, max }) => {
       timerPct = (current / max) * 100;
@@ -243,6 +263,7 @@
   </div>
 {/if}
 
+<audio id="previewAudio" style="display:none" preload="auto"></audio>
 <div id="app">
   <!-- Timer bar -->
   <div id="timer-wrap">

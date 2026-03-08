@@ -93,7 +93,7 @@ function endRound(roomId, reason, io) {
   game.isActive = false;
 
   const summary = {
-    answer:      `${displayString(game.currentTrack.artist)} - ${displayString(game.currentTrack.title)}`,
+    answer:      `${displayString(game.currentTrack.mainArtist || game.currentTrack.artist)} - ${displayString(game.currentTrack.title)}`,
     cover:       game.currentTrack.cover,
     reason,
     firstFinder: game.firstFullFinder,
@@ -151,7 +151,7 @@ async function startNextRound(roomId, io) {
   game.currentTrack = game.sessionPlaylist.pop();
 
   try {
-    const r         = await yts(`${game.currentTrack.artist} ${game.currentTrack.title} topic`);
+    const r         = await yts(`${game.currentTrack.mainArtist || game.currentTrack.artist} ${game.currentTrack.title} topic`);
     if (!r.videos?.length) throw new Error('No video');
 
     const video     = r.videos[0];
@@ -166,6 +166,7 @@ async function startNextRound(roomId, io) {
       round:        game.currentRound,
       total:        game.maxRounds,
       featCount:    game.currentTrack.featArtists.length,
+      previewUrl:   game.currentTrack.preview_url || null,
     };
 
     io.to(`room:${roomId}`).emit('start_round', game.lastRoundData);
@@ -213,51 +214,28 @@ async function saveGameResults(roomId, finalScores) {
 
 /**
  * Returns true if the player's input should count as a match for the target.
- * Smart comparison: handles substrings, typos, short names, partials.
+ * Uses GLOBAL similarity only — no word decomposition (prevents single-word cheating).
  */
 function checkMatch(input, target) {
   if (!input || !target) return false;
-  const len    = input.length;
-  const tLen   = target.length;
+  const len  = input.length;
+  const tLen = target.length;
 
-  // Exact
+  // Exact match
   if (input === target) return true;
 
-  // Substring containment (input is clearly part of the answer)
-  if (len >= 2 && tLen >= 2) {
-    if (target.includes(input)) return true;
-    if (len >= tLen - 1 && input.includes(target)) return true;
-  }
+  // Substring containment: input is fully contained in target (or near-complete)
+  // Only accept if input is at least 40% of target length to avoid false positives
+  if (len >= 3 && target.includes(input) && len / tLen >= 0.40) return true;
 
+  // Target contained in input (player typed extra words around the answer)
+  if (tLen >= 3 && input.includes(target) && tLen / len >= 0.60) return true;
+
+  // Global string similarity — no word decomposition
   const sim = stringSimilarity.compareTwoStrings(input, target);
-
-  // Very short inputs: require high similarity or exact word
-  if (len <= 2) return sim >= 0.95;
-
-  // Standard threshold
-  if (sim >= 0.72) return true;
-
-  // Longer inputs: slightly looser (handles extra words in title)
-  if (len >= 5 && sim >= 0.62) return true;
-
-  // Word-by-word: input matches a significant word in the target
-  const totalLen = target.replace(/\s+/g, '').length || 1;
-  const words    = target.split(/\s+/).filter(w => w.length >= 2);
-  const wordHit  = words.some(w => {
-    const ws = stringSimilarity.compareTwoStrings(input, w);
-    // Must be a meaningful word (>= 40% of target length) with high similarity
-    return ws >= 0.82 && w.length / totalLen >= 0.40;
-  });
-  if (wordHit) return true;
-
-  // Multi-word input: check each word of input against the target
-  if (len >= 6 && input.includes(' ')) {
-    const inputWords = input.split(/\s+/).filter(w => w.length >= 3);
-    const matchRatio = inputWords.filter(iw =>
-      target.includes(iw) || stringSimilarity.compareTwoStrings(iw, target) >= 0.75
-    ).length / (inputWords.length || 1);
-    if (matchRatio >= 0.7) return true;
-  }
+  if (len <= 2) return sim >= 0.95;     // Short inputs: very strict
+  if (sim >= 0.72) return true;          // Standard threshold
+  if (len >= 6 && sim >= 0.65) return true; // Longer inputs: slightly looser (typos)
 
   return false;
 }
