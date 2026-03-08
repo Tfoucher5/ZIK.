@@ -1,8 +1,11 @@
 <script>
   import { onMount, setContext } from 'svelte';
+  import { page } from '$app/state';
   import Nav from '$lib/components/Nav.svelte';
   import AuthModal from '$lib/components/AuthModal.svelte';
   import { createSupabaseClient } from '$lib/supabase.js';
+
+  const isGame = $derived(page.url.pathname.startsWith('/game'));
 
   let { data, children } = $props();
 
@@ -86,15 +89,18 @@
   <link rel="stylesheet" href="/css/home.css">
 </svelte:head>
 
+{#if !isGame}
 <Nav
   user={currentUser}
   onLogin={() => openAuthModal('login')}
   onRegister={() => openAuthModal('register')}
   onLogout={() => sb?.auth.signOut()}
 />
+{/if}
 
 {@render children()}
 
+{#if !isGame}
 <footer class="site-footer">
   <span class="nav-logo">ZIK<span>.</span></span>
   <span>&copy; 2025 ZIK &mdash; Blind Test Multijoueur</span>
@@ -104,6 +110,7 @@
     <a href="mailto:contact@zik.app">Contact</a>
   </div>
 </footer>
+{/if}
 
 <AuthModal
   {sb}

@@ -4,7 +4,10 @@
   padding: calc(var(--nav-h) + 32px) 24px 80px;
 }
 .settings-back {
-  display: inline-block; font-size: .82rem; color: var(--mid);
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: inherit; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .82rem; color: var(--mid);
   font-weight: 500; margin-bottom: 20px;
   transition: color .15s;
 }

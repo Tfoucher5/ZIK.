@@ -4,7 +4,6 @@ const stringSimilarity = require('string-similarity');
 const yts              = require('yt-search');
 
 import { supabase }  from '../config.js';
-import ROOMS         from '../rooms.js';
 import { playlistCache, customRooms, dbRooms, roomGames } from '../state.js';
 import { loadPlaylist, cleanString, displayString, buildTrack, calcSpeedBonus } from '../services/playlist.js';
 
@@ -30,7 +29,7 @@ function getOrCreateRoom(roomId) {
     game: {
       isActive:         false,
       currentRound:     0,
-      maxRounds:        cust?.max_rounds || cust?.maxRounds || ROOMS[roomId]?.maxRounds || 10,
+      maxRounds:        cust?.max_rounds || cust?.maxRounds || 10,
       roundDuration:    cust?.round_duration || cust?.roundDuration || DEFAULT_ROUND_DURATION,
       breakDuration:    cust?.break_duration || cust?.breakDuration || DEFAULT_BREAK_DURATION,
       timer:            0,
@@ -212,15 +211,73 @@ async function saveGameResults(roomId, finalScores) {
   }
 }
 
-function wordMatch(input, target) {
-  if (input.length < 2) return false;
+/**
+ * Returns true if the player's input should count as a match for the target.
+ * Smart comparison: handles substrings, typos, short names, partials.
+ */
+function checkMatch(input, target) {
+  if (!input || !target) return false;
+  const len    = input.length;
+  const tLen   = target.length;
+
+  // Exact
+  if (input === target) return true;
+
+  // Substring containment (input is clearly part of the answer)
+  if (len >= 2 && tLen >= 2) {
+    if (target.includes(input)) return true;
+    if (len >= tLen - 1 && input.includes(target)) return true;
+  }
+
+  const sim = stringSimilarity.compareTwoStrings(input, target);
+
+  // Very short inputs: require high similarity or exact word
+  if (len <= 2) return sim >= 0.95;
+
+  // Standard threshold
+  if (sim >= 0.72) return true;
+
+  // Longer inputs: slightly looser (handles extra words in title)
+  if (len >= 5 && sim >= 0.62) return true;
+
+  // Word-by-word: input matches a significant word in the target
   const totalLen = target.replace(/\s+/g, '').length || 1;
   const words    = target.split(/\s+/).filter(w => w.length >= 2);
-  return words.some(w =>
-    stringSimilarity.compareTwoStrings(input, w) > 0.88 &&
-    w.length / totalLen >= 0.50
-  );
+  const wordHit  = words.some(w => {
+    const ws = stringSimilarity.compareTwoStrings(input, w);
+    // Must be a meaningful word (>= 40% of target length) with high similarity
+    return ws >= 0.82 && w.length / totalLen >= 0.40;
+  });
+  if (wordHit) return true;
+
+  // Multi-word input: check each word of input against the target
+  if (len >= 6 && input.includes(' ')) {
+    const inputWords = input.split(/\s+/).filter(w => w.length >= 3);
+    const matchRatio = inputWords.filter(iw =>
+      target.includes(iw) || stringSimilarity.compareTwoStrings(iw, target) >= 0.75
+    ).length / (inputWords.length || 1);
+    if (matchRatio >= 0.7) return true;
+  }
+
+  return false;
 }
+
+function checkClose(input, target) {
+  if (!input || !target || input.length < 2) return false;
+  const sim = stringSimilarity.compareTwoStrings(input, target);
+  if (sim >= 0.42) return true;
+  // Also close if input is nearly a substring
+  if (input.length >= 3 && target.length >= 3) {
+    for (let i = 0; i <= target.length - input.length + 1; i++) {
+      const chunk = target.slice(i, i + input.length);
+      if (stringSimilarity.compareTwoStrings(input, chunk) >= 0.8) return true;
+    }
+  }
+  return false;
+}
+
+// Legacy – kept for API compat
+function wordMatch(input, target) { return false; }
 
 function leaveRoom(socket, roomId, io) {
   const room = roomGames[roomId];
@@ -266,7 +323,7 @@ export function register(io) {
     socket.on('join_room', async ({ roomId, username, userId, isGuest }) => {
       if (!username?.trim()) return socket.emit('error', 'Pseudo requis');
 
-      if (!ROOMS[roomId] && !customRooms[roomId] && !dbRooms[roomId]) {
+      if (!customRooms[roomId] && !dbRooms[roomId]) {
         const { data: dbRoom } = await supabase
           .from('rooms')
           .select('code, name, emoji, max_rounds, round_duration, break_duration, playlist_id')
@@ -311,25 +368,22 @@ export function register(io) {
 
       io.to(`room:${roomId}`).emit('update_players', Object.values(room.players));
 
-      if (!playlistCache[roomId] && (ROOMS[roomId] || dbRooms[roomId])) {
+      if (!playlistCache[roomId] && dbRooms[roomId]) {
         loadPlaylist(roomId)
           .then(tracks => { if (tracks.length > 0) socket.emit('track_count_update', tracks.length); })
           .catch(() => {});
       }
 
-      const cust         = customRooms[roomId] || dbRooms[roomId];
-      const officialRoom = ROOMS[roomId];
+      const cust = customRooms[roomId] || dbRooms[roomId];
       socket.emit('room_joined', {
         roomId,
-        roomConfig: officialRoom
-          ? { ...officialRoom, trackCount: playlistCache[roomId]?.length || null }
-          : {
-              id:         roomId,
-              name:       cust?.name,
-              emoji:      cust?.emoji,
-              trackCount: customRooms[roomId]?.tracks?.length || playlistCache[roomId]?.length || null,
-              maxRounds:  cust?.max_rounds || cust?.maxRounds,
-            },
+        roomConfig: {
+          id:         roomId,
+          name:       cust?.name,
+          emoji:      cust?.emoji,
+          trackCount: customRooms[roomId]?.tracks?.length || playlistCache[roomId]?.length || null,
+          maxRounds:  cust?.max_rounds || cust?.maxRounds,
+        },
       });
       socket.emit('init_history', room.game.history);
 
@@ -386,22 +440,15 @@ export function register(io) {
       const track      = room.game.currentTrack;
       const cover      = track.cover || '';
 
-      const simArtist = stringSimilarity.compareTwoStrings(input, track.cleanArtist);
-      const simTitle  = stringSimilarity.compareTwoStrings(input, track.cleanTitle);
-
       let hit = false;
 
       if (!user.foundArtist) {
-        const match = input.length >= 1 && (
-          simArtist > 0.75 ||
-          (input.length >= 3 && simArtist > 0.65 && wordMatch(input, track.cleanArtist))
-        );
-        if (match) {
+        if (checkMatch(input, track.cleanArtist)) {
           user.foundArtist = true;
           user.score += 1 + speedBonus;
           socket.emit('feedback', { type: 'success_artist', msg: `Artiste ! (+${1 + speedBonus} pts)`, val: displayString(track.mainArtist || track.artist), cover });
           hit = true;
-        } else if (simArtist > 0.50) {
+        } else if (!hit && checkClose(input, track.cleanArtist)) {
           socket.emit('feedback', { type: 'close', msg: "Tu chauffes sur l'artiste !" });
           hit = true;
         }
@@ -410,34 +457,25 @@ export function register(io) {
       for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
         if (user.foundFeats[fi]) continue;
         const cleanFeat = track.cleanFeatArtists[fi];
-        const simFeat   = stringSimilarity.compareTwoStrings(input, cleanFeat);
-        const matchFeat = input.length >= 1 && (
-          simFeat > 0.75 ||
-          (input.length >= 3 && simFeat > 0.65 && wordMatch(input, cleanFeat))
-        );
-        if (matchFeat) {
+        if (checkMatch(input, cleanFeat)) {
           user.foundFeats[fi] = true;
           user.score += 1 + speedBonus;
           socket.emit('feedback', { type: 'success_feat', featIndex: fi, msg: `Feat ! (+${1 + speedBonus} pts)`, val: displayString(track.featArtists[fi]), cover });
           hit = true;
           break;
-        } else if (simFeat > 0.50 && !hit) {
+        } else if (!hit && checkClose(input, cleanFeat)) {
           socket.emit('feedback', { type: 'close', msg: 'Tu chauffes sur le feat !' });
           hit = true;
         }
       }
 
       if (!user.foundTitle) {
-        const match = input.length >= 1 && (
-          simTitle > 0.75 ||
-          (input.length >= 3 && simTitle > 0.65 && wordMatch(input, track.cleanTitle))
-        );
-        if (match) {
+        if (checkMatch(input, track.cleanTitle)) {
           user.foundTitle = true;
           user.score += 1 + speedBonus;
           socket.emit('feedback', { type: 'success_title', msg: `Titre ! (+${1 + speedBonus} pts)`, val: displayString(track.title), cover });
           hit = true;
-        } else if (simTitle > 0.50 && !hit) {
+        } else if (!hit && checkClose(input, track.cleanTitle)) {
           socket.emit('feedback', { type: 'close', msg: 'Tu chauffes sur le titre !' });
           hit = true;
         }

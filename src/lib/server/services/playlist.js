@@ -1,7 +1,6 @@
 import { supabase }     from '../config.js';
 import { playlistCache, customRooms, dbRooms } from '../state.js';
 import { fetchDeezerPlaylist } from './deezer.js';
-import ROOMS from '../rooms.js';
 
 // ─── String helpers ───────────────────────────────────────────────────────────
 
@@ -96,63 +95,26 @@ export async function loadPlaylist(roomId) {
     return [];
   }
 
-  const room = ROOMS[roomId];
-  if (!room) return [];
 
-  try {
-    const { data: officialPl } = await supabase
-      .from('custom_playlists')
-      .select('id')
-      .eq('linked_room_id', roomId)
-      .eq('is_official', true)
-      .single();
-
-    if (officialPl) {
-      const { data: trackRows } = await supabase
-        .from('custom_playlist_tracks')
-        .select('artist, title, cover_url, preview_url')
-        .eq('playlist_id', officialPl.id)
-        .order('position');
-
-      if (trackRows?.length >= 5) {
-        const tracks = trackRows.map(t => buildTrack({
-          artist: t.artist, title: t.title, cover: t.cover_url, preview_url: t.preview_url,
-        }));
-        playlistCache[roomId] = tracks;
-        console.log(`Room "${roomId}" (playlist Supabase officielle): ${tracks.length} titres`);
-        return tracks;
-      }
-    }
-  } catch { /* fallback to Deezer */ }
-
-  const ids = room.playlist_ids || (room.playlist_id ? [room.playlist_id] : []);
-  if (!ids.length) { console.error(`Room "${roomId}": aucun playlist_id configure`); return []; }
-
-  for (const pid of ids) {
-    try {
-      const data   = await fetchDeezerPlaylist(pid);
-      const tracks = data.tracks.data
-        .filter(t => t.readable !== false)
-        .map(t => buildTrack({ artist: t.artist.name, title: t.title, cover: t.album.cover_xl || t.album.cover_big }));
-
-      if (tracks.length < 5) throw new Error(`Seulement ${tracks.length} titres lisibles`);
-
-      playlistCache[roomId] = tracks;
-      console.log(`Room "${roomId}" (Deezer ${pid}): ${tracks.length} titres — "${data.title}"`);
-      return tracks;
-    } catch (err) {
-      console.warn(`Room "${roomId}" playlist ${pid} KO: ${err.message}`);
-    }
-  }
-
-  console.error(`Room "${roomId}": toutes les playlists ont echoue`);
+  console.warn(`Room "${roomId}": aucun fallback disponible`);
   return [];
-}
-
 export async function preloadAllPlaylists() {
-  console.log('Prechargement des playlists Deezer...');
-  const results = await Promise.allSettled(Object.keys(ROOMS).map(id => loadPlaylist(id)));
-  const ok  = results.filter(r => r.status === 'fulfilled' && r.value?.length > 0).length;
-  const ko  = results.length - ok;
-  console.log(`Playlists: ${ok}/${results.length} OK${ko ? ` — ${ko} en erreur` : ''}`);
+  console.log('Prechargement des playlists...');
+  try {
+    const { data: dbRoomsList } = await supabase
+      .from('rooms')
+      .select('code, name, emoji, max_rounds, round_duration, break_duration, playlist_id')
+      .not('playlist_id', 'is', null);
+    if (!dbRoomsList?.length) {
+      console.log('Aucune room DB avec playlist configuree.');
+      return;
+    }
+    dbRoomsList.forEach(r => { dbRooms[r.code] = r; });
+    const results = await Promise.allSettled(dbRoomsList.map(r => loadPlaylist(r.code)));
+    const ok  = results.filter(r => r.status === 'fulfilled' && r.value?.length > 0).length;
+    const ko  = results.length - ok;
+    console.log(`Playlists: ${ok}/${results.length} OK${ko ? ` — ${ko} en erreur` : ''}`);
+  } catch (e) {
+    console.error('Erreur prechargement:', e.message);
+  }
 }

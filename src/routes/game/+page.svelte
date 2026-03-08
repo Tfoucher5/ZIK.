@@ -274,6 +274,7 @@
             <div class="p-right">
               <div class="p-badge {p.foundArtist ? 'f' : ''}">A</div>
               <div class="p-badge {p.foundTitle  ? 'f' : ''}">T</div>
+              {#if p.foundFeats?.some(Boolean)}<div class="p-badge f">F</div>{/if}
               <span class="p-score{p.scored ? ' flash' : ''}">{p.score}pt</span>
             </div>
           </div>
@@ -348,6 +349,9 @@
       <div class="side-title">Historique</div>
       <div id="history-list">
         {#each history as item (item.answer + item.round)}
+          {@const _di = item.answer.indexOf(' - ')}
+          {@const _ha = _di > -1 ? item.answer.slice(0, _di) : item.answer}
+          {@const _ht = _di > -1 ? item.answer.slice(_di + 3) : '—'}
           <div class="h-item">
             {#if item.cover}
               <img src={item.cover} alt="">
@@ -355,7 +359,15 @@
               <div class="h-no-img">&#x266A;</div>
             {/if}
             <div class="h-info">
-              <div class="h-name">{item.answer}</div>
+              <div class="h-artist" class:h-found={item.foundArtist}>{_ha}</div>
+              {#if item.featArtists?.length}
+                <div class="h-feats">
+                  {#each item.featArtists as fa, fi}
+                    <span class="h-feat" class:h-found={item.foundFeats?.[fi]}>feat. {fa}</span>
+                  {/each}
+                </div>
+              {/if}
+              <div class="h-title" class:h-found={item.foundTitle}>{_ht}</div>
             </div>
           </div>
         {/each}
@@ -368,7 +380,7 @@
         <input
           type="text"
           id="guessInput"
-          placeholder="Artiste ou titre\u2026"
+          placeholder="Artiste ou titre…"
           disabled={guessDisabled}
           bind:value={guessVal}
           autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" maxlength="100"

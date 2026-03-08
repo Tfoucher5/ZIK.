@@ -242,6 +242,11 @@ a{text-decoration:none;color:inherit}
 .h-no-img{width:36px;height:36px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
 .h-info{flex:1;min-width:0}
 .h-name{font-size:.68rem;white-space:normal;word-break:break-word;line-height:1.3;margin-bottom:3px}
+.h-artist{font-size:.7rem;font-weight:600;white-space:normal;word-break:break-word;line-height:1.3;color:var(--mid)}
+.h-title{font-size:.67rem;white-space:normal;word-break:break-word;line-height:1.3;color:var(--dim)}
+.h-feats{display:flex;flex-wrap:wrap;gap:3px;margin:1px 0}
+.h-feat{font-size:.6rem;color:var(--dim);opacity:.7}
+.h-found{color:var(--accent)!important;opacity:1}
 .h-tags{display:flex;gap:3px}
 .h-tag{
   width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,.06);
