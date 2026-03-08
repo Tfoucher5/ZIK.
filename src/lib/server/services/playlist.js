@@ -98,6 +98,8 @@ export async function loadPlaylist(roomId) {
 
   console.warn(`Room "${roomId}": aucun fallback disponible`);
   return [];
+}
+
 export async function preloadAllPlaylists() {
   console.log('Prechargement des playlists...');
   try {
