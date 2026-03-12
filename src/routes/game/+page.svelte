@@ -79,7 +79,16 @@
     audio.onloadedmetadata = () => {
       const maxSeek = Math.max(0, Math.min((audio.duration || 30) - 10, 20));
       audio.currentTime = Math.random() * maxSeek;
-      audio.play().catch(() => {});
+      audio.play().catch(() => {
+        // Autoplay blocked (focus on input, etc.) → retry on next user gesture
+        const resume = () => {
+          audio.play().catch(() => {});
+          document.removeEventListener('pointerdown', resume, true);
+          document.removeEventListener('keydown',     resume, true);
+        };
+        document.addEventListener('pointerdown', resume, true);
+        document.addEventListener('keydown',     resume, true);
+      });
     };
     audio.load();
   }
