@@ -36,6 +36,7 @@
   let volValue    = $state(50);
   let isAdmin     = $state(false);
   let autoStart   = $state(false);
+  let hasOwner    = $state(false);
   let countdownVal = $state(0);
   let showCountdown = $state(false);
 
@@ -167,6 +168,7 @@
         roomLabel = `${roomConfig.emoji || ''} ${roomConfig.name || ''}${trackInfo}`.trim();
         autoStart = roomConfig.autoStart || false;
         isAdmin   = roomConfig.isAdmin   || false;
+        hasOwner  = roomConfig.hasOwner  || false;
       }
     });
     socket.on('game_countdown', ({ seconds }) => { startCountdownUI(seconds); });
@@ -399,14 +401,9 @@
             <div class="countdown-circle">{countdownVal}</div>
             <p class="countdown-label">La partie d&eacute;marre automatiquement&hellip;</p>
           </div>
-        {:else if autoStart}
-          <div class="info-waiting">&#x23F3; La partie va d&eacute;marrer automatiquement d&egrave;s qu&apos;un joueur rejoint.</div>
-        {:else if isAdmin}
-          <button id="startBtn" class="start-btn" onclick={requestGame} disabled={startDisabled}>
-            {#if startLabel === 'Chargement\u2026'}Chargement&hellip;{:else}&#x1F3AE; Lancer la partie{/if}
-          </button>
-          <p class="info-admin-hint">Tu es l&apos;admin &mdash; toi seul peux lancer la partie.</p>
-        {:else if !isAdmin && !autoStart}
+        {:else if hasOwner && autoStart && !isAdmin}
+          <div class="info-waiting">&#x23F3; La partie va d&eacute;marrer automatiquement&hellip;</div>
+        {:else if hasOwner && !autoStart && !isAdmin}
           <div class="info-waiting">
             &#x23F3; En attente de l&apos;administrateur&hellip;<br>
             <small>Seul le cr&eacute;ateur de cette room peut d&eacute;marrer la partie.</small>
@@ -415,6 +412,9 @@
           <button id="startBtn" class="start-btn" onclick={requestGame} disabled={startDisabled}>
             {#if startLabel === 'Chargement\u2026'}Chargement&hellip;{:else}&#x1F3AE; Lancer la partie{/if}
           </button>
+          {#if hasOwner && !autoStart}
+            <p class="info-admin-hint">Tu es l&apos;admin &mdash; toi seul peux lancer la partie.</p>
+          {/if}
         {/if}
       {/if}
 
@@ -484,7 +484,7 @@
           {/each}
         </div>
         <div class="go-actions">
-          {#if autoStart || isAdmin}
+          {#if !hasOwner || autoStart || isAdmin}
             <button class="start-btn" onclick={requestGame}>&#x1F504; Rejouer</button>
           {:else}
             <div class="info-waiting" style="font-size:.8rem">&#x23F3; En attente de l&apos;admin pour rejouer.</div>
