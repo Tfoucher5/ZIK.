@@ -408,7 +408,7 @@ export function register(io) {
       const dbRoom    = dbRooms[roomId];
       const autoStart = dbRoom?.auto_start || false;
       const ownerId   = dbRoom?.owner_id   || null;
-      const isAdmin   = !!(userId && ownerId && userId === ownerId);
+      const isAdmin   = !!(userId && ownerId && String(userId).trim().toLowerCase() === String(ownerId).trim().toLowerCase());
 
       socket.emit('room_joined', {
         roomId,
@@ -420,6 +420,7 @@ export function register(io) {
           maxRounds:  cust?.max_rounds || cust?.maxRounds,
           autoStart,
           isAdmin,
+          hasOwner:  !!ownerId,
         },
       });
       socket.emit('init_history', room.game.history);
@@ -451,7 +452,9 @@ export function register(io) {
       if (dbRoom && !dbRoom.auto_start) {
         const name   = room.socketToName[socket.id];
         const player = room.players[name];
-        if (!player?.userId || player.userId !== dbRoom.owner_id) {
+        const pId    = String(player?.userId || '').trim().toLowerCase();
+        const oId    = String(dbRoom.owner_id || '').trim().toLowerCase();
+        if (!pId || !oId || pId !== oId) {
           return socket.emit('server_error', 'Seul l\u2019administrateur peut lancer la partie.');
         }
       }

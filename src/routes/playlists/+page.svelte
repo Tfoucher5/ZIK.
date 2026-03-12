@@ -286,7 +286,7 @@
   async function doSearch() {
     const q = searchQuery.trim();
     if (!q) return;
-    searchLoading = true; searchResults = [];
+    searchLoading = true; searchResults = []; _addingIdx = {};
     try {
       const r = await fetch(`/api/${searchSource}/search?q=${encodeURIComponent(q)}`);
       const data = await r.json();
