@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { supabase } from '$lib/server/config.js';
-import { customRooms } from '$lib/server/state.js';
+import { customRooms, dbRooms } from '$lib/server/state.js';
 import { requireAuth, userClient } from '$lib/server/middleware/auth.js';
 
 export async function GET({ params }) {
@@ -27,6 +27,9 @@ export async function PATCH({ params, request }) {
   if (updates.name) updates.name = String(updates.name).trim().slice(0, 60);
   const { error } = await userClient(token).from('rooms').update(updates).eq('id', params.code);
   if (error) return json({ error: error.message }, { status: 400 });
+  // Invalidate the in-memory room cache so the next join fetches fresh config
+  const cachedCode = Object.keys(dbRooms).find(k => dbRooms[k]?.id === params.code);
+  if (cachedCode) delete dbRooms[cachedCode];
   return json({ ok: true });
 }
 

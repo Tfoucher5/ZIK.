@@ -353,15 +353,16 @@ export function register(io) {
     socket.on('join_room', async ({ roomId, username, userId, isGuest }) => {
       if (!username?.trim()) return socket.emit('error', 'Pseudo requis');
 
-      if (!customRooms[roomId] && !dbRooms[roomId]) {
-        const { data: dbRoom } = await supabase
+      // Fetch from DB if not cached, or if cache is stale (missing auto_start/owner_id fields added later)
+      if (!customRooms[roomId] && (!dbRooms[roomId] || dbRooms[roomId].owner_id === undefined)) {
+        const { data: freshRoom } = await supabase
           .from('rooms')
           .select('code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id')
           .eq('code', roomId)
           .single();
-        if (dbRoom) {
-          dbRooms[roomId] = dbRoom;
-        } else {
+        if (freshRoom) {
+          dbRooms[roomId] = { ...dbRooms[roomId], ...freshRoom };
+        } else if (!dbRooms[roomId]) {
           return socket.emit('error', 'Room inconnue ou expiree');
         }
       }
