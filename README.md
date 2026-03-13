@@ -11,6 +11,7 @@
 - [Stack Technique](#-stack-technique)
 - [Architecture](#-architecture)
 - [Installation](#-installation)
+- [Changelog](#-changelog)
 - [Roadmap](#-roadmap)
 - [Contribution](#-contribution)
 - [Développeur](#-développeur)
@@ -52,7 +53,9 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Inscription email / mot de passe
 - Connexion **Google OAuth**
 - Jeu en mode **invité** (score non sauvegardé)
-- Profil avec avatar, pseudo, stats et historique
+- Profil personnel avec avatar, pseudo, stats et meilleurs scores
+- **Profil public** : voir le profil de n'importe quel joueur connecté (`/user/[username]`)
+- **Confidentialité du profil** : passer en mode Privé / Public depuis les paramètres
 - Paramètres : animations, volume par défaut
 
 ### 📱 Interface
@@ -60,6 +63,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - **Responsive mobile** — layout optimisé touch avec bouton de validation
 - Rooms publiques browsables + rejoindre par code
 - Navigation fluide avec animations
+- Noms de joueurs **cliquables** partout (classements, scoreboard en jeu, écran de fin)
 
 ---
 
@@ -67,13 +71,14 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 | Couche | Techno |
 |---|---|
-| **Serveur** | Node.js + Express |
+| **Framework** | SvelteKit 2 (Svelte 5) |
+| **Serveur** | Node.js + SvelteKit adapter-node |
 | **Temps réel** | Socket.IO |
-| **Base de données** | Supabase (PostgreSQL) |
+| **Base de données** | Supabase (PostgreSQL + RLS) |
 | **Auth** | Supabase Auth (email + Google OAuth) |
 | **Musique** | YouTube IFrame API (lecture) |
 | **Import playlists** | Spotify Web API + Deezer API |
-| **Frontend** | Vanilla JS, HTML, CSS (no framework) |
+| **Style** | CSS vanilla (variables, dark mode natif) |
 | **Déploiement** | Vercel (frontend) + serveur Node dédié |
 
 ---
@@ -82,28 +87,31 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 ```
 /
-├── server.js              # Serveur Express + Socket.IO + logique de jeu
-├── public/
-│   ├── css/               # Styles par page (home, game, playlists, rooms…)
-│   └── js/                # Scripts par page + game.js (client Socket.IO)
-├── views/                 # Pages HTML
-│   ├── index.html         # Accueil
-│   ├── game.html          # Interface de jeu
-│   ├── rooms.html         # Browsing des rooms
-│   ├── playlists.html     # Gestion des playlists
-│   ├── profile.html       # Profil utilisateur
-│   └── settings.html      # Paramètres
-└── supabase_schema.sql    # Schéma de la base de données
+├── server.js                  # Serveur HTTP + Socket.IO
+├── src/
+│   ├── lib/
+│   │   ├── components/        # AuthModal.svelte, Nav.svelte
+│   │   ├── server/
+│   │   │   ├── config.js      # Client Supabase serveur
+│   │   │   ├── middleware/    # Auth JWT, rate limiting
+│   │   │   ├── services/      # Spotify, Deezer, playlists
+│   │   │   ├── socket/        # Logique de jeu temps réel
+│   │   │   └── state.js       # État en mémoire des parties
+│   │   ├── supabase.js        # Client Supabase côté client
+│   │   └── utils.js           # DiceBear, escaping HTML
+│   └── routes/
+│       ├── +layout.svelte     # Layout global (nav, contexte auth)
+│       ├── +page.svelte       # Accueil (rooms + classements)
+│       ├── game/              # Interface de jeu temps réel
+│       ├── profile/           # Mon profil (édition)
+│       ├── user/[username]/   # Profil public d'un joueur
+│       ├── settings/          # Paramètres (visuel, jeu, confidentialité)
+│       ├── rooms/             # Browsing des rooms
+│       ├── playlists/         # Gestion des playlists
+│       └── api/               # Endpoints REST
+├── static/css/                # Styles par page
+└── supabase_schema.sql        # Schéma complet de la base de données
 ```
-
-### Logique de jeu (server.js)
-- `roomGames{}` — état en mémoire de chaque partie
-- `buildTrack()` — normalise un titre (artiste, feat, titre, cleanString)
-- `parseFeaturing()` — extrait l'artiste principal et les featurings
-- `cleanString()` — normalise pour comparaison (accents, ponctuation)
-- `displayString()` — nettoie pour affichage (retire les parenthèses)
-- `submit_guess` — vérifie une réponse (similarité Dice + wordMatch)
-- `endRound()` — termine la manche, envoie les résultats, passe à la suivante
 
 ---
 
@@ -131,10 +139,12 @@ cp .env.example .env
 
 # 4. Appliquer le schéma Supabase
 # Importer supabase_schema.sql dans ton projet Supabase
+# Si la table profiles existe déjà, jouer la migration :
+# ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT FALSE;
 
 # 5. Lancer le serveur
 node server.js
-# ou en dev :
+# ou en développement :
 npm run dev
 ```
 
@@ -144,15 +154,39 @@ npm run dev
 |---|---|
 | `SUPABASE_URL` | URL de ton projet Supabase |
 | `SUPABASE_ANON_KEY` | Clé publique Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé service role (opérations serveur) |
 | `SPOTIFY_CLIENT_ID` | Client ID de ton app Spotify |
 | `SPOTIFY_CLIENT_SECRET` | Secret de ton app Spotify |
 | `ADMIN_USER_ID` | UUID Supabase de l'admin (accès super_admin) |
 
 ---
 
+## 📋 Changelog
+
+### v1.1.0 — Profils publics & confidentialité
+- **Profil public** : nouvelle page `/user/[username]` pour voir le profil de n'importe quel joueur
+- **Auth obligatoire** : un compte est requis pour consulter un profil
+- **Mode privé** : nouveau paramètre de confidentialité dans les Settings (Public / Privé)
+- **Noms cliquables** : tous les pseudos dans l'appli (classements, scoreboard, fin de partie) sont désormais des liens vers le profil
+- Les joueurs invités ne sont pas liés (pas de profil persistant)
+- Ajout du champ `is_private` dans la table `profiles`
+
+### v1.0.0 — Sortie initiale
+- Auth email + Google OAuth
+- Rooms officielles et personnalisées (éphémères + persistantes)
+- Gameplay multijoueur temps réel (Socket.IO)
+- Import Spotify / Deezer
+- Featurings multiples
+- Classements ELO + hebdomadaire
+- Profil avec stats et meilleurs scores
+- Mode invité
+- Responsive mobile + bouton de validation
+
+---
+
 ## 📈 Roadmap
 
-### ✅ V1 — Implémenté
+### ✅ v1.0 — Stable
 - [x] Auth email + Google OAuth
 - [x] Rooms officielles et personnalisées
 - [x] Gameplay temps réel (Socket.IO)
@@ -164,7 +198,13 @@ npm run dev
 - [x] Rooms éphémères et persistantes
 - [x] Responsive mobile + bouton de validation
 
-### 🚧 V1.1 — En cours
+### ✅ v1.1 — Profils publics
+- [x] Page profil public `/user/[username]`
+- [x] Connexion obligatoire pour voir un profil
+- [x] Paramètre de confidentialité Privé / Public
+- [x] Noms de joueurs cliquables partout dans l'appli
+
+### 🚧 v1.2 — En réflexion
 - [ ] Notifications en jeu (son, vibration mobile)
 - [ ] Statistiques détaillées par room
 - [ ] Mode spectateur
@@ -189,4 +229,4 @@ Un serveur Discord est prévu — lien à venir.
 
 **Théo Foucher** — parce qu'il kiffe la **ZIK.**
 
-> *"Développé avec Node.js, Supabase, et beaucoup trop de musique en fond."*
+> *"Développé avec SvelteKit, Supabase, et beaucoup trop de musique en fond."*
