@@ -22,7 +22,7 @@
 <section id="competences" class="section">
     <div class="section-header" use:reveal>
         <span class="kicker">Compétences</span>
-        <h2 class="section-title">Ce que je sais construire</h2>
+        <h2 class="section-title">Stack & expertise technique</h2>
     </div>
 
     <!-- Skill categories -->
@@ -44,7 +44,7 @@
 
     <!-- Qualités -->
     <div class="qualities-wrap" use:reveal style="--delay: 200ms">
-        <h3 class="sub-title">Ma manière de travailler</h3>
+        <h3 class="sub-title">Méthode & approche</h3>
         <div class="qualities-grid">
             {#each qualities as q, i}
                 <div class="quality-item card" use:reveal style="--delay: {i * 80 + 300}ms">

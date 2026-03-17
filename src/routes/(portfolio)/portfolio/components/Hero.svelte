@@ -105,10 +105,10 @@
     <div class="hero-content" use:reveal>
         <div class="status-badge">
             <span class="ping"></span>
-            Étudiant · Alternant · Disponible
+            Alternant · Licence Pro · 2025–2026
         </div>
 
-        <p class="eyebrow">Portfolio · 2025</p>
+        <p class="eyebrow">Portfolio · 2026</p>
 
         <h1 class="hero-name">
             Théo<br/>Foucher
@@ -175,8 +175,8 @@
             <div class="panel dispo-panel glass-card">
                 <div class="dispo-dot"></div>
                 <div>
-                    <div class="dispo-title">En alternance</div>
-                    <div class="dispo-sub">Ouvert aux opportunités 2025–2026</div>
+                    <div class="dispo-title">En alternance — Licence Pro</div>
+                    <div class="dispo-sub">En recherche pour 2026–2027</div>
                 </div>
             </div>
         </div>

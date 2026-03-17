@@ -29,7 +29,7 @@
 <section id="formation" class="section">
     <div class="section-header" use:reveal>
         <span class="kicker">Formation</span>
-        <h2 class="section-title">Parcours scolaire</h2>
+        <h2 class="section-title">Formation</h2>
     </div>
 
     <div class="edu-grid">

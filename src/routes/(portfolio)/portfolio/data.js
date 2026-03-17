@@ -11,7 +11,7 @@ export const experiences = [
     {
         id: 'daher',
         title: 'Alternance · Développement & Data Industrielle',
-        date: '2024 – Actuellement',
+        date: '2025 – Actuellement',
         company: 'DAHER LOGISTICS',
         location: 'Montoir-de-Bretagne (44)',
         type: 'Alternance',
@@ -71,7 +71,7 @@ export const education = [
         id: 'licence',
         degree: 'Bachelor / Licence Pro Informatique',
         school: '[ À compléter — Nom établissement ]',
-        period: '2024 – 2025',
+        period: '2025 – 2026',
         location: 'Loire-Atlantique',
         description: "Formation en alternance focalisée sur le développement logiciel, la data et les outils industriels.",
         details: [
@@ -85,7 +85,7 @@ export const education = [
         id: 'bts',
         degree: 'BTS SIO · option SLAM',
         school: '[ À compléter — Nom établissement ]',
-        period: '2022 – 2024',
+        period: '2023 – 2025',
         location: 'Nantes',
         description: "Services Informatiques aux Organisations, spécialité Solutions Logicielles et Applications Métiers.",
         details: [
@@ -248,5 +248,5 @@ export const passions = [
 export const metrics = [
     { value: 3, suffix: '+', label: 'univers techniques' },
     { value: 5, suffix: '+', label: 'projets livrés' },
-    { value: 2, suffix: ' ans', label: "d'expérience terrain" }
+    { value: 3, suffix: ' ans', label: "d'expérience terrain" }
 ];
