@@ -5,7 +5,7 @@
     export let form;
 
     const GITHUB_URL = 'https://github.com/Tfoucher5';
-    const LINKEDIN_URL = 'https://www.linkedin.com/in/ton-profil-linkedin/'; // <-- remplace ici par ton vrai lien
+    const LINKEDIN_URL = 'https://www.linkedin.com/in/theo-foucher-3956b52a0/';
 
     let isSubmitting = false;
     let ticking = false;
