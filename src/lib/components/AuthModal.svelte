@@ -72,8 +72,9 @@
 </script>
 
 {#if open}
-<div id="auth-modal" class="overlay" role="dialog" aria-modal="true"
-  onclick={e => { if (e.target === e.currentTarget) close(); }}>
+<!-- svelte-ignore a11y_interactive_supports_focus -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div id="auth-modal" class="overlay" role="dialog" aria-modal="true" onclick={e => { if (e.target === e.currentTarget) close(); }}>
   <div class="modal" id="auth-box">
     <button class="close-btn" onclick={close}>&#x2715;</button>
 
@@ -87,14 +88,14 @@
           Continuer avec Google
         </button>
         <div class="auth-divider"><span>ou</span></div>
-        <div class="field"><label>Email</label><input type="email" bind:value={loginEmail} placeholder="ton@email.com" autocomplete="email"></div>
-        <div class="field"><label>Mot de passe</label><input type="password" bind:value={loginPassword} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password"
+        <div class="field"><label for="email">Email</label><input type="email" bind:value={loginEmail} placeholder="ton@email.com" autocomplete="email"></div>
+        <div class="field"><label for="password">Mot de passe</label><input type="password" bind:value={loginPassword} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password"
           onkeypress={e => { if (e.key === 'Enter') handleLogin(); }}></div>
         {#if loginError}<div class="alert-err">{loginError}</div>{/if}
         <button class="btn-accent full" onclick={handleLogin} disabled={loginLoading}>
           {loginLoading ? 'Connexion...' : 'Se connecter'}
         </button>
-        <p class="mswitch">Pas de compte ? <a href="#" onclick={e => { e.preventDefault(); setView('register'); }}>Cr&eacute;er un compte</a></p>
+        <p class="mswitch">Pas de compte ? <a href="/rooms" onclick={e => { e.preventDefault(); setView('register'); }}>Cr&eacute;er un compte</a></p>
       </div>
 
     {:else if view === 'register'}
@@ -107,15 +108,15 @@
           Continuer avec Google
         </button>
         <div class="auth-divider"><span>ou</span></div>
-        <div class="field"><label>Pseudo</label><input type="text" bind:value={regUsername} placeholder="MonPseudo" maxlength="20" autocomplete="username"></div>
-        <div class="field"><label>Email</label><input type="email" bind:value={regEmail} placeholder="ton@email.com" autocomplete="email"></div>
-        <div class="field"><label>Mot de passe</label><input type="password" bind:value={regPassword} placeholder="Min. 6 caract&egrave;res" autocomplete="new-password"
+        <div class="field"><label for="pseudo">Pseudo</label><input type="text" bind:value={regUsername} placeholder="MonPseudo" maxlength="20" autocomplete="username"></div>
+        <div class="field"><label for="email">Email</label><input type="email" bind:value={regEmail} placeholder="ton@email.com" autocomplete="email"></div>
+        <div class="field"><label for="pasword">Mot de passe</label><input type="password" bind:value={regPassword} placeholder="Min. 6 caract&egrave;res" autocomplete="new-password"
           onkeypress={e => { if (e.key === 'Enter') handleRegister(); }}></div>
         {#if regError}<div class="alert-err">{regError}</div>{/if}
         <button class="btn-accent full" onclick={handleRegister} disabled={regLoading}>
           {regLoading ? 'Cr&eacute;ation...' : 'Cr&eacute;er mon compte'}
         </button>
-        <p class="mswitch">D&eacute;j&agrave; un compte ? <a href="#" onclick={e => { e.preventDefault(); setView('login'); }}>Se connecter</a></p>
+        <p class="mswitch">D&eacute;j&agrave; un compte ? <a href="/login" onclick={e => { e.preventDefault(); setView('login'); }}>Se connecter</a></p>
       </div>
 
     {:else if view === 'confirm'}

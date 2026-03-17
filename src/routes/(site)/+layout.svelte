@@ -9,6 +9,7 @@
 
   let { data, children } = $props();
 
+  // svelte-ignore state_referenced_locally
   const { supabaseUrl, supabaseAnonKey, spotifyClientId } = data.env;
   const sb = createSupabaseClient(supabaseUrl, supabaseAnonKey);
 

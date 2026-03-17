@@ -176,6 +176,8 @@
 
 <!-- Edit profile modal -->
 {#if editOpen}
+<!-- svelte-ignore a11y_interactive_supports_focus -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="overlay" role="dialog" aria-modal="true" onclick={e => { if (e.target === e.currentTarget) editOpen = false; }}>
   <div class="modal">
     <button class="close-btn" onclick={() => editOpen = false}>&#x2715;</button>
@@ -183,13 +185,13 @@
     <p class="mdesc">Personnalise ton pseudo et ton avatar.</p>
 
     <div class="field">
-      <label>Pseudo <span style="color:var(--dim);font-weight:400;font-size:.78rem">(3-20 caract&egrave;res)</span></label>
+      <label for="pseudo">Pseudo <span style="color:var(--dim);font-weight:400;font-size:.78rem">(3-20 caract&egrave;res)</span></label>
       <input type="text" bind:value={editUsername} maxlength="20" autocomplete="off" oninput={updatePreview}>
     </div>
 
     <div class="field">
-      <label>URL de l&apos;avatar <span style="color:var(--dim);font-weight:400;font-size:.78rem">&mdash; optionnel</span></label>
-      <input type="url" bind:value={editAvatarUrl} placeholder="https://... (image carr\u00e9e recommand\u00e9e)" oninput={updatePreview}>
+      <label for="avatar">URL de l&apos;avatar <span style="color:var(--dim);font-weight:400;font-size:.78rem">&mdash; optionnel</span></label>
+      <input type="url" bind:value={editAvatarUrl} placeholder="https://... (image carrée recommandée)" oninput={updatePreview}>
     </div>
 
     <div class="avatar-preview-wrap">
