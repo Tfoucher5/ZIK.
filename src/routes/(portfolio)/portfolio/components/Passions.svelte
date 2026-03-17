@@ -22,7 +22,7 @@
 <section class="section">
     <div class="section-header" use:reveal>
         <span class="kicker">Au-delà du code</span>
-        <h2 class="section-title">Ce qui m'anime</h2>
+        <h2 class="section-title">Intérêts & passions</h2>
     </div>
 
     <div class="passions-grid">

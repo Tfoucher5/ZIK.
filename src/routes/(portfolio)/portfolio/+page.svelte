@@ -3,6 +3,7 @@
 
     import PortfolioNav from './components/PortfolioNav.svelte';
     import Hero from './components/Hero.svelte';
+    import TechMarquee from './components/TechMarquee.svelte';
     import Experience from './components/Experience.svelte';
     import Education from './components/Education.svelte';
     import Skills from './components/Skills.svelte';
@@ -60,6 +61,7 @@
 
     <main>
         <Hero />
+        <TechMarquee />
         <Experience />
         <Education />
         <Skills />
