@@ -40,7 +40,7 @@
 </script>
 
 <svelte:head>
-    <title>Théo Foucher | Développeur Web · Data · Optimisation</title>
+    <title>Théo Foucher | Développeur Web · Application</title>
     <meta
         name="description"
         content="Portfolio de Théo Foucher — développement web full-stack, data, automatisation industrielle et interfaces modernes."

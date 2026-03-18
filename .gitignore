@@ -17,3 +17,10 @@ Thumbs.db
 
 # Package
 .svelte-kit
+.vscode
+
+# Supabase local config (⚠️ contient des tokens)
+.supabase/
+
+# Edge Functions deps (si jamais)
+supabase/functions/**/node_modules

@@ -35,7 +35,7 @@
     <div class="section-header" use:reveal>
         <span class="kicker">Contact</span>
         <h2 class="section-title">Initialiser une connexion</h2>
-        <p class="section-sub">Un projet, une alternance, une opportunité ou un échange ? Écris-moi ici.</p>
+        <p class="section-sub">Une alternance, une opportunité ou un échange ? Écris-moi ici.</p>
     </div>
 
     <div class="contact-layout" use:reveal style="--delay: 100ms">
@@ -44,7 +44,7 @@
             <div class="info-card card">
                 <h3 class="info-title">Restons en contact</h3>
                 <p class="info-text">
-                    Je réponds généralement sous 24–48h. N'hésite pas à me décrire ton projet ou ta demande, même si elle est encore floue.
+                    Je réponds généralement sous 24–48h.
                 </p>
 
                 <div class="contact-links">

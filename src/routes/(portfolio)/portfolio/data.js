@@ -11,34 +11,33 @@ export const experiences = [
     {
         id: 'daher',
         title: 'Alternance · Développement & Data Industrielle',
-        date: '2025 – Actuellement',
+        date: 'du 25/08/2025 à Actuellement',
         company: 'DAHER LOGISTICS',
         location: 'Montoir-de-Bretagne (44)',
         type: 'Alternance',
         current: true,
         shortDesc: "Développement from scratch d'un outil Python pour le suivi des mallettes Kardex et optimisation de flux industriels.",
-        longDesc: "Au sein du pôle IT de DAHER LOGISTICS, je conçois des outils pragmatiques orientés données pour répondre à des besoins terrain concrets. L'enjeu principal est de fiabiliser les process logistiques via l'automatisation et l'analyse.",
+        longDesc: "Au sein de DAHER LOGISTICS, je conçois des outils pragmatiques orientés données pour répondre à des besoins terrain concrets. L'enjeu principal est de fiabiliser les process logistiques via l'automatisation et l'analyse.",
         details: [
             "Conception et développement from scratch d'un moteur de tracking Python/Pandas pour les équipements Kardex",
             "Maintenance et amélioration continue d'outils métier critiques en VBA et Access",
-            "Analyse des flux logistiques, identification des goulots d'étranglement et optimisation ROI",
-            "Collaboration directe avec les équipes terrain pour la définition et le cadrage des besoins"
+            "Analyse des flux logistiques, identification des goulots d'étranglement et optimisation ROI"
         ],
         stack: ['Python', 'Pandas', 'VBA', 'Access', 'Excel']
     },
     {
         id: 'wiklog',
-        title: "Stage · Refonte Outil Web Logistique",
-        date: '2024',
+        title: "Stage · Refonte Outil Web",
+        date: 'du 23/12/2024 au 31/01/2025',
         company: 'WIKLOG',
         location: 'La Baule (44)',
-        type: 'Stage',
+        type: 'Stage - 6 semaines',
         current: false,
         shortDesc: "Transformation d'un Excel en application Web fluide, responsive et mobile-first avec Laravel.",
-        longDesc: "Chez WIKLOG, j'ai mené de bout en bout la refonte d'un outil de gestion logistique utilisé quotidiennement par les équipes terrain. Le passage d'un tableur à une vraie application web a nécessité une réflexion approfondie sur l'UX et la logique métier.",
+        longDesc: "Chez WIKLOG, j'ai mené de bout en bout la refonte d'un outil de gestion du temps, utilisé quotidiennement par les équipes terrain. Le passage d'un tableur à une vraie application web a nécessité une réflexion approfondie sur l'UX et la logique métier.",
         details: [
-            "Migration complète d'un outil Excel vers une application web Laravel moderne",
-            "Design responsive et mobile-first avec focus sur l'ergonomie terrain et la rapidité d'exécution",
+            "Migration complète d'un tableur Excel sans Macros vers une application web Laravel moderne",
+            "Design responsive et mobile-first avec focus sur l'ergonomie et la rapidité d'exécution",
             "Travail en méthode Agile avec sprints, rétrospectives et démonstrations client régulières",
             "Optimisation des performances et refactoring de la logique métier héritée"
         ],
@@ -47,18 +46,18 @@ export const experiences = [
     {
         id: 'laposte',
         title: 'Stage · Développement Web',
-        date: '2023',
+        date: 'du 10/06/2024 au 19/07/2024',
         company: 'La Poste',
         location: 'Nantes (44)',
         type: 'Stage',
         current: false,
         shortDesc: "Transformation d'un outil Excel en application Web avec Angular (Front) et NodeJS (Back).",
-        longDesc: "Premier stage significatif chez La Poste, où j'ai découvert le développement web en contexte d'entreprise. Travail en équipe sur une refonte complète d'un outil interne de gestion.",
+        longDesc: "Premier stage significatif chez La Poste, où j'ai découvert le développement web en contexte d'entreprise. Travail 'en équipe' sur une refonte complète d'un outil interne de gestion.",
         details: [
             "Développement frontend avec Angular pour moderniser un outil interne de gestion",
             "API backend avec NodeJS pour la gestion et la persistance des données métier",
             "Interface responsive remplaçant complètement une gestion Excel manuelle et fragile",
-            "Tests, documentation technique et passation à l'équipe IT interne"
+            "Création d'une nouvelle table dans la Base De Données Oracle"
         ],
         stack: ['Angular', 'NodeJS', 'TypeScript', 'REST API', 'PostgreSQL']
     }
@@ -69,27 +68,27 @@ export const experiences = [
 export const education = [
     {
         id: 'licence',
-        degree: 'Bachelor / Licence Pro Informatique',
-        school: '[ À compléter — Nom établissement ]',
+        degree: 'Licence STS mention informatique parcours Informatique générale - coloration Développement',
+        school: 'Institut d\'informatique Appliquée',
         period: '2025 – 2026',
-        location: 'Loire-Atlantique',
-        description: "Formation en alternance focalisée sur le développement logiciel, la data et les outils industriels.",
+        location: 'Saint-Nazaire (44)',
+        description: "Formation en alternance focalisée sur le développement logiciel et le réseau.",
         details: [
-            "Développement web full-stack et architecture applicative",
-            "Gestion de données, automatisation et scripts Python",
-            "Projets industriels en contexte réel via alternance",
-            "Méthodes Agile, DevOps et bonnes pratiques de développement"
+            "paradigmes de programmation, programmation avancée",
+            "Systèmes d'information et Bases de données",
+            "Management de projet | Planification, organisation...",
+            "Cyberstructure de l'internet: réseau et sécurité"
         ]
     },
     {
         id: 'bts',
         degree: 'BTS SIO · option SLAM',
-        school: '[ À compléter — Nom établissement ]',
+        school: 'Institut d\'informatique Appliquée',
         period: '2023 – 2025',
-        location: 'Nantes',
+        location: 'Saint-Nazaire (44)',
         description: "Services Informatiques aux Organisations, spécialité Solutions Logicielles et Applications Métiers.",
         details: [
-            "Développement d'applications web et logicielles",
+            "Développement d'applications web et logicielles sécurisées",
             "Bases de données relationnelles et SQL",
             "Méthodes agiles, UML et gestion de projet",
             "Stages chez La Poste (2023) et WIKLOG (2024)"
@@ -109,13 +108,13 @@ export const skills = [
         title: 'Back-end & Data',
         icon: '◉',
         description: "Conception d'applications orientées données, logique métier, persistance, automatisation et exploitation technique.",
-        items: ['Laravel', 'NodeJS', 'Python', 'Pandas', 'PostgreSQL', 'Supabase', 'SQL', 'API REST']
+        items: ['Laravel', 'NodeJS', 'Python', 'Pandas', 'PostgreSQL', 'Supabase', 'SQL']
     },
     {
         title: 'Industrialisation',
         icon: '◎',
         description: "Développement d'outils pragmatiques pour des environnements réels : logistique, process métier, optimisation, suivi.",
-        items: ['Excel', 'VBA', 'Access', 'Automatisation', 'Analyse', 'Process', 'ROI', 'Reporting']
+        items: ['Excel', 'VBA', 'Access', 'Automatisation', 'Analyse', 'Reporting']
     }
 ];
 
@@ -144,7 +143,7 @@ export const projects = [
             'Import de playlists Spotify & Deezer',
             'Système de score, classement et profils utilisateurs',
             "Architecture full-stack avec gestion d'état avancée",
-            'Déployé en production sur Vercel + serveur Node dédié'
+            'Déployé en production sur Railway'
         ],
         links: [
             { label: 'Voir le code', url: 'https://github.com/Tfoucher5/ZIK', type: 'github' },
@@ -158,21 +157,20 @@ export const projects = [
         title: 'Moteur de Tracking Kardex',
         tagline: 'Outil data interne · DAHER LOGISTICS',
         shortDesc: "Outil interne orienté data pour le suivi des pièces, l'optimisation de cycle de vie et la réduction des pertes.",
-        longDesc: "Face à une gestion des équipements Kardex dispersée dans des fichiers Excel incomplets, j'ai conçu un moteur de tracking from scratch capable d'agréger, nettoyer et analyser les données de cycle de vie des mallettes. Le résultat : une visibilité totale sur l'état du parc et des alertes préventives automatisées.",
+        longDesc: "J’ai développé un outil dédié aux mallettes gérées dans les Kardex (tours de stockage vertical pour petites pièces). À partir des fichiers de données extraits automatiquement, l’application affiche — via un simple scan de la mallette — tous les godets associés ainsi que leur dernière date de vidage. Avant, tous les godets “en lot” étaient systématiquement vidés tous les 6 mois, faute d’historique fiable : cela entraînait le jet inutile de pièces parfois coûteuses. L’outil identifie désormais les godets réellement à vider, met en évidence ceux à traiter, et enregistre instantanément les validations. Résultat : une réduction nette des pertes et des économies significatives pour Airbus.",
         tags: ['Python', 'Pandas', 'Automatisation', 'Analyse'],
         stack: [
             { name: 'Python', cat: 'Core' },
             { name: 'Pandas', cat: 'Data' },
             { name: 'OpenPyXL', cat: 'Excel' },
-            { name: 'Excel', cat: 'Excel' },
-            { name: 'Access', cat: 'Backend' }
         ],
         highlights: [
-            'Agrégation et nettoyage automatique des données multi-sources',
-            'Calcul des cycles de vie et alertes de maintenance préventive',
-            'Exports formatés pour les équipes terrain',
-            'Réduction significative des pertes et doublons',
-            "Adoption rapide par les équipes grâce à l'interface Excel familière"
+            "Affichage instantané des godets d’une mallette via scan du code-barres",
+            "Suivi fiable des dates de dernier vidage des godets",
+            "Identification automatique des godets réellement à vider selon les règles de gestion",
+            "Mise à jour en un clic et enregistrement direct dans le Kardex concerné",
+            "Suppression du vidage systématique semestriel et réduction des pertes pièces",
+            "Économies significatives grâce à une gestion précise des godets lottés"
         ],
         links: [],
         status: 'internal',
@@ -183,7 +181,7 @@ export const projects = [
         title: 'Refonte Outil Logistique Web',
         tagline: 'Migration Excel → Application Web · WIKLOG',
         shortDesc: "Passage d'une logique tableur à une application Web claire, responsive et exploitable au quotidien.",
-        longDesc: "Le défi était ambitieux : transformer un Excel utilisé depuis des années en une vraie application web, sans perdre les utilisateurs en route. J'ai travaillé de façon itérative avec les équipes terrain pour comprendre les usages réels, simplifier les flux et livrer une interface mobile-first adaptée aux conditions d'utilisation logistique.",
+        longDesc: "Dans l’association sportive USGPH, deux employés saisissaient leurs heures dans un fichier Excel, mais le suivi était souvent incomplet ou incohérent — l’un d’eux travaillait même beaucoup trop sans que cela soit identifié à temps. J’ai donc dans le cadre de mon stage, conçu une application web permettant au gérant de créer et ajuster un planning précis pour chaque employé. De leur côté, les employés visualisent leurs tâches et peuvent les valider d’un simple clic une fois réalisées. Cette approche réduit les erreurs de saisie, évite les heures supplémentaires non contrôlées et offre au gérant une vision claire du travail réellement effectué.",
         tags: ['Laravel', 'UX', 'Métier', 'Mobile-first'],
         stack: [
             { name: 'Laravel', cat: 'Backend' },
@@ -194,11 +192,13 @@ export const projects = [
             { name: 'Blade', cat: 'Templates' }
         ],
         highlights: [
-            'Migration complète Excel → application web fonctionnelle',
-            'Interface mobile-first adaptée aux contraintes terrain',
-            'Méthode Agile avec sprints et validation régulière',
-            'Performance et logique métier optimisées dès la conception',
-            'Prise en main immédiate par des utilisateurs non-tech'
+            "Transformation d’un suivi Excel manuel en une application web moderne",
+            "Création d’un planning dynamique ajustable par le gérant",
+            "Visualisation claire des tâches pour chaque employé",
+            "Validation des tâches en un clic pour réduire erreurs et oublis",
+            "Suivi fiable des heures réellement effectuées",
+            "Prévention des heures supplémentaires non contrôlées",
+            "Amélioration de la transparence et de la gestion au sein de l’association"
         ],
         links: [],
         status: 'internal',
@@ -226,7 +226,7 @@ export const qualities = [
     {
         icon: '◷',
         title: 'Vision produit',
-        text: "Je pense usage concret, lisibilité, ergonomie, vitesse et valeur réelle — pas seulement à la technique pour la technique."
+        text: "Je pense usage concret, lisibilité, ergonomie, vitesse et valeur réelle."
     }
 ];
 
@@ -235,18 +235,18 @@ export const passions = [
     {
         title: 'Motorsport & Sim Racing',
         icon: '⬡',
-        text: "Passionné d'endurance, de F1 et de philosophie mécanique. L'optimisation, la trajectoire et la précision me parlent autant sur piste qu'en développement."
+        text: "Passionné d'endurance, de F1 et de Voitures en général. L'optimisation, la trajectoire et la précision me parlent autant sur piste qu'en développement."
     },
     {
-        title: 'Gaming & Univers sandbox',
+        title: 'Musique : Une Vie au Rythme des Sons',
         icon: '⬡',
-        text: "J'apprécie les systèmes complexes, l'expérimentation et les environnements où performance et créativité cohabitent naturellement."
+        text: "Impossible de vivre sans musique : j'écoute de tous les genres. Très présent sur les événements de musique électronique, cette passion est pour moi une source constante de dynamisme et de partage."
     }
 ];
 
 // ─── Métriques hero ──────────────────────────────────────────
 export const metrics = [
-    { value: 3, suffix: '+', label: 'univers techniques' },
     { value: 5, suffix: '+', label: 'projets livrés' },
-    { value: 3, suffix: ' ans', label: "d'expérience terrain" }
+    { value: 2, suffix: ' ', label: "stages en Entrprise" },
+    { value: 1, suffix: ' an', label: "en Alternance" }
 ];
