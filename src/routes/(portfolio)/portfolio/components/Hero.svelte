@@ -5,7 +5,7 @@
     let countersStarted = false;
     let displayValues = metrics.map(() => 0);
 
-    const words = ['Web', 'Application', 'Performance', 'Logistique', 'Automatisation'];
+    const words = ['Web', 'Application', 'Performance', 'Automatisation'];
     let wordIndex = 0;
     let displayed = '';
     let isDeleting = false;
@@ -120,7 +120,7 @@
 
         <p class="hero-desc">
             J'aime comprendre la mécanique des choses et concevoir des outils utiles, rapides et élégants.
-            Entre interfaces modernes, logique métier et analyse de données — je cherche toujours la trajectoire la plus propre.
+            Entre interfaces modernes, logique métier et analyse de données - je cherche toujours la trajectoire la plus propre.
         </p>
 
         <div class="cta-row">
@@ -162,12 +162,12 @@
                 <div class="panel-label">Focus actuel</div>
                 <p class="focus-text">Transformer les besoins réels en outils clairs, fiables et performants.</p>
                 <div class="stack-chips">
-                    <span>SvelteKit</span>
-                    <span>Python</span>
-                    <span>Laravel</span>
-                    <span>Supabase</span>
-                    <span>Automatisation</span>
-                    <span>Data</span>
+                    <span>SvelteKit (perso)</span>
+                    <span>Supabase (perso)</span>
+                    <span>Python (alternance)</span>
+                    <span>Automatisation (alternance)</span>
+                    <span>Data (alternance)</span>
+                    <span>Excel (alternance)</span>
                 </div>
             </div>
 
