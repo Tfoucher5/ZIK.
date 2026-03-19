@@ -34,6 +34,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ## ✨ Fonctionnalités
 
 ### 🎮 Gameplay
+
 - Blind test **multijoueur synchronisé** (Socket.IO)
 - Détection intelligente des réponses : similarité phonétique, accents, fautes de frappe
 - Support des **artistes en featuring** (slots dynamiques)
@@ -42,6 +43,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Rooms éphémères (4h) et rooms persistantes en base
 
 ### 🎵 Playlists
+
 - Création et gestion de playlists personnalisées
 - Import depuis **Spotify** (lien de playlist)
 - Import depuis **Deezer** (lien de playlist)
@@ -49,12 +51,14 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Playlists officielles curées par l'équipe
 
 ### 🏆 Compétition
+
 - Système de **points** avec bonus de vitesse
 - **Classement ELO** all-time
 - **Classement hebdomadaire**
 - Meilleurs scores par room sur le profil
 
 ### 👤 Profil & Auth
+
 - Inscription email / mot de passe
 - Connexion **Google OAuth**
 - Jeu en mode **invité** (score non sauvegardé)
@@ -64,6 +68,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Paramètres : animations, volume par défaut
 
 ### 📱 Interface
+
 - Design **dark mode** natif
 - **Responsive mobile** — layout optimisé touch avec bouton de validation
 - Rooms publiques browsables + rejoindre par code
@@ -74,17 +79,17 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 ## 🛠️ Stack Technique
 
-| Couche | Techno |
-|---|---|
-| **Framework** | SvelteKit 2 (Svelte 5) |
-| **Serveur** | Node.js + SvelteKit adapter-node |
-| **Temps réel** | Socket.IO |
-| **Base de données** | Supabase (PostgreSQL + RLS) |
-| **Auth** | Supabase Auth (email + Google OAuth) |
-| **Musique** | YouTube IFrame API (lecture) |
-| **Import playlists** | Spotify Web API + Deezer API |
-| **Style** | CSS vanilla (variables, dark mode natif) |
-| **Déploiement** | Vercel (frontend) + serveur Node dédié |
+| Couche               | Techno                                   |
+| -------------------- | ---------------------------------------- |
+| **Framework**        | SvelteKit 2 (Svelte 5)                   |
+| **Serveur**          | Node.js + SvelteKit adapter-node         |
+| **Temps réel**       | Socket.IO                                |
+| **Base de données**  | Supabase (PostgreSQL + RLS)              |
+| **Auth**             | Supabase Auth (email + Google OAuth)     |
+| **Musique**          | YouTube IFrame API (lecture)             |
+| **Import playlists** | Spotify Web API + Deezer API             |
+| **Style**            | CSS vanilla (variables, dark mode natif) |
+| **Déploiement**      | Vercel (frontend) + serveur Node dédié   |
 
 ---
 
@@ -117,10 +122,13 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ├── static/css/                # Styles par page
 └── supabase_schema.sql        # Schéma complet de la base de données
 ```
+
 ---
+
 ## 📋 Changelog
 
 ### v1.1.0 — Profils publics & confidentialité
+
 - **Profil public** : nouvelle page `/user/[username]` pour voir le profil de n'importe quel joueur
 - **Auth obligatoire** : un compte est requis pour consulter un profil
 - **Mode privé** : nouveau paramètre de confidentialité dans les Settings (Public / Privé)
@@ -128,6 +136,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Les joueurs invités ne sont pas liés (pas de profil persistant)
 
 ### v1.0.0 — Sortie initiale
+
 - Auth email + Google OAuth
 - Rooms officielles et personnalisées (éphémères + persistantes)
 - Gameplay multijoueur temps réel (Socket.IO)
@@ -143,6 +152,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ## 📈 Roadmap
 
 ### ✅ v1.0 — Stable
+
 - [x] Auth email + Google OAuth
 - [x] Rooms officielles et personnalisées
 - [x] Gameplay temps réel (Socket.IO)
@@ -155,12 +165,14 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - [x] Responsive mobile + bouton de validation
 
 ### ✅ v1.1 — Profils publics
+
 - [x] Page profil public `/user/[username]`
 - [x] Connexion obligatoire pour voir un profil
 - [x] Paramètre de confidentialité Privé / Public
 - [x] Noms de joueurs cliquables partout dans l'appli
 
 ### 🚧 v1.2 — En réflexion
+
 - [ ] Imports depuis Apple Music
 - [ ] Répondre avec la voix (mobile uniquement)
 - [ ] Formulaire de contact
@@ -179,4 +191,4 @@ Un serveur Discord est prévu — lien à venir.
 
 **Théo Foucher** — parce qu'il kiffe la **ZIK.**
 
-> *"Développé avec SvelteKit, Supabase, et beaucoup trop de musique en fond."*
+> _"Développé avec SvelteKit, Supabase, et beaucoup trop de musique en fond."_

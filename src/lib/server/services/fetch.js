@@ -3,17 +3,17 @@ let _fetch;
 
 export async function getFetch() {
   if (_fetch) return _fetch;
-  if (typeof globalThis.fetch === 'function') {
+  if (typeof globalThis.fetch === "function") {
     _fetch = globalThis.fetch;
     return _fetch;
   }
   try {
-    const mod = await import('node-fetch');
+    const mod = await import("node-fetch");
     _fetch = mod.default;
-    console.log('Info: utilisation de node-fetch');
+    console.log("Info: utilisation de node-fetch");
   } catch {
-    console.error('node-fetch introuvable — lance: npm install node-fetch');
-    throw new Error('fetch indisponible');
+    console.error("node-fetch introuvable — lance: npm install node-fetch");
+    throw new Error("fetch indisponible");
   }
   return _fetch;
 }

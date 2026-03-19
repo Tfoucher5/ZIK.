@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-function escapeHtml(value: string = '') {
+function escapeHtml(value: string = "") {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -10,9 +10,7 @@ function escapeHtml(value: string = '') {
 }
 
 serve(async (req) => {
-
   try {
-
     const { nom, email, message, source } = await req.json();
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -25,11 +23,10 @@ serve(async (req) => {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-
         from: "Portfolio <contact@zik-music.fr>",
         to: [CONTACT_TO_EMAIL],
         reply_to: safeEmail,
@@ -75,8 +72,8 @@ Email: ${email}
 
 Message:
 ${message}
-`
-      })
+`,
+      }),
     });
 
     if (!res.ok) {
@@ -87,16 +84,14 @@ ${message}
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
-      status: 200
+      status: 200,
     });
-
   } catch (err) {
-
     console.error(err);
 
     return new Response(JSON.stringify({ error: err.message }), {
       headers: { "Content-Type": "application/json" },
-      status: 500
+      status: 500,
     });
   }
 });

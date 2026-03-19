@@ -1,15 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
-import { error } from '@sveltejs/kit';
-import { supabase } from '../config.js';
+import { createClient } from "@supabase/supabase-js";
+import { error } from "@sveltejs/kit";
+import { supabase } from "../config.js";
 
 // ─── JWT token cache (avoids a Supabase round-trip per request) ──────────────
 const _tokenCache = new Map(); // token -> { user, exp }
-const TOKEN_TTL   = 60_000;
+const TOKEN_TTL = 60_000;
 
 export async function verifyToken(token) {
   const cached = _tokenCache.get(token);
   if (cached && cached.exp > Date.now()) return cached.user;
-  const { data: { user }, error: err } = await supabase.auth.getUser(token);
+  const {
+    data: { user },
+    error: err,
+  } = await supabase.auth.getUser(token);
   if (err || !user) return null;
   _tokenCache.set(token, { user, exp: Date.now() + TOKEN_TTL });
   return user;
@@ -17,7 +20,8 @@ export async function verifyToken(token) {
 
 setInterval(() => {
   const now = Date.now();
-  for (const [k, v] of _tokenCache.entries()) if (v.exp < now) _tokenCache.delete(k);
+  for (const [k, v] of _tokenCache.entries())
+    if (v.exp < now) _tokenCache.delete(k);
 }, 60_000);
 
 // ─── In-memory rate limiter ───────────────────────────────────────────────────
@@ -25,9 +29,13 @@ const _rl = new Map(); // ip -> { count, resetAt }
 
 export function checkRateLimit(ip, max, windowMs) {
   const now = Date.now();
-  const e   = _rl.get(ip);
-  if (!e || e.resetAt < now) { _rl.set(ip, { count: 1, resetAt: now + windowMs }); return; }
-  if (e.count >= max) throw error(429, 'Trop de requetes, reessaie dans un instant.');
+  const e = _rl.get(ip);
+  if (!e || e.resetAt < now) {
+    _rl.set(ip, { count: 1, resetAt: now + windowMs });
+    return;
+  }
+  if (e.count >= max)
+    throw error(429, "Trop de requetes, reessaie dans un instant.");
   e.count++;
 }
 
@@ -39,10 +47,10 @@ setInterval(() => {
 // ─── Route helpers ────────────────────────────────────────────────────────────
 
 export async function requireAuth(request) {
-  const token = request.headers.get('authorization')?.slice(7);
-  if (!token) throw error(401, 'Non authentifie');
+  const token = request.headers.get("authorization")?.slice(7);
+  if (!token) throw error(401, "Non authentifie");
   const user = await verifyToken(token);
-  if (!user) throw error(401, 'Session invalide');
+  if (!user) throw error(401, "Session invalide");
   return { user, token };
 }
 

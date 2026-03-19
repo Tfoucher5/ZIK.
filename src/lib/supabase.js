@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { browser } from '$app/environment';
+import { createClient } from "@supabase/supabase-js";
+import { browser } from "$app/environment";
 
 /**
  * Create a Supabase client for client-side use.
