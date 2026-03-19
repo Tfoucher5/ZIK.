@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # 1. Gestion des dépendances (ex: npm, yarn, pnpm)
+  - package-ecosystem: "npm" # Change par "pip" ou "composer" selon ta techno
+    directory: "/"
+    schedule:
+      interval: "weekly" # Une fois par semaine (le lundi matin) c'est parfait
+      day: "monday"
+    open-pull-requests-limit: 5 # Ne m'envoie pas plus de 5 PR à la fois
+    labels:
+      - "dependencies"
+      - "automated-pr"
+    # Optionnel : Ignorer les mises à jour mineures pour ne pas être spammé
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
