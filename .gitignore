@@ -15,8 +15,9 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Package
-.svelte-kit
+# SvelteKit specific
+.svelte-kit/
+build/
 .vscode
 
 # Supabase local config (⚠️ contient des tokens)
@@ -24,3 +25,6 @@ Thumbs.db
 
 # Edge Functions deps (si jamais)
 supabase/functions/**/node_modules
+
+# Vite (SvelteKit utilise Vite sous le capot)
+vite.config.js.timestamp-*
