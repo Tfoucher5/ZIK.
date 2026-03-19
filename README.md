@@ -2,7 +2,7 @@
 
 > Blind test multijoueur en temps réel — trouve les titres avant tout le monde.
 
-[![Code Quality Check](https://github.com/Tfoucher5/ZIK/actions/workflows/lint.yml/badge.svg)](https://github.com/Tfoucher5/ZIK/actions/workflows/lint.yml)
+[![Code Quality & Auto-Fix](https://github.com/Tfoucher5/ZIK/actions/workflows/lint.yml/badge.svg)](https://github.com/Tfoucher5/ZIK/actions/workflows/lint.yml)
 [![Dependabot Status](https://img.shields.io/badge/dependabot-enabled-brightgreen.svg?logo=dependabot)](https://github.com/Tfoucher5/ZIK/network/updates)
 [![SvelteKit](https://img.shields.io/badge/framework-SvelteKit-ff3e00.svg?logo=svelte)](https://kit.svelte.dev/)
 [![Supabase](https://img.shields.io/badge/database-Supabase-3ecf8e.svg?logo=supabase)](https://supabase.com/)
