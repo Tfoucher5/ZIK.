@@ -62,10 +62,10 @@
   {#if !profile || profile.is_private}
     <meta name="robots" content="noindex, nofollow">
   {:else}
-    <link rel="canonical" href="https://zik.app/user/{username}">
+    <link rel="canonical" href="https://www.zik-music.fr/user/{username}">
     <meta property="og:title" content="{profile.username} sur ZIK — Blind Test Multijoueur">
     <meta property="og:description" content="ELO {profile.elo ?? '?'} · Niveau {profile.level ?? '?'} · {profile.games_played ?? '0'} parties jouées. Découvre son profil sur ZIK.">
-    <meta property="og:url" content="https://zik.app/user/{username}">
+    <meta property="og:url" content="https://www.zik-music.fr/user/{username}">
     <meta property="og:type" content="profile">
   {/if}
   <link rel="stylesheet" href="/css/profile.css">

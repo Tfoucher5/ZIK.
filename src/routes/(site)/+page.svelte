@@ -108,12 +108,12 @@
 <svelte:head>
   <title>ZIK — Blind Test Multijoueur en Ligne | Jeu Musical Gratuit</title>
   <meta name="description" content="Joue au blind test musical en ligne avec tes amis ! Identifie les chansons en temps réel, importe tes playlists Spotify ou Deezer, et grimpe au classement ELO. Gratuit, sans installation.">
-  <link rel="canonical" href="https://zik.app/">
+  <link rel="canonical" href="https://www.zik-music.fr/">
 
   <!-- Open Graph -->
   <meta property="og:title" content="ZIK — Blind Test Multijoueur en Ligne">
   <meta property="og:description" content="Joue au blind test musical en ligne avec tes amis ! Identifie les chansons en temps réel, importe tes playlists Spotify ou Deezer, et grimpe au classement ELO. Gratuit, sans installation.">
-  <meta property="og:url" content="https://zik.app/">
+  <meta property="og:url" content="https://www.zik-music.fr/">
 
   <!-- Twitter Card -->
   <meta name="twitter:title" content="ZIK — Blind Test Multijoueur en Ligne">
@@ -124,7 +124,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "ZIK",
-    "url": "https://zik.app",
+    "url": "https://www.zik-music.fr/",
     "description": "Blind test musical multijoueur en ligne. Identifie les chansons avant tout le monde, importe tes playlists et grimpe au classement ELO.",
     "applicationCategory": "GameApplication",
     "genre": "Music",
