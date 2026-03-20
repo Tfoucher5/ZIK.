@@ -14,7 +14,7 @@
 
   <section>
     <h2>1. Pr&eacute;sentation du service</h2>
-    <p>ZIK est une application web de blind test musical multijoueur, accessible gratuitement &agrave; l&apos;adresse <strong>zik.app</strong>. Le service permet aux utilisateurs de participer &agrave; des parties de devinettes musicales, de cr&eacute;er des playlists personnalis&eacute;es et de se mesurer &agrave; d&apos;autres joueurs.</p>
+    <p>ZIK est une application web de blind test musical multijoueur, accessible gratuitement &agrave; l&apos;adresse <strong>www.zik-music.fr</strong>. Le service permet aux utilisateurs de participer &agrave; des parties de devinettes musicales, de cr&eacute;er des playlists personnalis&eacute;es et de se mesurer &agrave; d&apos;autres joueurs.</p>
   </section>
 
   <section>

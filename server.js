@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 const { handler } = await import("./build/handler.js");
 
 import { register } from "./src/lib/server/socket/game.js";
+import { registerSalon } from "./src/lib/server/socket/salon.js";
 import { preloadAllPlaylists } from "./src/lib/server/services/playlist.js";
 
 const server = createServer(handler);
@@ -17,6 +18,7 @@ const io = new Server(server, {
 });
 
 register(io);
+registerSalon(io);
 preloadAllPlaylists();
 
 const PORT = process.env.PORT || 3000;

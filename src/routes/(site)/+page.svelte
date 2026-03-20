@@ -173,6 +173,7 @@
         Jouer maintenant <span class="arrow">&rarr;</span>
       </button>
       <a href="/rooms" class="btn-ghost hero-cta-sec">Explorer les rooms</a>
+      <a href="/salon" class="btn-ghost hero-cta-sec" style="border-color:rgba(168,85,247,.4);color:var(--accent2)">&#x1F6CB;&#xFE0F; Mode Salon</a>
     </div>
   </div>
 </section>
