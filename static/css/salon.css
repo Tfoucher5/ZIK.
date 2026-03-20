@@ -273,9 +273,10 @@ body {
 /* ─── Host screen ───────────────────────────────────────────────────────────── */
 
 .salon-host {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -283,10 +284,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--border);
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .salon-host-code {
@@ -333,31 +335,39 @@ body {
   font-size: 1rem;
 }
 
-.salon-host-url {
-  font-size: 0.75rem;
+.salon-host-qr-sm {
+  border-radius: 6px;
+  background: #fff;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.salon-host-url-full {
+  font-size: 0.78rem;
   color: var(--mid);
   background: var(--surface2);
   border-radius: 8px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 240px;
-}
-.salon-host-url span {
-  color: var(--accent2);
-  font-weight: 600;
 }
 
 /* Timer bar */
 .salon-timer-bar {
-  height: 4px;
+  height: 0;
   background: var(--surface2);
-  position: relative;
+  flex-shrink: 0;
+  transition: height 0.2s;
+  overflow: hidden;
+}
+.salon-timer-bar.active {
+  height: 5px;
 }
 .salon-timer-fill {
   height: 100%;
-  background: var(--success);
   transition:
     width 0.9s linear,
     background 0.5s;
@@ -366,98 +376,89 @@ body {
 /* Main layout */
 .salon-host-body {
   display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 0;
+  grid-template-columns: 1fr 260px;
+  flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .salon-host-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 24px;
-  gap: 20px;
+  padding: 20px 24px;
+  gap: 16px;
   overflow-y: auto;
+  min-height: 0;
 }
 
-/* YouTube visible */
-.salon-yt-wrapper {
-  width: 100%;
-  max-width: 800px;
-  aspect-ratio: 16/9;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: #000;
-  position: relative;
-}
-.salon-yt-wrapper iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  display: block;
-}
-
-/* Prompter (host sees answer) */
-.salon-prompter {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 24px;
-  width: 100%;
-  max-width: 800px;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-.salon-prompter-cover {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--surface2);
-}
-.salon-prompter-info {
-  flex: 1;
-}
-.salon-prompter-artist {
-  font-size: 0.8rem;
-  color: var(--mid);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.salon-prompter-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-top: 2px;
-}
-
-/* Lobby */
+/* Lobby — fullscreen QR code */
 .salon-lobby {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 16px;
   flex: 1;
-  padding: 48px 24px;
+  padding: 20px 24px;
+}
+.salon-lobby-qr-wrap {
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.salon-lobby-qr {
+  display: block;
+  border-radius: 8px;
+}
+.salon-lobby-code {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: var(--accent2);
+}
+.salon-lobby-url {
+  font-size: 0.9rem;
+  color: var(--mid);
+}
+.salon-lobby-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 4px;
 }
 .salon-lobby-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  text-align: center;
-}
-.salon-lobby-sub {
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--mid);
-  font-size: 0.9rem;
-  text-align: center;
 }
 .salon-player-count {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 900;
   color: var(--accent2);
+}
+
+/* YouTube container — always in DOM, audio keeps playing when height:0 */
+.salon-yt-container {
+  height: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #000;
+  transition: height 0.35s ease;
+}
+.salon-yt-container.yt-visible {
+  height: 300px;
+  padding: 0 24px 12px;
+}
+.salon-yt-container #salon-yt-player {
+  width: 100%;
+  height: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  display: block;
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 /* Summary */
@@ -483,6 +484,22 @@ body {
   font-size: 0.85rem;
   color: var(--accent2);
   margin-top: 6px;
+}
+.salon-summary-cover {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin: 12px auto 0;
+  display: block;
+}
+
+/* Gameover actions */
+.salon-gameover-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* Game over */
@@ -579,12 +596,13 @@ body {
 
 /* Footer controls */
 .salon-host-footer {
-  padding: 16px 24px;
+  padding: 12px 24px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .btn-salon-start {
@@ -1210,33 +1228,6 @@ body {
   font-weight: 600;
 }
 
-/* YouTube reveal container — always in DOM, shown only in summary */
-.salon-yt-reveal {
-  /* keep iframe alive but invisible during non-summary phases */
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s;
-}
-.salon-yt-reveal.visible {
-  position: relative;
-  width: 100%;
-  max-width: 560px;
-  height: 220px;
-  margin: 12px auto 0;
-  border-radius: var(--radius);
-  overflow: hidden;
-  opacity: 1;
-  pointer-events: auto;
-}
-.salon-yt-reveal.visible #salon-yt-player {
-  width: 100%;
-  height: 100%;
-}
-
 /* Partial badge on host sidebar */
 .salon-player-badge.partial {
   background: rgba(251, 191, 36, 0.15);
@@ -1281,7 +1272,8 @@ body {
   .salon-host-sidebar {
     border-left: none;
     border-top: 1px solid var(--border);
-    max-height: 200px;
+    max-height: 180px;
+    flex-shrink: 0;
   }
   .salon-players-list {
     flex-direction: row;
@@ -1291,36 +1283,39 @@ body {
     padding: 8px;
   }
   .salon-player-row {
-    min-width: 130px;
+    min-width: 120px;
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
+  .salon-lobby-qr {
+    width: 200px;
+    height: 200px;
+  }
+  .salon-yt-container.yt-visible {
+    height: 220px;
+  }
 }
 
 @media (max-width: 640px) {
-  .salon-host-header {
-    padding: 10px 14px;
+  .salon-host-url-full {
+    display: none;
   }
   .salon-code-val {
     font-size: 1.3rem;
-  }
-  .salon-host-qr {
-    width: 52px;
-    height: 52px;
-  }
-  .salon-host-qr img {
-    width: 44px;
-    height: 44px;
-  }
-  .salon-host-url {
-    display: none;
   }
   .salon-choices {
     grid-template-columns: 1fr;
   }
   .salon-choice-btn {
     min-height: 64px;
+  }
+  .salon-lobby-qr {
+    width: 180px;
+    height: 180px;
+  }
+  .salon-lobby-code {
+    font-size: 2rem;
   }
 }
 

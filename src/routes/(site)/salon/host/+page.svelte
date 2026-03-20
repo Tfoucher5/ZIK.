@@ -13,7 +13,6 @@
   let timerVal    = $state(0);
   let timerMax    = $state(30);
   let hostInfo    = $state(null);
-  let choices     = $state(null);
   let roundEnd    = $state(null);
   let finalScores = $state([]);
   let settings    = $state({});
@@ -30,7 +29,7 @@
     'Concentrez-vous ! 🧠',
     'La pression monte… ⏰',
     'Un indice : c\'est de la musique 😅',
-    'Même les pros sudent là… 💦',
+    'Même les pros suent là… 💦',
     'Ça commence à chauffer ! 🌡️',
     'Tournée des grands ducs 👑',
     'Le premier qui trouve gagne tout ! 🎯',
@@ -40,7 +39,7 @@
     'Ça sent la victoire ! 🏅',
   ];
 
-  // YouTube
+  // YouTube — player object lives independently from Svelte rendering
   let ytReady = false;
   let ytPlayer;
 
@@ -61,16 +60,14 @@
   function loadVideo(videoId, startSeconds) {
     if (ytReady && ytPlayer) {
       ytPlayer.loadVideoById({ videoId, startSeconds, suggestedQuality: 'medium' });
+      setTimeout(() => { try { ytPlayer.playVideo(); } catch {} }, 400);
     } else {
-      const checkInterval = setInterval(() => {
+      const check = setInterval(() => {
         if (!ytReady) return;
-        clearInterval(checkInterval);
+        clearInterval(check);
         ytPlayer = new window.YT.Player('salon-yt-player', {
           videoId,
-          playerVars: {
-            autoplay: 1, controls: 1, enablejsapi: 1,
-            start: startSeconds, rel: 0, modestbranding: 1,
-          },
+          playerVars: { autoplay: 1, controls: 1, enablejsapi: 1, start: startSeconds, rel: 0, modestbranding: 1 },
           events: { onReady: (e) => e.target.playVideo() },
         });
       }, 200);
@@ -84,9 +81,7 @@
   function connectSocket(roomCode) {
     socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
 
-    socket.on('connect', () => {
-      socket.emit('salon_join_host', { code: roomCode });
-    });
+    socket.on('connect', () => socket.emit('salon_join_host', { code: roomCode }));
 
     socket.on('salon_host_joined', (data) => {
       settings = data.settings || {};
@@ -98,6 +93,7 @@
 
     socket.on('salon_player_joined', ({ players: p }) => { players = p; });
     socket.on('salon_player_left',   ({ players: p }) => { players = p; });
+
     socket.on('salon_scores_update', ({ scores }) => {
       players = players.map(pl => {
         const s = scores.find(s => s.username === pl.username);
@@ -105,35 +101,26 @@
       }).sort((a, b) => b.score - a.score);
     });
 
-    socket.on('salon_game_starting', () => {
-      phase = 'starting';
-    });
+    socket.on('salon_game_starting', () => { phase = 'starting'; });
 
     socket.on('salon_round_start', (data) => {
       phase    = 'round';
       round    = data.round;
       total    = data.total;
-      choices  = data.choices || null;
       hostInfo = data.hostInfo || null;
       roundEnd = null;
       clearAutoNext();
       pickPhrase();
-
-      // Reset player badges
-      players = players.map(p => ({ ...p, foundThisRound: false, answeredThisRound: false }));
-
+      players = players.map(p => ({ ...p, foundThisRound: false, partialThisRound: false, answeredThisRound: false }));
       loadVideo(data.videoId, data.startSeconds);
     });
 
-    socket.on('salon_timer_update', ({ current, max }) => {
-      timerVal = current;
-      timerMax = max;
-    });
+    socket.on('salon_timer_update', ({ current, max }) => { timerVal = current; timerMax = max; });
 
     socket.on('salon_player_answered', ({ username, correct, partial }) => {
       players = players.map(p =>
         p.username === username
-          ? { ...p, answeredThisRound: true, foundThisRound: correct && !partial, partialThisRound: partial }
+          ? { ...p, answeredThisRound: true, foundThisRound: correct && !partial, partialThisRound: !!partial }
           : p
       );
     });
@@ -141,76 +128,42 @@
     socket.on('salon_round_end', (data) => {
       phase    = 'summary';
       roundEnd = data;
-      hostInfo = { ...hostInfo, revealed: true };
       stopVideo();
-
       if (data.scores) {
-        const scoreMap = Object.fromEntries(data.scores.map(s => [s.username, s.score]));
-        players = players.map(p => ({ ...p, score: scoreMap[p.username] ?? p.score }))
-          .sort((a, b) => b.score - a.score);
+        const m = Object.fromEntries(data.scores.map(s => [s.username, s.score]));
+        players = players.map(p => ({ ...p, score: m[p.username] ?? p.score })).sort((a, b) => b.score - a.score);
       }
-
-      if (!settings.manualNext) {
-        startAutoNextCountdown(settings.showAnswerDuration || 7);
-      }
+      if (!settings.manualNext) startAutoNextCountdown(settings.showAnswerDuration || 7);
     });
 
     socket.on('salon_game_over', ({ scores }) => {
-      phase       = 'gameover';
-      finalScores = scores;
-      stopVideo();
-      clearAutoNext();
+      phase = 'gameover'; finalScores = scores; stopVideo(); clearAutoNext();
     });
 
-    socket.on('salon_error', ({ message }) => {
-      error = message;
+    socket.on('salon_restarted', ({ players: p }) => {
+      players = p; roundEnd = null; finalScores = []; clearAutoNext();
     });
+
+    socket.on('salon_error', ({ message }) => { error = message; });
   }
 
-  function startAutoNextCountdown(seconds) {
-    autoNextSec = seconds;
-    clearAutoNext();
-    autoNextTimer = setInterval(() => {
-      autoNextSec--;
-      if (autoNextSec <= 0) clearAutoNext();
-    }, 1000);
+  function startAutoNextCountdown(s) {
+    autoNextSec = s; clearAutoNext();
+    autoNextTimer = setInterval(() => { if (--autoNextSec <= 0) clearAutoNext(); }, 1000);
   }
+  function clearAutoNext() { clearInterval(autoNextTimer); autoNextTimer = null; autoNextSec = 0; }
+  function startGame()    { socket?.emit('salon_start'); phase = 'starting'; }
+  function nextRound()    { socket?.emit('salon_next_round'); clearAutoNext(); }
+  function restartGame()  { socket?.emit('salon_restart'); }
 
-  function clearAutoNext() {
-    clearInterval(autoNextTimer);
-    autoNextTimer = null;
-    autoNextSec = 0;
-  }
-
-  function startGame() {
-    socket?.emit('salon_start');
-    phase = 'starting';
-  }
-
-  function nextRound() {
-    socket?.emit('salon_next_round');
-    clearAutoNext();
-  }
-
-  function timerPct() {
-    if (!timerMax) return 100;
-    return Math.max(0, (timerVal / timerMax) * 100);
-  }
-
+  function timerPct()  { return timerMax ? Math.max(0, (timerVal / timerMax) * 100) : 100; }
   function timerColor() {
     const p = timerPct();
-    if (p > 60) return '#4ade80';
-    if (p > 30) return '#fbbf24';
-    return '#f87171';
+    return p > 60 ? '#4ade80' : p > 30 ? '#fbbf24' : '#f87171';
   }
 
-  function qrUrl() {
-    const target = encodeURIComponent(`https://www.zik-music.fr/salon/play?code=${code}`);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${target}&bgcolor=ffffff&color=000000`;
-  }
-
-  function joinUrl() {
-    return `zik-music.fr/salon/play?code=${code}`;
+  function qrUrl(size = 200) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent('https://www.zik-music.fr/salon/play?code=' + code)}&bgcolor=ffffff&color=000000`;
   }
 
   onMount(() => {
@@ -222,8 +175,7 @@
   });
 
   onDestroy(() => {
-    socket?.disconnect();
-    clearAutoNext();
+    socket?.disconnect(); clearAutoNext();
     if (ytPlayer?.destroy) ytPlayer.destroy();
   });
 </script>
@@ -239,21 +191,19 @@
   <!-- Header -->
   <header class="salon-host-header">
     <div class="salon-host-code">
-      <img class="salon-host-qr" src={qrUrl()} alt="QR code" width="64" height="64">
+      <img class="salon-host-qr-sm" src={qrUrl(80)} alt="QR" width="40" height="40">
       <div>
-        <div class="salon-code-label">Code d'accès</div>
+        <div class="salon-code-label">Code</div>
         <div class="salon-code-val">{code}</div>
       </div>
     </div>
 
-    <div class="salon-host-url">
-      <span>{joinUrl()}</span>
+    <div class="salon-host-url-full">
+      zik-music.fr/salon/play?code=<strong style="color:var(--accent2)">{code}</strong>
     </div>
 
     {#if phase === 'round'}
-      <div class="salon-host-round">
-        Manche <strong>{round} / {total}</strong>
-      </div>
+      <div class="salon-host-round">Manche <strong>{round} / {total}</strong></div>
     {/if}
 
     <div style="font-size:.8rem;color:var(--mid)">
@@ -261,49 +211,46 @@
     </div>
   </header>
 
-  <!-- Timer bar -->
-  {#if phase === 'round'}
-    <div class="salon-timer-bar">
-      <div class="salon-timer-fill" style="width:{timerPct()}%;background:{timerColor()}"></div>
-    </div>
-  {/if}
+  <!-- Timer bar — always in DOM, zero-height when not playing -->
+  <div class="salon-timer-bar {phase === 'round' ? 'active' : ''}">
+    <div class="salon-timer-fill" style="width:{timerPct()}%;background:{timerColor()}"></div>
+  </div>
 
-  <!-- Body -->
+  <!-- Body: center + sidebar -->
   <div class="salon-host-body">
 
-    <!-- Center -->
     <div class="salon-host-center">
 
       {#if phase === 'lobby' || phase === 'starting'}
         <div class="salon-lobby">
-          <div class="salon-player-count">{players.length}</div>
-          <div class="salon-lobby-title">joueur{players.length !== 1 ? 's' : ''} connecté{players.length !== 1 ? 's' : ''}</div>
-          <div class="salon-lobby-sub">Scannez le QR code ou allez sur <strong style="color:var(--accent2)">{joinUrl()}</strong></div>
+          <div class="salon-lobby-qr-wrap">
+            <img src={qrUrl(280)} alt="QR code" width="280" height="280" class="salon-lobby-qr">
+          </div>
+          <div class="salon-lobby-code">{code}</div>
+          <div class="salon-lobby-url">zik-music.fr/salon/play?code={code}</div>
+          <div class="salon-lobby-count">
+            <span class="salon-player-count">{players.length}</span>
+            <span class="salon-lobby-title">joueur{players.length !== 1 ? 's' : ''} connecté{players.length !== 1 ? 's' : ''}</span>
+          </div>
         </div>
 
       {:else if phase === 'round'}
-        <!-- Phrase + timer (center stage) -->
         <div class="salon-round-stage">
           <div class="salon-big-timer {timerPct() < 20 ? 'danger' : timerPct() < 40 ? 'warn' : ''}">{timerVal}</div>
           <div class="salon-phrase">{currentPhrase}</div>
           <div class="salon-visualizer">
-            {#each {length: 12} as _}
-              <div class="salon-vis-bar"></div>
-            {/each}
+            {#each {length: 14} as _}<div class="salon-vis-bar"></div>{/each}
           </div>
+          {#if players.some(p => p.foundThisRound)}
+            <div class="salon-finders">
+              {#each players.filter(p => p.foundThisRound) as p}
+                <span class="salon-finder-chip">✓ {p.username}</span>
+              {/each}
+            </div>
+          {/if}
         </div>
 
-        <!-- Finders list (who found so far) -->
-        {#if players.some(p => p.foundThisRound)}
-          <div class="salon-finders">
-            {#each players.filter(p => p.foundThisRound) as p}
-              <span class="salon-finder-chip">✓ {p.username}</span>
-            {/each}
-          </div>
-        {/if}
-
       {:else if phase === 'summary' && roundEnd}
-        <!-- Reveal: YouTube player visible + answer -->
         <div class="salon-summary">
           <div class="salon-summary-reason">{roundEnd.reason}</div>
           <div class="salon-summary-answer">{roundEnd.answer}</div>
@@ -314,11 +261,10 @@
             <div class="salon-summary-first">🏆 Premier : {roundEnd.firstFinder}</div>
           {/if}
           {#if roundEnd.cover}
-            <img src={roundEnd.cover} alt="" style="width:80px;height:80px;border-radius:8px;margin:12px auto 0;display:block;object-fit:cover">
+            <img src={roundEnd.cover} alt="" class="salon-summary-cover">
           {/if}
         </div>
 
-        <!-- Scores -->
         <div class="salon-scores-table">
           {#each players as p, i}
             <div class="salon-scores-row {i < 3 ? 'top' : ''}">
@@ -341,19 +287,20 @@
               </div>
             {/each}
           </div>
-          <button class="btn-salon-start" onclick={() => window.location.href = '/salon'}>
-            Nouveau salon
-          </button>
+          <div class="salon-gameover-actions">
+            <button class="btn-salon-start" onclick={restartGame}>🔄 Rejouer</button>
+            <button class="btn-salon-next" onclick={() => window.location.href = '/salon'}>Nouveau salon</button>
+          </div>
         </div>
       {/if}
 
       {#if error}
-        <p style="color:var(--danger);font-size:.9rem">{error}</p>
+        <p style="color:var(--danger);font-size:.9rem;text-align:center;margin-top:8px">{error}</p>
       {/if}
 
     </div>
 
-    <!-- Sidebar: players -->
+    <!-- Sidebar -->
     <div class="salon-host-sidebar">
       <div class="salon-sidebar-title">Joueurs</div>
       <div class="salon-players-list">
@@ -373,32 +320,30 @@
     </div>
   </div>
 
-  <!-- YouTube player — always in DOM so YT API object stays alive, only visible during summary -->
-  <div class="salon-yt-reveal {phase === 'summary' ? 'visible' : ''}">
+  <!--
+    YouTube player — ALWAYS in the DOM (never inside a {#if}).
+    During rounds: invisible container (height:0, overflow:hidden) but audio still plays.
+    During summary: height expands to show the video.
+  -->
+  <div class="salon-yt-container {phase === 'summary' ? 'yt-visible' : ''}">
     <div id="salon-yt-player"></div>
   </div>
 
-  <!-- Footer controls -->
+  <!-- Footer -->
   <footer class="salon-host-footer">
     {#if phase === 'lobby'}
       <button class="btn-salon-start" onclick={startGame} disabled={players.length === 0}>
         {players.length === 0 ? 'En attente de joueurs…' : '▶ Lancer la partie'}
       </button>
-
     {:else if phase === 'summary'}
       {#if settings.manualNext}
-        <button class="btn-salon-next" onclick={nextRound}>
-          Manche suivante →
-        </button>
+        <button class="btn-salon-next" onclick={nextRound}>Manche suivante →</button>
       {:else if autoNextSec > 0}
         <div class="salon-auto-next">
           Manche suivante dans <strong>{autoNextSec}s</strong>…
           <button class="btn-salon-next" onclick={nextRound} style="margin-left:12px">Maintenant →</button>
         </div>
       {/if}
-
-    {:else if phase === 'gameover'}
-      <!-- handled in center -->
     {/if}
   </footer>
 </div>

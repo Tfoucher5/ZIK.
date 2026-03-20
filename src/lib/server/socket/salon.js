@@ -203,9 +203,13 @@ function checkEveryoneDone(code, io) {
   if (!salon || salon.game.phase !== "round") return;
   const players = Object.values(salon.players);
   if (players.length === 0) return;
-  if (players.every((p) => playerFullyFound(p, salon.game.currentTrack))) {
-    endRound(code, "Tout le monde a trouvé !", io);
-  }
+  // In QCM mode: done when everyone has answered (right or wrong)
+  // In free mode: done when everyone has found all elements
+  const allDone =
+    salon.settings.answerMode === "multiple"
+      ? players.every((p) => p._fullFoundCounted)
+      : players.every((p) => playerFullyFound(p, salon.game.currentTrack));
+  if (allDone) endRound(code, "Tout le monde a répondu !", io);
 }
 
 // ─── Game loop ────────────────────────────────────────────────────────────────
@@ -684,6 +688,46 @@ export function registerSalon(io) {
       }
 
       checkEveryoneDone(code, io);
+    });
+
+    // ── Host restarts the game with same players ──────────────────────────────
+    socket.on("salon_restart", () => {
+      const code = socket.salonCode;
+      const salon = salonRooms[code];
+      if (!salon) return;
+      if (socket.id !== salon.hostSocketId) return;
+      if (salon.game.phase !== "gameover" && salon.game.phase !== "summary")
+        return;
+
+      // Clear any pending timers
+      clearInterval(salon.game.interval);
+      clearTimeout(salon.game.breakTimer);
+      salon.game.interval = null;
+      salon.game.breakTimer = null;
+
+      // Reset all player scores
+      for (const p of Object.values(salon.players)) {
+        p.score = 0;
+        p.foundArtist = false;
+        p.foundTitle = false;
+        p.foundFeats = [];
+        p._fullFoundCounted = false;
+      }
+
+      // Re-shuffle session playlist from full playlist
+      const tracks = [...salon.game.fullPlaylist]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, salon.settings.maxRounds);
+      salon.game.sessionPlaylist = tracks;
+      salon.game.currentRound = 0;
+      salon.game.history = [];
+      salon.game.firstFinder = null;
+      salon.game.currentTrack = null;
+
+      io.to(`salon:${code}`).emit("salon_restarted", {
+        players: getPlayerList(salon),
+      });
+      startNextRound(code, io);
     });
 
     // ── Disconnect ────────────────────────────────────────────────────────────
