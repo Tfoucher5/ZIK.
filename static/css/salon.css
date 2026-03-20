@@ -1098,12 +1098,22 @@ body {
   color: var(--success);
   transition: color 0.3s;
 }
-.salon-big-timer.warn  { color: var(--warn); }
-.salon-big-timer.danger { color: var(--danger); animation: pulse 0.6s infinite; }
+.salon-big-timer.warn {
+  color: var(--warn);
+}
+.salon-big-timer.danger {
+  color: var(--danger);
+  animation: pulse 0.6s infinite;
+}
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.06); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
 }
 
 .salon-phrase {
@@ -1127,22 +1137,76 @@ body {
   background: linear-gradient(to top, var(--accent), var(--accent2));
   animation: visBar 0.9s ease-in-out infinite alternate;
 }
-.salon-vis-bar:nth-child(1)  { height: 30%; animation-duration: 0.7s; animation-delay: 0.00s; }
-.salon-vis-bar:nth-child(2)  { height: 60%; animation-duration: 1.1s; animation-delay: 0.05s; }
-.salon-vis-bar:nth-child(3)  { height: 90%; animation-duration: 0.8s; animation-delay: 0.10s; }
-.salon-vis-bar:nth-child(4)  { height: 45%; animation-duration: 1.3s; animation-delay: 0.15s; }
-.salon-vis-bar:nth-child(5)  { height: 75%; animation-duration: 0.6s; animation-delay: 0.20s; }
-.salon-vis-bar:nth-child(6)  { height: 55%; animation-duration: 1.0s; animation-delay: 0.25s; }
-.salon-vis-bar:nth-child(7)  { height: 85%; animation-duration: 0.9s; animation-delay: 0.30s; }
-.salon-vis-bar:nth-child(8)  { height: 40%; animation-duration: 1.2s; animation-delay: 0.35s; }
-.salon-vis-bar:nth-child(9)  { height: 70%; animation-duration: 0.75s; animation-delay: 0.40s; }
-.salon-vis-bar:nth-child(10) { height: 50%; animation-duration: 1.1s; animation-delay: 0.45s; }
-.salon-vis-bar:nth-child(11) { height: 65%; animation-duration: 0.85s; animation-delay: 0.50s; }
-.salon-vis-bar:nth-child(12) { height: 35%; animation-duration: 0.95s; animation-delay: 0.55s; }
+.salon-vis-bar:nth-child(1) {
+  height: 30%;
+  animation-duration: 0.7s;
+  animation-delay: 0s;
+}
+.salon-vis-bar:nth-child(2) {
+  height: 60%;
+  animation-duration: 1.1s;
+  animation-delay: 0.05s;
+}
+.salon-vis-bar:nth-child(3) {
+  height: 90%;
+  animation-duration: 0.8s;
+  animation-delay: 0.1s;
+}
+.salon-vis-bar:nth-child(4) {
+  height: 45%;
+  animation-duration: 1.3s;
+  animation-delay: 0.15s;
+}
+.salon-vis-bar:nth-child(5) {
+  height: 75%;
+  animation-duration: 0.6s;
+  animation-delay: 0.2s;
+}
+.salon-vis-bar:nth-child(6) {
+  height: 55%;
+  animation-duration: 1s;
+  animation-delay: 0.25s;
+}
+.salon-vis-bar:nth-child(7) {
+  height: 85%;
+  animation-duration: 0.9s;
+  animation-delay: 0.3s;
+}
+.salon-vis-bar:nth-child(8) {
+  height: 40%;
+  animation-duration: 1.2s;
+  animation-delay: 0.35s;
+}
+.salon-vis-bar:nth-child(9) {
+  height: 70%;
+  animation-duration: 0.75s;
+  animation-delay: 0.4s;
+}
+.salon-vis-bar:nth-child(10) {
+  height: 50%;
+  animation-duration: 1.1s;
+  animation-delay: 0.45s;
+}
+.salon-vis-bar:nth-child(11) {
+  height: 65%;
+  animation-duration: 0.85s;
+  animation-delay: 0.5s;
+}
+.salon-vis-bar:nth-child(12) {
+  height: 35%;
+  animation-duration: 0.95s;
+  animation-delay: 0.55s;
+}
 
 @keyframes visBar {
-  from { transform: scaleY(0.25); opacity: 0.5; }
-  to   { transform: scaleY(1);    opacity: 1; }
+  from {
+    transform: scaleY(0.25);
+    opacity: 0.5;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
 
 /* Finders chips (host round) */

@@ -176,7 +176,8 @@ function getPlayerList(salon) {
     username: p.username,
     score: p.score,
     foundThisRound: p._fullFoundCounted,
-    answeredThisRound: p.foundArtist || p.foundTitle || p.foundFeats.some(Boolean),
+    answeredThisRound:
+      p.foundArtist || p.foundTitle || p.foundFeats.some(Boolean),
   }));
 }
 
@@ -191,7 +192,9 @@ function resetRoundFlags(salon) {
 
 // Returns true if this player has found everything for the current track
 function playerFullyFound(player, track) {
-  const allFeats = (track.cleanFeatArtists || []).every((_, i) => player.foundFeats[i]);
+  const allFeats = (track.cleanFeatArtists || []).every(
+    (_, i) => player.foundFeats[i],
+  );
   return player.foundArtist && player.foundTitle && allFeats;
 }
 
