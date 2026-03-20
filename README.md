@@ -15,7 +15,6 @@
 - [Fonctionnalités](#-fonctionnalités)
 - [Stack Technique](#-stack-technique)
 - [Architecture](#-architecture)
-- [Installation](#-installation)
 - [Changelog](#-changelog)
 - [Roadmap](#-roadmap)
 - [Contribution](#-contribution)
@@ -41,6 +40,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Timer par manche avec bonus de vitesse
 - **Rooms officielles** curées + rooms personnalisées
 - Rooms éphémères (4h) et rooms persistantes en base
+- **Mode Salon** (Kahoot-like) : un écran hôte, les joueurs sur téléphone via QR code
 
 ### 🎵 Playlists
 
@@ -113,6 +113,9 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 │       ├── +layout.svelte     # Layout global (nav, contexte auth)
 │       ├── +page.svelte       # Accueil (rooms + classements)
 │       ├── game/              # Interface de jeu temps réel
+│       ├── salon/             # Mode Salon (setup + hôte + joueur)
+│       │   ├── host/          # Écran hôte (TV/ordi)
+│       │   └── play/          # Interface joueur (téléphone)
 │       ├── profile/           # Mon profil (édition)
 │       ├── user/[username]/   # Profil public d'un joueur
 │       ├── settings/          # Paramètres (visuel, jeu, confidentialité)
@@ -126,6 +129,17 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ---
 
 ## 📋 Changelog
+
+### v1.2.0 — Mode Salon
+
+- **Mode Salon** (Kahoot-like) : expérience soirée avec un écran hôte sur TV/ordi et les joueurs sur leur téléphone
+- Rejoindre via **QR code** ou code à 6 caractères, sans inscription requise
+- Écran hôte : player YouTube visible en grand, barre timer, liste joueurs avec indicateurs en temps réel (🎤🎸🎵)
+- Interface joueur mobile optimisée : texte libre ou **QCM 4 choix** (style Kahoot)
+- Système de points identique au mode normal : artiste, titre, featurings scorés séparément avec bonus de vitesse
+- Avance automatique entre les manches ou mode manuel
+- Classement en temps réel, fin de partie avec rejouer / nouveau salon
+- 100% éphémère — aucune sauvegarde en base, parties privées
 
 ### v1.1.0 — Profils publics & confidentialité
 
@@ -171,9 +185,16 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - [x] Paramètre de confidentialité Privé / Public
 - [x] Noms de joueurs cliquables partout dans l'appli
 
-### 🚧 v1.2 — En réflexion
+### ✅ v1.2 — Mode Salon
 
-- [ ] Imports depuis Apple Music
+- [x] Mode Salon Kahoot-like (hôte TV + joueurs téléphone)
+- [x] Rejoindre via QR code ou code
+- [x] Texte libre et QCM 4 choix
+- [x] Indicateurs de découverte en temps réel côté hôte
+- [x] Avance automatique ou manuelle
+
+### 🚧 v1.3 — En réflexion
+
 - [ ] Répondre avec la voix (mobile uniquement)
 - [ ] Formulaire de contact
 
