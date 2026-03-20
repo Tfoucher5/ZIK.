@@ -21,12 +21,18 @@
   let timerVal     = $state(0);
   let timerMax     = $state(30);
   let choices      = $state(null);
-  let answered     = $state(false);
+  let featCount    = $state(0);
+
+  // Per-element found state
+  let foundArtist  = $state(false);
+  let foundTitle   = $state(false);
+  let foundFeats   = $state([]);  // bool[]
+  let allFound     = $state(false);
+
   let guess        = $state('');
-  let guessDisabled = $state(true);
   let roundEnd     = $state(null);
   let finalScores  = $state([]);
-  let feedback     = $state(null);  // { correct, points }
+  let feedback     = $state(null);  // { type, correct, points, msg }
   let feedbackTimer = null;
   let error        = $state('');
 
@@ -51,14 +57,14 @@
   }
 
   function submitGuess() {
-    if (guessDisabled || answered || !guess.trim()) return;
+    if (allFound || !guess.trim()) return;
     socket.emit('salon_submit_guess', { guess: guess.trim() });
     guess = '';
   }
 
   function submitChoice(index) {
-    if (answered) return;
-    answered = true;
+    if (allFound) return;
+    allFound = true;
     socket.emit('salon_submit_choice', { choiceIndex: index });
   }
 
@@ -85,7 +91,6 @@
       total      = data.settings?.maxRounds || 10;
       phase      = 'lobby';
       joining    = false;
-      // Remember for reconnect
       localStorage.setItem('salon_code', c);
       localStorage.setItem('salon_user', u);
     });
@@ -99,10 +104,13 @@
       round       = data.round;
       total       = data.total;
       choices     = data.choices || null;
-      answered    = false;
-      guessDisabled = false;
+      featCount   = data.featCount || 0;
       roundEnd    = null;
       guess       = '';
+      foundArtist = false;
+      foundTitle  = false;
+      foundFeats  = Array(data.featCount || 0).fill(false);
+      allFound    = false;
       if (answerMode === 'free') {
         setTimeout(() => {
           document.getElementById('salon-guess-input')?.focus();
@@ -119,8 +127,20 @@
       showFeedback(data);
       if (data.correct) {
         myScore += data.points;
-        answered = true;
-        guessDisabled = true;
+        // Update found state based on type
+        if (data.type === 'success_artist') foundArtist = true;
+        else if (data.type === 'success_title') {
+          foundTitle = true;
+          // QCM correct also sets artist
+          if (answerMode === 'multiple') foundArtist = true;
+        } else if (data.type === 'success_feat') {
+          // find first unfound feat and mark it
+          const idx = foundFeats.findIndex(f => !f);
+          if (idx !== -1) foundFeats = foundFeats.map((f, i) => i === idx ? true : f);
+        }
+        // Check if all found
+        const featsOk = foundFeats.every(Boolean);
+        allFound = foundArtist && foundTitle && featsOk;
       }
     });
 
@@ -131,10 +151,9 @@
     });
 
     socket.on('salon_round_end', (data) => {
-      phase         = 'summary';
-      roundEnd      = data;
-      guessDisabled = true;
-      answered      = true;
+      phase    = 'summary';
+      roundEnd = data;
+      allFound = true; // disable input
       if (data.scores) scores = data.scores;
     });
 
@@ -160,7 +179,6 @@
     const urlCode = params.get('code')?.toUpperCase() || '';
     if (urlCode) codeInput = urlCode;
 
-    const savedCode = localStorage.getItem('salon_code');
     const savedUser = localStorage.getItem('salon_user');
     if (savedUser && !usernameInput) usernameInput = savedUser;
   });
@@ -233,31 +251,46 @@
         </div>
 
       {:else if phase === 'round'}
-        <!-- Round info -->
+        <!-- Round info + timer -->
         <div class="salon-play-round">
           Manche <strong>{round} / {total}</strong>
         </div>
-
-        <!-- Timer circle -->
         <div class="salon-play-timer {timerClass()}">{timerVal}</div>
 
+        <!-- Progress indicators (artist / feats / title) -->
+        {#if answerMode === 'free'}
+          <div class="salon-progress-row">
+            <span class="salon-progress-chip {foundArtist ? 'found' : ''}">
+              {foundArtist ? '✓' : '○'} Artiste
+            </span>
+            {#each foundFeats as ff, i}
+              <span class="salon-progress-chip {ff ? 'found' : ''}">
+                {ff ? '✓' : '○'} Feat {i + 1}
+              </span>
+            {/each}
+            <span class="salon-progress-chip {foundTitle ? 'found' : ''}">
+              {foundTitle ? '✓' : '○'} Titre
+            </span>
+          </div>
+        {/if}
+
         <!-- Answer zone -->
-        {#if answered}
-          <p style="color:var(--mid);font-size:.9rem;text-align:center">Réponse envoyée — en attente des autres…</p>
+        {#if allFound}
+          <p style="color:var(--accent2);font-size:.95rem;text-align:center;font-weight:700">Tout trouvé ! 🎉</p>
+          <p style="color:var(--mid);font-size:.85rem;text-align:center">En attente des autres…</p>
         {:else if answerMode === 'free'}
           <div class="salon-play-guess">
-            <input id="salon-guess-input" type="text" bind:value={guess} placeholder="Artiste ou titre…"
+            <input id="salon-guess-input" type="text" bind:value={guess} placeholder="Artiste, titre, feat…"
               maxlength="100" autocomplete="off" spellcheck="false"
-              disabled={guessDisabled}
               onkeydown={e => { if (e.key === 'Enter') submitGuess(); }}>
-            <button class="btn-salon-submit" onclick={submitGuess} disabled={guessDisabled || !guess.trim()}>
+            <button class="btn-salon-submit" onclick={submitGuess} disabled={!guess.trim()}>
               Envoyer
             </button>
           </div>
         {:else if answerMode === 'multiple' && choices}
           <div class="salon-choices">
             {#each choices as choice, i}
-              <button class="salon-choice-btn c{i}" onclick={() => submitChoice(i)} disabled={answered}>
+              <button class="salon-choice-btn c{i}" onclick={() => submitChoice(i)} disabled={allFound}>
                 {choice}
               </button>
             {/each}
@@ -266,8 +299,13 @@
 
       {:else if phase === 'summary' && roundEnd}
         <div class="salon-play-roundend">
-          <img src={roundEnd.cover} alt="" class="cover">
+          {#if roundEnd.cover}
+            <img src={roundEnd.cover} alt="" class="cover">
+          {/if}
           <div class="answer">{roundEnd.answer}</div>
+          {#if roundEnd.featArtists?.length}
+            <div style="font-size:.78rem;color:var(--mid);margin-top:2px">feat. {roundEnd.featArtists.join(', ')}</div>
+          {/if}
           {#if roundEnd.firstFinder}
             <p style="font-size:.8rem;color:var(--accent2)">🏆 Premier : {roundEnd.firstFinder}</p>
           {/if}
@@ -311,9 +349,11 @@
   {#if feedback}
     <div class="salon-feedback">
       <div class="salon-feedback-inner">
-        <div class="salon-feedback-emoji">{feedback.correct ? '🎉' : '😔'}</div>
-        <div class="salon-feedback-msg {feedback.correct ? 'ok' : 'ko'}">
-          {feedback.correct ? 'Trouvé !' : 'Raté…'}
+        <div class="salon-feedback-emoji">
+          {feedback.type === 'success_artist' ? '🎤' : feedback.type === 'success_title' ? '🎵' : feedback.type === 'success_feat' ? '🎸' : feedback.type === 'close' ? '🌡️' : '😔'}
+        </div>
+        <div class="salon-feedback-msg {feedback.correct ? 'ok' : feedback.type === 'close' ? 'close' : 'ko'}">
+          {feedback.msg}
         </div>
         {#if feedback.correct && feedback.points > 0}
           <div class="salon-feedback-pts">+{feedback.points} point{feedback.points > 1 ? 's' : ''}</div>

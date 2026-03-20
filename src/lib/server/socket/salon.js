@@ -96,7 +96,7 @@ function makeChoices(correct, allTracks) {
   };
 }
 
-// ─── Answer checking (free text) ─────────────────────────────────────────────
+// ─── Answer checking ──────────────────────────────────────────────────────────
 
 function checkMatch(input, target) {
   if (!input || !target) return false;
@@ -109,6 +109,19 @@ function checkMatch(input, target) {
   if (len <= 2) return sim >= 0.95;
   if (sim >= 0.72) return true;
   if (len >= 6 && sim >= 0.65) return true;
+  return false;
+}
+
+function checkClose(input, target) {
+  if (!input || !target || input.length < 2) return false;
+  const sim = stringSimilarity.compareTwoStrings(input, target);
+  if (sim >= 0.42) return true;
+  if (input.length >= 3 && target.length >= 3) {
+    for (let i = 0; i <= target.length - input.length + 1; i++) {
+      const chunk = target.slice(i, i + input.length);
+      if (stringSimilarity.compareTwoStrings(input, chunk) >= 0.8) return true;
+    }
+  }
   return false;
 }
 
@@ -146,19 +159,52 @@ function cleanupNow(code, io) {
 
 // ─── Player helpers ───────────────────────────────────────────────────────────
 
+function makePlayer(username, socketId) {
+  return {
+    username,
+    socketId,
+    score: 0,
+    foundArtist: false,
+    foundTitle: false,
+    foundFeats: [],
+    _fullFoundCounted: false,
+  };
+}
+
 function getPlayerList(salon) {
   return Object.values(salon.players).map((p) => ({
     username: p.username,
     score: p.score,
-    foundThisRound: p.foundThisRound,
-    answeredThisRound: p.answeredThisRound,
+    foundThisRound: p._fullFoundCounted,
+    answeredThisRound:
+      p.foundArtist || p.foundTitle || p.foundFeats.some(Boolean),
   }));
 }
 
 function resetRoundFlags(salon) {
   for (const p of Object.values(salon.players)) {
-    p.foundThisRound = false;
-    p.answeredThisRound = false;
+    p.foundArtist = false;
+    p.foundTitle = false;
+    p.foundFeats = [];
+    p._fullFoundCounted = false;
+  }
+}
+
+// Returns true if this player has found everything for the current track
+function playerFullyFound(player, track) {
+  const allFeats = (track.cleanFeatArtists || []).every(
+    (_, i) => player.foundFeats[i],
+  );
+  return player.foundArtist && player.foundTitle && allFeats;
+}
+
+function checkEveryoneDone(code, io) {
+  const salon = salonRooms[code];
+  if (!salon || salon.game.phase !== "round") return;
+  const players = Object.values(salon.players);
+  if (players.length === 0) return;
+  if (players.every((p) => playerFullyFound(p, salon.game.currentTrack))) {
+    endRound(code, "Tout le monde a trouvé !", io);
   }
 }
 
@@ -184,6 +230,7 @@ function endRound(code, reason, io) {
     cover: track.cover,
     reason,
     firstFinder: game.firstFinder,
+    featArtists: (track.featArtists || []).map(displayString),
     scores,
   };
 
@@ -197,7 +244,6 @@ function endRound(code, reason, io) {
       startNextRound(code, io);
     }, salon.settings.showAnswerDuration * 1000);
   }
-  // If manualNext, host must emit salon_next_round
 }
 
 async function startNextRound(code, io) {
@@ -252,7 +298,7 @@ async function startNextRound(code, io) {
       );
       game.choices = c;
       game.correctChoiceIndex = idx;
-      choices = c; // send to all (correct index NOT included)
+      choices = c;
     }
 
     const roundData = {
@@ -261,9 +307,10 @@ async function startNextRound(code, io) {
       round: game.currentRound,
       total: salon.settings.maxRounds,
       choices,
+      featCount: track.featArtists?.length || 0,
     };
 
-    // Send to host (includes answer info for prompter display)
+    // Send to host (includes answer info — revealed ONLY at round end on host screen)
     if (salon.hostSocketId) {
       io.to(salon.hostSocketId).emit("salon_round_start", {
         ...roundData,
@@ -354,7 +401,6 @@ export function registerSalon(io) {
       if (!salon)
         return socket.emit("salon_error", { message: "Salon introuvable." });
 
-      // Clear host disconnect grace timer
       clearTimeout(salon._hostDcTimer);
       salon._hostDcTimer = null;
       salon.hostSocketId = socket.id;
@@ -395,13 +441,7 @@ export function registerSalon(io) {
         });
       }
 
-      salon.players[username] = {
-        username,
-        socketId: socket.id,
-        score: 0,
-        foundThisRound: false,
-        answeredThisRound: false,
-      };
+      salon.players[username] = makePlayer(username, socket.id);
 
       socket.join(`salon:${code}`);
       socket.join(`salon:players:${code}`);
@@ -417,7 +457,6 @@ export function registerSalon(io) {
           maxRounds: salon.settings.maxRounds,
         },
       });
-      // Notify host
       if (salon.hostSocketId) {
         io.to(salon.hostSocketId).emit("salon_player_joined", { players });
       }
@@ -438,7 +477,6 @@ export function registerSalon(io) {
       salon.game.sessionPlaylist = tracks;
       salon.game.currentRound = 0;
 
-      // Reset scores
       for (const p of Object.values(salon.players)) p.score = 0;
 
       io.to(`salon:${code}`).emit("salon_game_starting");
@@ -466,7 +504,7 @@ export function registerSalon(io) {
       if (!salon || salon.game.phase !== "round") return;
 
       const player = salon.players[username];
-      if (!player || player.foundThisRound) return;
+      if (!player || player._fullFoundCounted) return;
 
       const track = salon.game.currentTrack;
       const input = cleanString(guess?.slice(0, 100) || "");
@@ -474,41 +512,120 @@ export function registerSalon(io) {
 
       const timeTaken = (Date.now() - salon.game.startTime) / 1000;
       const bonus = calcSpeedBonus(timeTaken);
+      let hit = false;
 
-      const matchTitle = checkMatch(input, track.cleanTitle);
-      const matchArtist = checkMatch(input, track.cleanArtist);
+      // Artist
+      if (!player.foundArtist) {
+        if (checkMatch(input, track.cleanArtist)) {
+          player.foundArtist = true;
+          player.score += 1 + bonus;
+          socket.emit("salon_feedback", {
+            type: "success_artist",
+            correct: true,
+            points: 1 + bonus,
+            msg: `Artiste ! (+${1 + bonus} pts)`,
+          });
+          hit = true;
+        } else if (checkClose(input, track.cleanArtist)) {
+          socket.emit("salon_feedback", {
+            type: "close",
+            correct: false,
+            points: 0,
+            msg: "Tu chauffes sur l'artiste !",
+          });
+          hit = true;
+        }
+      }
 
-      if (matchTitle || matchArtist) {
-        const points = 1 + bonus;
-        player.score += points;
-        player.foundThisRound = true;
+      // Feats
+      if (!hit) {
+        for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
+          if (player.foundFeats[fi]) continue;
+          if (checkMatch(input, track.cleanFeatArtists[fi])) {
+            player.foundFeats[fi] = true;
+            player.score += 1 + bonus;
+            socket.emit("salon_feedback", {
+              type: "success_feat",
+              correct: true,
+              points: 1 + bonus,
+              msg: `Feat ! (+${1 + bonus} pts)`,
+            });
+            hit = true;
+            break;
+          } else if (checkClose(input, track.cleanFeatArtists[fi])) {
+            socket.emit("salon_feedback", {
+              type: "close",
+              correct: false,
+              points: 0,
+              msg: "Tu chauffes sur le feat !",
+            });
+            hit = true;
+            break;
+          }
+        }
+      }
 
+      // Title
+      if (!hit) {
+        if (!player.foundTitle) {
+          if (checkMatch(input, track.cleanTitle)) {
+            player.foundTitle = true;
+            player.score += 1 + bonus;
+            socket.emit("salon_feedback", {
+              type: "success_title",
+              correct: true,
+              points: 1 + bonus,
+              msg: `Titre ! (+${1 + bonus} pts)`,
+            });
+            hit = true;
+          } else if (checkClose(input, track.cleanTitle)) {
+            socket.emit("salon_feedback", {
+              type: "close",
+              correct: false,
+              points: 0,
+              msg: "Tu chauffes sur le titre !",
+            });
+            hit = true;
+          }
+        }
+      }
+
+      if (!hit) {
+        socket.emit("salon_feedback", {
+          type: "miss",
+          correct: false,
+          points: 0,
+          msg: "Pas du tout…",
+        });
+      }
+
+      // Check if fully found now
+      if (playerFullyFound(player, track) && !player._fullFoundCounted) {
+        player._fullFoundCounted = true;
         if (!salon.game.firstFinder) salon.game.firstFinder = username;
-
-        socket.emit("salon_feedback", { correct: true, points });
+        // Notify host
         if (salon.hostSocketId) {
           io.to(salon.hostSocketId).emit("salon_player_answered", {
             username,
             correct: true,
           });
         }
-
-        // Update scores on all devices
-        const scores = Object.values(salon.players)
-          .map((p) => ({ username: p.username, score: p.score }))
-          .sort((a, b) => b.score - a.score);
-        io.to(`salon:${code}`).emit("salon_scores_update", { scores });
-
-        // Check if everyone found
-        const allFound = Object.values(salon.players).every(
-          (p) => p.foundThisRound,
-        );
-        if (allFound && salon.game.phase === "round") {
-          endRound(code, "Tout le monde a trouvé !", io);
-        }
-      } else {
-        socket.emit("salon_feedback", { correct: false, points: 0 });
+      } else if (hit && !player._fullFoundCounted && salon.hostSocketId) {
+        // Partial progress — update host badge
+        io.to(salon.hostSocketId).emit("salon_player_answered", {
+          username,
+          correct: false,
+          partial: true,
+        });
       }
+
+      // Broadcast updated scores
+      const scores = Object.values(salon.players)
+        .map((p) => ({ username: p.username, score: p.score }))
+        .sort((a, b) => b.score - a.score);
+      io.to(`salon:${code}`).emit("salon_scores_update", { scores });
+
+      checkEveryoneDone(code, io);
     });
 
     // ── Player submits multiple choice ────────────────────────────────────────
@@ -519,24 +636,34 @@ export function registerSalon(io) {
       if (!salon || salon.game.phase !== "round") return;
 
       const player = salon.players[username];
-      if (!player || player.answeredThisRound) return;
+      if (!player || player._fullFoundCounted) return;
 
       const game = salon.game;
-      player.answeredThisRound = true;
-
       const timeTaken = (Date.now() - game.startTime) / 1000;
       const bonus = calcSpeedBonus(timeTaken);
       const correct = choiceIndex === game.correctChoiceIndex;
 
       if (correct) {
-        const points = 1 + bonus;
+        // Artist + title both awarded in QCM
+        const points = 2 + bonus;
         player.score += points;
-        player.foundThisRound = true;
+        player.foundArtist = true;
+        player.foundTitle = true;
+        player._fullFoundCounted = true;
         if (!game.firstFinder) game.firstFinder = username;
-
-        socket.emit("salon_feedback", { correct: true, points });
+        socket.emit("salon_feedback", {
+          type: "success_title",
+          correct: true,
+          points,
+          msg: `Trouvé ! (+${points} pts)`,
+        });
       } else {
-        socket.emit("salon_feedback", { correct: false, points: 0 });
+        socket.emit("salon_feedback", {
+          type: "miss",
+          correct: false,
+          points: 0,
+          msg: "Raté…",
+        });
       }
 
       if (salon.hostSocketId) {
@@ -551,13 +678,12 @@ export function registerSalon(io) {
         .sort((a, b) => b.score - a.score);
       io.to(`salon:${code}`).emit("salon_scores_update", { scores });
 
-      // Check if everyone answered
-      const allAnswered = Object.values(salon.players).every(
-        (p) => p.answeredThisRound,
-      );
-      if (allAnswered && game.phase === "round") {
-        endRound(code, "Tout le monde a répondu !", io);
+      // In QCM, wrong answer = still answered (can't retry)
+      if (!correct) {
+        player._fullFoundCounted = true; // block further attempts
       }
+
+      checkEveryoneDone(code, io);
     });
 
     // ── Disconnect ────────────────────────────────────────────────────────────
@@ -568,7 +694,6 @@ export function registerSalon(io) {
       if (!salon) return;
 
       if (socket.salonRole === "host") {
-        // Grace period before cleanup
         salon._hostDcTimer = setTimeout(() => {
           cleanupNow(code, io);
         }, HOST_RECONNECT_GRACE);

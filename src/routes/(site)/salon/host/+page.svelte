@@ -2,33 +2,53 @@
   import { onMount, onDestroy } from 'svelte';
   import { io } from 'socket.io-client';
 
-  // URL params
   let code = $state('');
   let socket;
 
   // Game state
-  let phase       = $state('lobby');   // lobby | round | summary | gameover
+  let phase       = $state('lobby');
   let players     = $state([]);
   let round       = $state(0);
   let total       = $state(10);
   let timerVal    = $state(0);
   let timerMax    = $state(30);
-  let hostInfo    = $state(null);   // { artist, title, cover, correctChoiceIndex }
-  let choices     = $state(null);   // string[] for QCM
-  let roundEnd    = $state(null);   // { answer, cover, reason, firstFinder, scores }
+  let hostInfo    = $state(null);
+  let choices     = $state(null);
+  let roundEnd    = $state(null);
   let finalScores = $state([]);
   let settings    = $state({});
   let error       = $state('');
   let autoNextSec = $state(0);
   let autoNextTimer = null;
+  let currentPhrase = $state('');
+
+  const phrases = [
+    'Écoutez bien… 👂',
+    'Vous le sentez ce titre ? 🎵',
+    'Chaud devant ! 🔥',
+    'Qui sera le premier ? 🏆',
+    'Concentrez-vous ! 🧠',
+    'La pression monte… ⏰',
+    'Un indice : c\'est de la musique 😅',
+    'Même les pros sudent là… 💦',
+    'Ça commence à chauffer ! 🌡️',
+    'Tournée des grands ducs 👑',
+    'Le premier qui trouve gagne tout ! 🎯',
+    'C\'est maintenant ou jamais… ⚡',
+    'Vos oreilles valent de l\'or 🪙',
+    'Top niveau ce soir ! 🎶',
+    'Ça sent la victoire ! 🏅',
+  ];
 
   // YouTube
   let ytReady = false;
   let ytPlayer;
-  let currentVideoId = '';
-  let currentStart   = 0;
 
   const medals = ['🥇', '🥈', '🥉'];
+
+  function pickPhrase() {
+    currentPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+  }
 
   function initYT() {
     if (window.YT?.Player) { ytReady = true; return; }
@@ -39,8 +59,6 @@
   }
 
   function loadVideo(videoId, startSeconds) {
-    currentVideoId = videoId;
-    currentStart   = startSeconds;
     if (ytReady && ytPlayer) {
       ytPlayer.loadVideoById({ videoId, startSeconds, suggestedQuality: 'medium' });
     } else {
@@ -89,7 +107,6 @@
 
     socket.on('salon_game_starting', () => {
       phase = 'starting';
-      stopVideo();
     });
 
     socket.on('salon_round_start', (data) => {
@@ -100,8 +117,9 @@
       hostInfo = data.hostInfo || null;
       roundEnd = null;
       clearAutoNext();
+      pickPhrase();
 
-      // Reset player answered badges
+      // Reset player badges
       players = players.map(p => ({ ...p, foundThisRound: false, answeredThisRound: false }));
 
       loadVideo(data.videoId, data.startSeconds);
@@ -112,10 +130,10 @@
       timerMax = max;
     });
 
-    socket.on('salon_player_answered', ({ username, correct }) => {
+    socket.on('salon_player_answered', ({ username, correct, partial }) => {
       players = players.map(p =>
         p.username === username
-          ? { ...p, answeredThisRound: true, foundThisRound: correct }
+          ? { ...p, answeredThisRound: true, foundThisRound: correct && !partial, partialThisRound: partial }
           : p
       );
     });
@@ -126,7 +144,6 @@
       hostInfo = { ...hostInfo, revealed: true };
       stopVideo();
 
-      // Update scores from round end data
       if (data.scores) {
         const scoreMap = Object.fromEntries(data.scores.map(s => [s.username, s.score]));
         players = players.map(p => ({ ...p, score: scoreMap[p.username] ?? p.score }))
@@ -258,7 +275,6 @@
     <div class="salon-host-center">
 
       {#if phase === 'lobby' || phase === 'starting'}
-        <!-- Lobby waiting screen -->
         <div class="salon-lobby">
           <div class="salon-player-count">{players.length}</div>
           <div class="salon-lobby-title">joueur{players.length !== 1 ? 's' : ''} connecté{players.length !== 1 ? 's' : ''}</div>
@@ -266,34 +282,34 @@
         </div>
 
       {:else if phase === 'round'}
-        <!-- YouTube player (visible) -->
-        <div class="salon-yt-wrapper">
-          <div id="salon-yt-player"></div>
+        <!-- Phrase + timer (center stage) -->
+        <div class="salon-round-stage">
+          <div class="salon-big-timer {timerPct() < 20 ? 'danger' : timerPct() < 40 ? 'warn' : ''}">{timerVal}</div>
+          <div class="salon-phrase">{currentPhrase}</div>
+          <div class="salon-visualizer">
+            {#each {length: 12} as _}
+              <div class="salon-vis-bar"></div>
+            {/each}
+          </div>
         </div>
 
-        <!-- Prompter (answer for host eyes) -->
-        {#if hostInfo}
-          <div class="salon-prompter">
-            {#if hostInfo.cover}
-              <img src={hostInfo.cover} alt="" class="salon-prompter-cover">
-            {/if}
-            <div class="salon-prompter-info">
-              <div class="salon-prompter-artist">{hostInfo.artist}</div>
-              <div class="salon-prompter-title">{hostInfo.title}</div>
-              {#if choices && hostInfo.correctChoiceIndex !== null}
-                <div style="font-size:.78rem;color:var(--accent2);margin-top:4px">
-                  ✓ {choices[hostInfo.correctChoiceIndex]}
-                </div>
-              {/if}
-            </div>
+        <!-- Finders list (who found so far) -->
+        {#if players.some(p => p.foundThisRound)}
+          <div class="salon-finders">
+            {#each players.filter(p => p.foundThisRound) as p}
+              <span class="salon-finder-chip">✓ {p.username}</span>
+            {/each}
           </div>
         {/if}
 
       {:else if phase === 'summary' && roundEnd}
-        <!-- Round summary -->
+        <!-- Reveal: YouTube player visible + answer -->
         <div class="salon-summary">
           <div class="salon-summary-reason">{roundEnd.reason}</div>
           <div class="salon-summary-answer">{roundEnd.answer}</div>
+          {#if roundEnd.featArtists?.length}
+            <div style="font-size:.8rem;color:var(--mid);margin-top:4px">feat. {roundEnd.featArtists.join(', ')}</div>
+          {/if}
           {#if roundEnd.firstFinder}
             <div class="salon-summary-first">🏆 Premier : {roundEnd.firstFinder}</div>
           {/if}
@@ -302,7 +318,7 @@
           {/if}
         </div>
 
-        <!-- Intermediate scores -->
+        <!-- Scores -->
         <div class="salon-scores-table">
           {#each players as p, i}
             <div class="salon-scores-row {i < 3 ? 'top' : ''}">
@@ -345,16 +361,21 @@
           <div class="salon-player-row">
             <div class="salon-player-rank">{i + 1}</div>
             <div class="salon-player-name">{p.username}</div>
-            <div class="salon-player-score">{p.score}</div>
+            <div class="salon-player-score">{p.score ?? 0}</div>
             {#if phase === 'round' || phase === 'summary'}
-              <div class="salon-player-badge {p.answeredThisRound ? (p.foundThisRound ? 'ok' : 'ko') : 'wait'}">
-                {p.answeredThisRound ? (p.foundThisRound ? '✓' : '✗') : '…'}
+              <div class="salon-player-badge {p.foundThisRound ? 'ok' : p.partialThisRound ? 'partial' : 'wait'}">
+                {p.foundThisRound ? '✓' : p.partialThisRound ? '~' : '…'}
               </div>
             {/if}
           </div>
         {/each}
       </div>
     </div>
+  </div>
+
+  <!-- YouTube player — always in DOM so YT API object stays alive, only visible during summary -->
+  <div class="salon-yt-reveal {phase === 'summary' ? 'visible' : ''}">
+    <div id="salon-yt-player"></div>
   </div>
 
   <!-- Footer controls -->
