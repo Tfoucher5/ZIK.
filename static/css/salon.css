@@ -819,10 +819,19 @@ body {
   cursor: not-allowed;
   transform: none;
 }
-.salon-choice-btn.c0 { background: var(--c-red); }
-.salon-choice-btn.c1 { background: var(--c-blue); }
-.salon-choice-btn.c2 { background: var(--c-yellow); color: #111; }
-.salon-choice-btn.c3 { background: var(--c-green); }
+.salon-choice-btn.c0 {
+  background: var(--c-red);
+}
+.salon-choice-btn.c1 {
+  background: var(--c-blue);
+}
+.salon-choice-btn.c2 {
+  background: var(--c-yellow);
+  color: #111;
+}
+.salon-choice-btn.c3 {
+  background: var(--c-green);
+}
 .salon-choice-btn.correct {
   box-shadow: 0 0 0 3px #fff;
   opacity: 1 !important;
@@ -848,14 +857,20 @@ body {
   text-align: center;
   animation: feedbackPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-.salon-feedback-emoji { font-size: 3rem; }
+.salon-feedback-emoji {
+  font-size: 3rem;
+}
 .salon-feedback-msg {
   font-size: 1.3rem;
   font-weight: 800;
   margin-top: 8px;
 }
-.salon-feedback-msg.ok { color: var(--success); }
-.salon-feedback-msg.ko { color: var(--danger); }
+.salon-feedback-msg.ok {
+  color: var(--success);
+}
+.salon-feedback-msg.ko {
+  color: var(--danger);
+}
 .salon-feedback-pts {
   font-size: 1rem;
   color: var(--mid);
@@ -863,8 +878,14 @@ body {
 }
 
 @keyframes feedbackPop {
-  from { opacity: 0; transform: scale(0.7); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Round end / game over on play screen */
@@ -911,7 +932,9 @@ body {
   font-weight: 900;
   letter-spacing: -0.03em;
 }
-.salon-join-logo span { color: var(--accent2); }
+.salon-join-logo span {
+  color: var(--accent2);
+}
 .salon-join-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -945,7 +968,9 @@ body {
   text-transform: none;
   letter-spacing: normal;
 }
-.salon-join-field input:focus { border-color: var(--accent2); }
+.salon-join-field input:focus {
+  border-color: var(--accent2);
+}
 .salon-join-field label {
   font-size: 0.78rem;
   color: var(--mid);
@@ -987,11 +1012,21 @@ body {
   animation: dot 1.2s infinite;
   font-size: 1.5rem;
 }
-.salon-play-lobby .waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
-.salon-play-lobby .waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+.salon-play-lobby .waiting-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.salon-play-lobby .waiting-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 @keyframes dot {
-  0%, 80%, 100% { opacity: 0.2; }
-  40% { opacity: 1; }
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
 }
 
 /* Scores list on play screen */
@@ -1015,14 +1050,24 @@ body {
   background: rgba(168, 85, 247, 0.12);
   border: 1px solid rgba(168, 85, 247, 0.3);
 }
-.salon-play-score-rank { color: var(--mid); font-size: 0.78rem; }
-.salon-play-score-name { font-weight: 500; }
-.salon-play-score-pts { font-weight: 800; color: var(--accent2); }
+.salon-play-score-rank {
+  color: var(--mid);
+  font-size: 0.78rem;
+}
+.salon-play-score-name {
+  font-weight: 500;
+}
+.salon-play-score-pts {
+  font-weight: 800;
+  color: var(--accent2);
+}
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .salon-host-body { grid-template-columns: 1fr; }
+  .salon-host-body {
+    grid-template-columns: 1fr;
+  }
   .salon-host-sidebar {
     border-left: none;
     border-top: 1px solid var(--border);
@@ -1044,17 +1089,35 @@ body {
 }
 
 @media (max-width: 640px) {
-  .salon-host-header { padding: 10px 14px; }
-  .salon-code-val { font-size: 1.3rem; }
-  .salon-host-qr { width: 52px; height: 52px; }
-  .salon-host-qr img { width: 44px; height: 44px; }
-  .salon-host-url { display: none; }
-  .salon-choices { grid-template-columns: 1fr; }
-  .salon-choice-btn { min-height: 64px; }
+  .salon-host-header {
+    padding: 10px 14px;
+  }
+  .salon-code-val {
+    font-size: 1.3rem;
+  }
+  .salon-host-qr {
+    width: 52px;
+    height: 52px;
+  }
+  .salon-host-qr img {
+    width: 44px;
+    height: 44px;
+  }
+  .salon-host-url {
+    display: none;
+  }
+  .salon-choices {
+    grid-template-columns: 1fr;
+  }
+  .salon-choice-btn {
+    min-height: 64px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }
