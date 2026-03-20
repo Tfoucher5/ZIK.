@@ -696,7 +696,8 @@ export function registerSalon(io) {
       const salon = salonRooms[code];
       if (!salon) return;
       if (socket.id !== salon.hostSocketId) return;
-      if (salon.game.phase !== "gameover" && salon.game.phase !== "summary") return;
+      if (salon.game.phase !== "gameover" && salon.game.phase !== "summary")
+        return;
 
       // Clear any pending timers
       clearInterval(salon.game.interval);

@@ -368,7 +368,9 @@ body {
 }
 .salon-timer-fill {
   height: 100%;
-  transition: width 0.9s linear, background 0.5s;
+  transition:
+    width 0.9s linear,
+    background 0.5s;
 }
 
 /* Main layout */
@@ -390,7 +392,6 @@ body {
   min-height: 0;
 }
 
-
 /* Lobby — fullscreen QR code */
 .salon-lobby {
   display: flex;
@@ -405,7 +406,7 @@ body {
   background: #fff;
   border-radius: 16px;
   padding: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 .salon-lobby-qr {
   display: block;
@@ -1227,7 +1228,6 @@ body {
   font-weight: 600;
 }
 
-
 /* Partial badge on host sidebar */
 .salon-player-badge.partial {
   background: rgba(251, 191, 36, 0.15);
@@ -1288,17 +1288,35 @@ body {
     align-items: flex-start;
     gap: 4px;
   }
-  .salon-lobby-qr { width: 200px; height: 200px; }
-  .salon-yt-container.yt-visible { height: 220px; }
+  .salon-lobby-qr {
+    width: 200px;
+    height: 200px;
+  }
+  .salon-yt-container.yt-visible {
+    height: 220px;
+  }
 }
 
 @media (max-width: 640px) {
-  .salon-host-url-full { display: none; }
-  .salon-code-val { font-size: 1.3rem; }
-  .salon-choices { grid-template-columns: 1fr; }
-  .salon-choice-btn { min-height: 64px; }
-  .salon-lobby-qr { width: 180px; height: 180px; }
-  .salon-lobby-code { font-size: 2rem; }
+  .salon-host-url-full {
+    display: none;
+  }
+  .salon-code-val {
+    font-size: 1.3rem;
+  }
+  .salon-choices {
+    grid-template-columns: 1fr;
+  }
+  .salon-choice-btn {
+    min-height: 64px;
+  }
+  .salon-lobby-qr {
+    width: 180px;
+    height: 180px;
+  }
+  .salon-lobby-code {
+    font-size: 2rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
