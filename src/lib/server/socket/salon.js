@@ -669,13 +669,14 @@ export function registerSalon(io) {
       }
 
       if (salon.hostSocketId) {
+        const t = salon.game.currentTrack;
         io.to(salon.hostSocketId).emit("salon_player_answered", {
           username,
           correct,
           foundArtist: player.foundArtist,
           foundTitle: player.foundTitle,
           foundFeatCount: player.foundFeats.filter(Boolean).length,
-          totalFeatCount: track.cleanFeatArtists?.length || 0,
+          totalFeatCount: t?.cleanFeatArtists?.length || 0,
         });
       }
 
