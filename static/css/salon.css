@@ -441,7 +441,6 @@ body {
   height: 1px; /* keeps the border visible with no content */
 }
 
-
 /* Lobby — fullscreen QR code */
 .salon-lobby {
   display: flex;
