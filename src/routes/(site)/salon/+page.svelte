@@ -94,7 +94,6 @@
 <svelte:head>
   <title>ZIK — Mode Salon</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="/css/salon.css">
 </svelte:head>
 
 <div class="salon-setup">

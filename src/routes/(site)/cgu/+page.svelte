@@ -10,7 +10,7 @@
 <main class="legal-page">
   <button onclick={() => history.back()} class="settings-back" style="background:none;border:none;cursor:pointer;padding:0;display:inline-block;margin-bottom:24px;font-size:.82rem;color:var(--mid);font-weight:500;transition:color .15s">&larr; Retour</button>
   <h1>Conditions G&eacute;n&eacute;rales d&apos;Utilisation</h1>
-  <p class="legal-date">Derni&egrave;re mise &agrave; jour : mars 2025</p>
+  <p class="legal-date">Derni&egrave;re mise &agrave; jour : mars 2026</p>
 
   <section>
     <h2>1. Pr&eacute;sentation du service</h2>

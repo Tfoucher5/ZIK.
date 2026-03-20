@@ -10,7 +10,7 @@
 <main class="legal-page">
   <button onclick={() => history.back()} class="settings-back" style="background:none;border:none;cursor:pointer;padding:0;display:inline-block;margin-bottom:24px;font-size:.82rem;color:var(--mid);font-weight:500;transition:color .15s">&larr; Retour</button>
   <h1>Politique de confidentialit&eacute;</h1>
-  <p class="legal-date">Derni&egrave;re mise &agrave; jour : mars 2025</p>
+  <p class="legal-date">Derni&egrave;re mise &agrave; jour : mars 2026</p>
 
   <section>
     <h2>1. Donn&eacute;es collect&eacute;es</h2>
@@ -42,7 +42,13 @@
 
   <section>
     <h2>4. Cookies et stockage local</h2>
-    <p>ZIK utilise le stockage local du navigateur (<code>localStorage</code>) uniquement pour vos pr&eacute;f&eacute;rences d&apos;interface (volume, animations) et votre session de connexion. Aucun cookie de tracking ou publicitaire n&apos;est utilis&eacute;.</p>
+    <p>ZIK utilise le stockage local du navigateur (<code>localStorage</code>) uniquement pour :</p>
+    <ul>
+      <li>Vos pr&eacute;f&eacute;rences d&apos;interface (volume, animations)</li>
+      <li>Votre session de connexion</li>
+      <li>En Mode Salon, le code et le pseudo saisis lors de votre derni&egrave;re session (pour pr&eacute;remplir le formulaire lors d&apos;une prochaine visite). Ces donn&eacute;es restent exclusivement sur votre appareil et ne sont jamais transmises &agrave; nos serveurs.</li>
+    </ul>
+    <p>Aucun cookie de tracking ou publicitaire n&apos;est utilis&eacute;.</p>
   </section>
 
   <section>

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(ls -la \"c:\\\\Users\\\\Teamr\\\\Desktop\\\\ZIK\\\\public\\\\css\"\" 2>/dev/null || echo \"Path not found \")",
       "mcp__claude_ai_Notion__notion-search",
-      "mcp__claude_ai_Notion__notion-fetch"
+      "mcp__claude_ai_Notion__notion-fetch",
+      "Bash(cat \"src/routes/\\(site\\)/salon/+layout@.svelte\")"
     ]
   }
 }

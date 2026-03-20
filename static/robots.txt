@@ -5,5 +5,7 @@ Disallow: /game
 Disallow: /api/
 Disallow: /settings
 Disallow: /profile
+Disallow: /salon/host
+Disallow: /salon/play
 
 Sitemap: https://www.zik-music.fr/sitemap.xml
