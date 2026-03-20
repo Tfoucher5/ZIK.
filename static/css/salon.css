@@ -383,11 +383,60 @@ body {
 .salon-host-center {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 20px 24px;
-  gap: 16px;
-  overflow-y: auto;
+  overflow: hidden;
   min-height: 0;
+}
+
+/* Stage: fills center, panels overlay each other */
+.salon-host-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.salon-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.salon-panel.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* YouTube fills its panel entirely */
+.salon-panel #salon-yt-player {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.salon-panel #salon-yt-player iframe {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  border: none;
+}
+
+/* Info area below stage */
+.salon-host-info {
+  flex-shrink: 0;
+  max-height: 38%;
+  overflow-y: auto;
+  width: 100%;
+  padding: 0 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+.salon-info-placeholder {
+  height: 1px; /* keeps the border visible with no content */
 }
 
 
@@ -398,8 +447,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  flex: 1;
-  padding: 20px 24px;
+  padding: 16px;
+  width: 100%;
 }
 .salon-lobby-qr-wrap {
   background: #fff;
@@ -438,26 +487,18 @@ body {
   color: var(--accent2);
 }
 
-/* YouTube container — always in DOM, audio keeps playing when height:0 */
-.salon-yt-container {
-  height: 0;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: #000;
-  transition: height 0.35s ease;
+/* Per-element found indicators in sidebar */
+.salon-player-found {
+  display: flex;
+  gap: 3px;
+  align-items: center;
 }
-.salon-yt-container.yt-visible {
-  height: 300px;
-  padding: 0 24px 12px;
+.found-el {
+  font-size: 0.78rem;
+  line-height: 1;
 }
-.salon-yt-container #salon-yt-player {
-  width: 100%;
-  height: 100%;
-  max-width: 700px;
-  margin: 0 auto;
-  display: block;
-  border-radius: var(--radius);
-  overflow: hidden;
+.found-el.empty {
+  opacity: 0.18;
 }
 
 /* Summary */
@@ -1086,8 +1127,10 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  padding: 24px 0 16px;
-  flex: 1;
+  padding: 16px;
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .salon-big-timer {

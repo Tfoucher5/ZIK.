@@ -6,42 +6,35 @@
   let socket;
 
   // Game state
-  let phase       = $state('lobby');
-  let players     = $state([]);
-  let round       = $state(0);
-  let total       = $state(10);
-  let timerVal    = $state(0);
-  let timerMax    = $state(30);
-  let hostInfo    = $state(null);
-  let roundEnd    = $state(null);
-  let finalScores = $state([]);
-  let settings    = $state({});
-  let error       = $state('');
-  let autoNextSec = $state(0);
+  let phase         = $state('lobby');
+  let players       = $state([]);
+  let round         = $state(0);
+  let total         = $state(10);
+  let timerVal      = $state(0);
+  let timerMax      = $state(30);
+  let roundEnd      = $state(null);
+  let finalScores   = $state([]);
+  let settings      = $state({});
+  let error         = $state('');
+  let autoNextSec   = $state(0);
   let autoNextTimer = null;
   let currentPhrase = $state('');
+  let featCount     = $state(0);
 
   const phrases = [
-    'Écoutez bien… 👂',
-    'Vous le sentez ce titre ? 🎵',
-    'Chaud devant ! 🔥',
-    'Qui sera le premier ? 🏆',
-    'Concentrez-vous ! 🧠',
-    'La pression monte… ⏰',
-    'Un indice : c\'est de la musique 😅',
-    'Même les pros suent là… 💦',
-    'Ça commence à chauffer ! 🌡️',
-    'Tournée des grands ducs 👑',
-    'Le premier qui trouve gagne tout ! 🎯',
-    'C\'est maintenant ou jamais… ⚡',
-    'Vos oreilles valent de l\'or 🪙',
-    'Top niveau ce soir ! 🎶',
+    'Écoutez bien… 👂', 'Vous le sentez ce titre ? 🎵', 'Chaud devant ! 🔥',
+    'Qui sera le premier ? 🏆', 'Concentrez-vous ! 🧠', 'La pression monte… ⏰',
+    'Un indice : c\'est de la musique 😅', 'Même les pros suent là… 💦',
+    'Ça commence à chauffer ! 🌡️', 'Tournée des grands ducs 👑',
+    'Le premier qui trouve gagne tout ! 🎯', 'C\'est maintenant ou jamais… ⚡',
+    'Vos oreilles valent de l\'or 🪙', 'Top niveau ce soir ! 🎶',
     'Ça sent la victoire ! 🏅',
   ];
 
-  // YouTube — player object lives independently from Svelte rendering
-  let ytReady = false;
+  // YouTube — always in DOM, only visually shown during summary/gameover
+  let ytReady          = false;
   let ytPlayer;
+  let currentStartSecs = 0;
 
   const medals = ['🥇', '🥈', '🥉'];
 
@@ -58,6 +51,7 @@
   }
 
   function loadVideo(videoId, startSeconds) {
+    currentStartSecs = startSeconds;
     if (ytReady && ytPlayer) {
       ytPlayer.loadVideoById({ videoId, startSeconds, suggestedQuality: 'medium' });
       setTimeout(() => { try { ytPlayer.playVideo(); } catch {} }, 400);
@@ -66,6 +60,7 @@
         if (!ytReady) return;
         clearInterval(check);
         ytPlayer = new window.YT.Player('salon-yt-player', {
+          height: '100%', width: '100%',
           videoId,
           playerVars: { autoplay: 1, controls: 1, enablejsapi: 1, start: startSeconds, rel: 0, modestbranding: 1 },
           events: { onReady: (e) => e.target.playVideo() },
@@ -74,8 +69,13 @@
     }
   }
 
-  function stopVideo() {
-    if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
+  // On reveal: seek back to start of clip and resume playing
+  function revealVideo() {
+    if (!ytPlayer) return;
+    try {
+      ytPlayer.seekTo(currentStartSecs, true);
+      ytPlayer.playVideo();
+    } catch {}
   }
 
   function connectSocket(roomCode) {
@@ -104,23 +104,34 @@
     socket.on('salon_game_starting', () => { phase = 'starting'; });
 
     socket.on('salon_round_start', (data) => {
-      phase    = 'round';
-      round    = data.round;
-      total    = data.total;
-      hostInfo = data.hostInfo || null;
-      roundEnd = null;
+      phase      = 'round';
+      round      = data.round;
+      total      = data.total;
+      featCount  = data.featCount || 0;
+      roundEnd   = null;
       clearAutoNext();
       pickPhrase();
-      players = players.map(p => ({ ...p, foundThisRound: false, partialThisRound: false, answeredThisRound: false }));
+      players = players.map(p => ({
+        ...p,
+        foundThisRound: false, foundArtist: false, foundTitle: false,
+        foundFeatCount: 0, totalFeatCount: data.featCount || 0,
+      }));
       loadVideo(data.videoId, data.startSeconds);
     });
 
     socket.on('salon_timer_update', ({ current, max }) => { timerVal = current; timerMax = max; });
 
-    socket.on('salon_player_answered', ({ username, correct, partial }) => {
+    socket.on('salon_player_answered', ({ username, correct, foundArtist, foundTitle, foundFeatCount, totalFeatCount }) => {
       players = players.map(p =>
         p.username === username
-          ? { ...p, answeredThisRound: true, foundThisRound: correct && !partial, partialThisRound: !!partial }
+          ? {
+              ...p,
+              foundThisRound: correct,
+              foundArtist: foundArtist ?? p.foundArtist,
+              foundTitle: foundTitle ?? p.foundTitle,
+              foundFeatCount: foundFeatCount ?? p.foundFeatCount ?? 0,
+              totalFeatCount: totalFeatCount ?? p.totalFeatCount ?? 0,
+            }
           : p
       );
     });
@@ -128,7 +139,9 @@
     socket.on('salon_round_end', (data) => {
       phase    = 'summary';
       roundEnd = data;
-      stopVideo();
+      // Don't stop video — seek to start and play for the reveal
+      setTimeout(revealVideo, 200);
+
       if (data.scores) {
         const m = Object.fromEntries(data.scores.map(s => [s.username, s.score]));
         players = players.map(p => ({ ...p, score: m[p.username] ?? p.score })).sort((a, b) => b.score - a.score);
@@ -137,7 +150,7 @@
     });
 
     socket.on('salon_game_over', ({ scores }) => {
-      phase = 'gameover'; finalScores = scores; stopVideo(); clearAutoNext();
+      phase = 'gameover'; finalScores = scores; clearAutoNext();
     });
 
     socket.on('salon_restarted', ({ players: p }) => {
@@ -152,15 +165,12 @@
     autoNextTimer = setInterval(() => { if (--autoNextSec <= 0) clearAutoNext(); }, 1000);
   }
   function clearAutoNext() { clearInterval(autoNextTimer); autoNextTimer = null; autoNextSec = 0; }
-  function startGame()    { socket?.emit('salon_start'); phase = 'starting'; }
-  function nextRound()    { socket?.emit('salon_next_round'); clearAutoNext(); }
-  function restartGame()  { socket?.emit('salon_restart'); }
+  function startGame()   { socket?.emit('salon_start'); phase = 'starting'; }
+  function nextRound()   { socket?.emit('salon_next_round'); clearAutoNext(); }
+  function restartGame() { socket?.emit('salon_restart'); }
 
   function timerPct()  { return timerMax ? Math.max(0, (timerVal / timerMax) * 100) : 100; }
-  function timerColor() {
-    const p = timerPct();
-    return p > 60 ? '#4ade80' : p > 30 ? '#fbbf24' : '#f87171';
-  }
+  function timerColor() { const p = timerPct(); return p > 60 ? '#4ade80' : p > 30 ? '#fbbf24' : '#f87171'; }
 
   function qrUrl(size = 200) {
     return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent('https://www.zik-music.fr/salon/play?code=' + code)}&bgcolor=ffffff&color=000000`;
@@ -211,75 +221,84 @@
     </div>
   </header>
 
-  <!-- Timer bar — always in DOM, zero-height when not playing -->
+  <!-- Timer bar — zero height when not playing -->
   <div class="salon-timer-bar {phase === 'round' ? 'active' : ''}">
     <div class="salon-timer-fill" style="width:{timerPct()}%;background:{timerColor()}"></div>
   </div>
 
-  <!-- Body: center + sidebar -->
+  <!-- Body: center stage + sidebar -->
   <div class="salon-host-body">
 
     <div class="salon-host-center">
 
-      {#if phase === 'lobby' || phase === 'starting'}
-        <div class="salon-lobby">
-          <div class="salon-lobby-qr-wrap">
-            <img src={qrUrl(280)} alt="QR code" width="280" height="280" class="salon-lobby-qr">
-          </div>
-          <div class="salon-lobby-code">{code}</div>
-          <div class="salon-lobby-url">zik-music.fr/salon/play?code={code}</div>
-          <div class="salon-lobby-count">
-            <span class="salon-player-count">{players.length}</span>
-            <span class="salon-lobby-title">joueur{players.length !== 1 ? 's' : ''} connecté{players.length !== 1 ? 's' : ''}</span>
-          </div>
-        </div>
+      <!--
+        Stage area: 3 overlapping panels (absolute positioned).
+        #salon-yt-player is ALWAYS in the DOM inside the video panel.
+        It's just opacity:0 during non-reveal phases so the iframe
+        stays loaded and audio keeps playing during rounds.
+      -->
+      <div class="salon-host-stage">
 
-      {:else if phase === 'round'}
-        <div class="salon-round-stage">
-          <div class="salon-big-timer {timerPct() < 20 ? 'danger' : timerPct() < 40 ? 'warn' : ''}">{timerVal}</div>
-          <div class="salon-phrase">{currentPhrase}</div>
-          <div class="salon-visualizer">
-            {#each {length: 14} as _}<div class="salon-vis-bar"></div>{/each}
-          </div>
-          {#if players.some(p => p.foundThisRound)}
-            <div class="salon-finders">
-              {#each players.filter(p => p.foundThisRound) as p}
-                <span class="salon-finder-chip">✓ {p.username}</span>
-              {/each}
+        <!-- Panel: Lobby -->
+        <div class="salon-panel" class:active={phase === 'lobby' || phase === 'starting'}>
+          <div class="salon-lobby">
+            <div class="salon-lobby-qr-wrap">
+              <img src={qrUrl(260)} alt="QR code" width="260" height="260" class="salon-lobby-qr">
             </div>
-          {/if}
-        </div>
-
-      {:else if phase === 'summary' && roundEnd}
-        <div class="salon-summary">
-          <div class="salon-summary-reason">{roundEnd.reason}</div>
-          <div class="salon-summary-answer">{roundEnd.answer}</div>
-          {#if roundEnd.featArtists?.length}
-            <div style="font-size:.8rem;color:var(--mid);margin-top:4px">feat. {roundEnd.featArtists.join(', ')}</div>
-          {/if}
-          {#if roundEnd.firstFinder}
-            <div class="salon-summary-first">🏆 Premier : {roundEnd.firstFinder}</div>
-          {/if}
-          {#if roundEnd.cover}
-            <img src={roundEnd.cover} alt="" class="salon-summary-cover">
-          {/if}
-        </div>
-
-        <div class="salon-scores-table">
-          {#each players as p, i}
-            <div class="salon-scores-row {i < 3 ? 'top' : ''}">
-              <div class="salon-scores-medal">{medals[i] || `#${i+1}`}</div>
-              <div class="salon-scores-name">{p.username}</div>
-              <div class="salon-scores-pts">{p.score} pts</div>
+            <div class="salon-lobby-code">{code}</div>
+            <div class="salon-lobby-url">zik-music.fr/salon/play?code={code}</div>
+            <div class="salon-lobby-count">
+              <span class="salon-player-count">{players.length}</span>
+              <span class="salon-lobby-title">joueur{players.length !== 1 ? 's' : ''} connecté{players.length !== 1 ? 's' : ''}</span>
             </div>
-          {/each}
+          </div>
         </div>
 
-      {:else if phase === 'gameover'}
-        <div class="salon-gameover">
-          <h2>🏆 Fin de la partie !</h2>
+        <!-- Panel: Round (timer + visualizer) -->
+        <div class="salon-panel" class:active={phase === 'round'}>
+          <div class="salon-round-stage">
+            <div class="salon-big-timer {timerPct() < 20 ? 'danger' : timerPct() < 40 ? 'warn' : ''}">{timerVal}</div>
+            <div class="salon-phrase">{currentPhrase}</div>
+            <div class="salon-visualizer">
+              {#each {length: 14} as _}<div class="salon-vis-bar"></div>{/each}
+            </div>
+            {#if players.some(p => p.foundThisRound)}
+              <div class="salon-finders">
+                {#each players.filter(p => p.foundThisRound) as p}
+                  <span class="salon-finder-chip">✓ {p.username}</span>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Panel: Video — always in DOM, active during summary + gameover -->
+        <div class="salon-panel" class:active={phase === 'summary' || phase === 'gameover'}>
+          <div id="salon-yt-player"></div>
+        </div>
+
+      </div>
+      <!-- /salon-host-stage -->
+
+      <!-- Info area below stage: changes per phase -->
+      <div class="salon-host-info">
+
+        {#if phase === 'summary' && roundEnd}
+          <div class="salon-summary">
+            <div class="salon-summary-reason">{roundEnd.reason}</div>
+            <div class="salon-summary-answer">{roundEnd.answer}</div>
+            {#if roundEnd.featArtists?.length}
+              <div style="font-size:.8rem;color:var(--mid);margin-top:4px">feat. {roundEnd.featArtists.join(', ')}</div>
+            {/if}
+            {#if roundEnd.firstFinder}
+              <div class="salon-summary-first">🏆 Premier : {roundEnd.firstFinder}</div>
+            {/if}
+            {#if roundEnd.cover}
+              <img src={roundEnd.cover} alt="" class="salon-summary-cover">
+            {/if}
+          </div>
           <div class="salon-scores-table">
-            {#each finalScores as p, i}
+            {#each players as p, i}
               <div class="salon-scores-row {i < 3 ? 'top' : ''}">
                 <div class="salon-scores-medal">{medals[i] || `#${i+1}`}</div>
                 <div class="salon-scores-name">{p.username}</div>
@@ -287,20 +306,40 @@
               </div>
             {/each}
           </div>
-          <div class="salon-gameover-actions">
-            <button class="btn-salon-start" onclick={restartGame}>🔄 Rejouer</button>
-            <button class="btn-salon-next" onclick={() => window.location.href = '/salon'}>Nouveau salon</button>
-          </div>
-        </div>
-      {/if}
 
-      {#if error}
-        <p style="color:var(--danger);font-size:.9rem;text-align:center;margin-top:8px">{error}</p>
-      {/if}
+        {:else if phase === 'gameover'}
+          <div class="salon-gameover">
+            <h2>🏆 Fin de la partie !</h2>
+            <div class="salon-scores-table">
+              {#each finalScores as p, i}
+                <div class="salon-scores-row {i < 3 ? 'top' : ''}">
+                  <div class="salon-scores-medal">{medals[i] || `#${i+1}`}</div>
+                  <div class="salon-scores-name">{p.username}</div>
+                  <div class="salon-scores-pts">{p.score} pts</div>
+                </div>
+              {/each}
+            </div>
+            <div class="salon-gameover-actions">
+              <button class="btn-salon-start" onclick={restartGame}>🔄 Rejouer</button>
+              <button class="btn-salon-next" onclick={() => window.location.href = '/salon'}>Nouveau salon</button>
+            </div>
+          </div>
+
+        {:else}
+          <!-- Placeholder to keep info area stable during round/lobby -->
+          <div class="salon-info-placeholder"></div>
+        {/if}
+
+        {#if error}
+          <p style="color:var(--danger);font-size:.9rem;text-align:center">{error}</p>
+        {/if}
+
+      </div>
 
     </div>
+    <!-- /salon-host-center -->
 
-    <!-- Sidebar -->
+    <!-- Sidebar: players with per-element found indicators -->
     <div class="salon-host-sidebar">
       <div class="salon-sidebar-title">Joueurs</div>
       <div class="salon-players-list">
@@ -310,24 +349,21 @@
             <div class="salon-player-name">{p.username}</div>
             <div class="salon-player-score">{p.score ?? 0}</div>
             {#if phase === 'round' || phase === 'summary'}
-              <div class="salon-player-badge {p.foundThisRound ? 'ok' : p.partialThisRound ? 'partial' : 'wait'}">
-                {p.foundThisRound ? '✓' : p.partialThisRound ? '~' : '…'}
+              <div class="salon-player-found">
+                {#if p.foundArtist}<span class="found-el" title="Artiste">🎤</span>{:else}<span class="found-el empty">🎤</span>{/if}
+                {#if (p.totalFeatCount || 0) > 0}
+                  {#if (p.foundFeatCount || 0) > 0}<span class="found-el" title="Feat">{p.foundFeatCount}🎸</span>{:else}<span class="found-el empty">🎸</span>{/if}
+                {/if}
+                {#if p.foundTitle}<span class="found-el" title="Titre">🎵</span>{:else}<span class="found-el empty">🎵</span>{/if}
               </div>
             {/if}
           </div>
         {/each}
       </div>
     </div>
-  </div>
 
-  <!--
-    YouTube player — ALWAYS in the DOM (never inside a {#if}).
-    During rounds: invisible container (height:0, overflow:hidden) but audio still plays.
-    During summary: height expands to show the video.
-  -->
-  <div class="salon-yt-container {phase === 'summary' ? 'yt-visible' : ''}">
-    <div id="salon-yt-player"></div>
   </div>
+  <!-- /salon-host-body -->
 
   <!-- Footer -->
   <footer class="salon-host-footer">
@@ -346,4 +382,5 @@
       {/if}
     {/if}
   </footer>
+
 </div>

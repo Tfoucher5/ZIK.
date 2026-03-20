@@ -84,13 +84,20 @@
     });
 
     socket.on('salon_joined', (data) => {
-      joined     = true;
-      username   = data.username;
-      code       = c;
-      answerMode = data.settings?.answerMode || 'free';
-      total      = data.settings?.maxRounds || 10;
-      phase      = 'lobby';
-      joining    = false;
+      joined      = true;
+      username    = data.username;
+      code        = c;
+      answerMode  = data.settings?.answerMode || 'free';
+      total       = data.settings?.maxRounds || 10;
+      phase       = 'lobby';
+      joining     = false;
+      // Reset game state (in case player is rejoining after a previous game)
+      myScore     = 0;
+      scores      = [];
+      foundArtist = false;
+      foundTitle  = false;
+      foundFeats  = [];
+      allFound    = false;
       localStorage.setItem('salon_code', c);
       localStorage.setItem('salon_user', u);
     });

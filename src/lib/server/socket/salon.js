@@ -607,19 +607,17 @@ export function registerSalon(io) {
       if (playerFullyFound(player, track) && !player._fullFoundCounted) {
         player._fullFoundCounted = true;
         if (!salon.game.firstFinder) salon.game.firstFinder = username;
-        // Notify host
-        if (salon.hostSocketId) {
-          io.to(salon.hostSocketId).emit("salon_player_answered", {
-            username,
-            correct: true,
-          });
-        }
-      } else if (hit && !player._fullFoundCounted && salon.hostSocketId) {
-        // Partial progress — update host badge
+      }
+
+      // Notify host on every hit with full found state
+      if (hit && salon.hostSocketId) {
         io.to(salon.hostSocketId).emit("salon_player_answered", {
           username,
-          correct: false,
-          partial: true,
+          correct: player._fullFoundCounted,
+          foundArtist: player.foundArtist,
+          foundTitle: player.foundTitle,
+          foundFeatCount: player.foundFeats.filter(Boolean).length,
+          totalFeatCount: track.cleanFeatArtists?.length || 0,
         });
       }
 
@@ -674,6 +672,10 @@ export function registerSalon(io) {
         io.to(salon.hostSocketId).emit("salon_player_answered", {
           username,
           correct,
+          foundArtist: player.foundArtist,
+          foundTitle: player.foundTitle,
+          foundFeatCount: player.foundFeats.filter(Boolean).length,
+          totalFeatCount: track.cleanFeatArtists?.length || 0,
         });
       }
 
