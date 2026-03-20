@@ -214,6 +214,7 @@
 <svelte:head>
   <title>ZIK Salon — Hôte {code}</title>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/css/salon.css">
 </svelte:head>
 
 <div class="salon-host">

@@ -1,18 +1,20 @@
 <script>
-  import { onMount, getContext } from 'svelte';
+  import { onMount } from 'svelte';
+  import { createSupabaseClient } from '$lib/supabase.js';
 
-  const _ctx = getContext('zik');
-  const sb   = _ctx.sb;
-  const user = $derived(_ctx.user);
-  const authReady = $derived(_ctx.authReady);
-  const openAuthModal = _ctx.openAuthModal;
+  let { data } = $props();
+
+  const sb = createSupabaseClient(data.env.supabaseUrl, data.env.supabaseAnonKey);
+
+  let user     = $state(null);
+  let authReady = $state(false);
 
   // Settings
-  let playlistId       = $state('');
-  let maxRounds        = $state(10);
-  let roundDuration    = $state(30);
-  let answerMode       = $state('free');    // 'free' | 'multiple'
-  let manualNext       = $state(false);
+  let playlistId         = $state('');
+  let maxRounds          = $state(10);
+  let roundDuration      = $state(30);
+  let answerMode         = $state('free');
+  let manualNext         = $state(false);
   let showAnswerDuration = $state(7);
 
   // Data
@@ -20,7 +22,6 @@
   let creating  = $state(false);
   let error     = $state('');
 
-  // Fetch user playlists + official playlists
   async function loadPlaylists() {
     if (!user) return;
     try {
@@ -44,7 +45,6 @@
       }
       playlists = merged;
 
-      // Auto-select first
       if (!playlistId && merged.length > 0 && merged[0].items.length > 0) {
         playlistId = merged[0].items[0].id;
       }
@@ -68,23 +68,33 @@
           settings: { maxRounds, roundDuration, answerMode, manualNext, showAnswerDuration },
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur création salon');
-      window.location.href = `/salon/host?code=${data.code}`;
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Erreur création salon');
+      window.location.href = `/salon/host?code=${d.code}`;
     } catch (e) {
       error = e.message;
       creating = false;
     }
   }
 
-  $effect(() => {
-    if (authReady && user) loadPlaylists();
+  onMount(async () => {
+    if (!sb) return;
+    const { data: { session } } = await sb.auth.getSession();
+    user = session?.user ?? null;
+    authReady = true;
+    if (user) loadPlaylists();
+
+    sb.auth.onAuthStateChange((_event, session) => {
+      user = session?.user ?? null;
+      if (user) loadPlaylists();
+    });
   });
 </script>
 
 <svelte:head>
   <title>ZIK — Mode Salon</title>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/css/salon.css">
 </svelte:head>
 
 <div class="salon-setup">
@@ -99,7 +109,7 @@
   {:else if !user}
     <div class="salon-card" style="text-align:center">
       <p style="margin-bottom:16px;color:var(--mid)">Connecte-toi pour créer un salon.</p>
-      <button class="btn-salon-create" onclick={() => openAuthModal('login')}>Se connecter</button>
+      <a href="/" class="btn-salon-create" style="display:inline-block;text-decoration:none">Retour à l'accueil</a>
     </div>
 
   {:else}
