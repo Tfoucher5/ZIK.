@@ -32,6 +32,10 @@
   let foundFeats   = $state([]);
   let allFound     = $state(false);
 
+  let chosenIndex        = $state(null);  // QCM: index clicked by this player
+  let revealCorrectIndex = $state(null);  // QCM: index of correct answer (from round_end)
+  let revealTimer        = null;          // delay before transitioning to summary
+
   let guess        = $state('');
   let roundEnd     = $state(null);
   let finalScores  = $state([]);
@@ -56,6 +60,7 @@
 
   function submitChoice(index) {
     if (allFound) return;
+    chosenIndex = index;
     allFound = true;
     socket.emit('salon_submit_choice', { choiceIndex: index });
   }
@@ -115,16 +120,20 @@
     socket.on('salon_game_starting', () => { phase = 'starting'; });
 
     socket.on('salon_round_start', (data) => {
-      phase       = 'round';
-      round       = data.round;
-      total       = data.total;
-      choices     = data.choices || null;
-      roundEnd    = null;
-      guess       = '';
-      foundArtist = false;
-      foundTitle  = false;
-      foundFeats  = Array(data.featCount || 0).fill(false);
-      allFound    = false;
+      phase              = 'round';
+      round              = data.round;
+      total              = data.total;
+      choices            = data.choices || null;
+      roundEnd           = null;
+      guess              = '';
+      foundArtist        = false;
+      foundTitle         = false;
+      foundFeats         = Array(data.featCount || 0).fill(false);
+      allFound           = false;
+      chosenIndex        = null;
+      revealCorrectIndex = null;
+      clearTimeout(revealTimer);
+      revealTimer        = null;
       if (answerMode === 'free') {
         setTimeout(() => { document.getElementById('salon-guess-input')?.focus(); }, 100);
       }
@@ -155,10 +164,22 @@
     });
 
     socket.on('salon_round_end', (data) => {
-      phase    = 'summary';
       roundEnd = data;
       allFound = true;
       if (data.scores) scores = data.scores;
+
+      if (answerMode === 'multiple' && data.correctChoiceIndex !== undefined) {
+        // QCM: brief reveal of correct answer before transitioning to summary
+        revealCorrectIndex = data.correctChoiceIndex;
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(() => {
+          revealTimer        = null;
+          revealCorrectIndex = null;
+          phase              = 'summary';
+        }, 2200);
+      } else {
+        phase = 'summary';
+      }
     });
 
     socket.on('salon_game_over', ({ scores: s }) => {
@@ -192,6 +213,7 @@
     socket?.disconnect();
     clearTimeout(feedbackTimer);
     clearTimeout(errorTimer);
+    clearTimeout(revealTimer);
   });
 </script>
 
@@ -235,6 +257,8 @@
           {answerMode} {choices}
           {foundArtist} {foundTitle} {foundFeats}
           {allFound}
+          {chosenIndex}
+          {revealCorrectIndex}
           bind:guess
           onSubmitGuess={submitGuess}
           onSubmitChoice={submitChoice}

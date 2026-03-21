@@ -8,6 +8,8 @@
     foundTitle = false,
     foundFeats = [],
     allFound = false,
+    chosenIndex = null,
+    revealCorrectIndex = null,
     guess = $bindable(''),
     onSubmitGuess,
     onSubmitChoice,
@@ -68,37 +70,60 @@
       🎵 Titre
     </span>
   </div>
-{/if}
 
-{#if allFound}
-  <div class="salon-all-found">
-    <div class="salon-all-found-emoji">🎉</div>
-    <div class="salon-all-found-text">Tout trouvé !</div>
-    <div class="salon-all-found-sub">En attente des autres…</div>
-  </div>
-{:else if answerMode === 'free'}
-  <div class="salon-play-guess">
-    <input
-      id="salon-guess-input"
-      type="text"
-      bind:value={guess}
-      placeholder="Artiste, titre, feat…"
-      maxlength="100"
-      autocomplete="off"
-      spellcheck="false"
-      onkeydown={e => { if (e.key === 'Enter') onSubmitGuess(); }}
-    >
-    <button class="btn-salon-submit" onclick={onSubmitGuess} disabled={!guess.trim()}>
-      Envoyer
-    </button>
-  </div>
+  {#if allFound}
+    <div class="salon-all-found">
+      <div class="salon-all-found-emoji">🎉</div>
+      <div class="salon-all-found-text">Tout trouvé !</div>
+      <div class="salon-all-found-sub">En attente des autres…</div>
+    </div>
+  {:else}
+    <div class="salon-play-guess">
+      <input
+        id="salon-guess-input"
+        type="text"
+        bind:value={guess}
+        placeholder="Artiste, titre, feat…"
+        maxlength="100"
+        autocomplete="off"
+        spellcheck="false"
+        onkeydown={e => { if (e.key === 'Enter') onSubmitGuess(); }}
+      >
+      <button class="btn-salon-submit" onclick={onSubmitGuess} disabled={!guess.trim()}>
+        Envoyer
+      </button>
+    </div>
+  {/if}
+
 {:else if answerMode === 'multiple' && choices}
+  <!-- QCM: choices always visible — state classes drive the reveal animation -->
   <div class="salon-choices">
     {#each choices as choice, i (i)}
-      <button class="salon-choice-btn c{i}" onclick={() => onSubmitChoice(i)} disabled={allFound}>
+      {@const isChosen = chosenIndex === i}
+      {@const isRevealing = revealCorrectIndex !== null}
+      {@const isCorrect = isRevealing && i === revealCorrectIndex}
+      {@const isWrong = isRevealing && isChosen && !isCorrect}
+      {@const isNeutral = isRevealing && !isChosen && !isCorrect}
+      <button
+        class="salon-choice-btn c{i}"
+        class:is-selected={isChosen && !isRevealing}
+        class:is-waiting={!isChosen && chosenIndex !== null && !isRevealing}
+        class:reveal-correct={isCorrect}
+        class:reveal-wrong={isWrong}
+        class:reveal-neutral={isNeutral}
+        onclick={() => onSubmitChoice(i)}
+        disabled={allFound}
+      >
         <span class="choice-shape"></span>
         <span class="choice-text">{choice}</span>
       </button>
     {/each}
   </div>
+
+  {#if chosenIndex !== null && !isNaN(chosenIndex) && revealCorrectIndex === null}
+    <p class="salon-qcm-waiting">
+      <span class="waiting-dots"><span>●</span><span>●</span><span>●</span></span>
+      Réponse verrouillée
+    </p>
+  {/if}
 {/if}

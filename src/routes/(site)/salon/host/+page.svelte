@@ -89,7 +89,8 @@
       pickPhrase();
       players = players.map(p => ({
         ...p,
-        foundThisRound: false, foundArtist: false, foundTitle: false,
+        foundThisRound: false, answeredThisRound: false,
+        foundArtist: false, foundTitle: false,
         foundFeatCount: 0, totalFeatCount: data.featCount || 0,
       }));
       hostCenter?.loadVideo(data.videoId, data.startSeconds);
@@ -97,12 +98,15 @@
 
     socket.on('salon_timer_update', ({ current, max }) => { timerVal = current; timerMax = max; });
 
-    socket.on('salon_player_answered', ({ username, correct, foundArtist, foundTitle, foundFeatCount, totalFeatCount }) => {
+    socket.on('salon_player_answered', ({ username, correct, answered, foundArtist, foundTitle, foundFeatCount, totalFeatCount }) => {
       players = players.map(p =>
         p.username === username
           ? {
               ...p,
-              foundThisRound: correct,
+              // QCM deferred: `answered` = clicked (no correct/wrong yet)
+              // Free mode: `correct` = fully found
+              answeredThisRound: answered === true ? true : (p.answeredThisRound || false),
+              foundThisRound: correct !== undefined && correct !== null ? correct : p.foundThisRound,
               foundArtist: foundArtist ?? p.foundArtist,
               foundTitle: foundTitle ?? p.foundTitle,
               foundFeatCount: foundFeatCount ?? p.foundFeatCount ?? 0,
@@ -191,7 +195,7 @@
       onNewSalon={() => window.location.href = '/salon'}
     />
 
-    <PlayerSidebar {players} {phase} />
+    <PlayerSidebar {players} {phase} answerMode={settings.answerMode || 'free'} />
 
   </div>
 
