@@ -133,12 +133,14 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ### v1.2.0 — Mode Salon
 
 - **Mode Salon** (Kahoot-like) : expérience soirée avec un écran hôte sur TV/ordi et les joueurs sur leur téléphone
-- Rejoindre via **QR code** ou code à 6 caractères, sans inscription requise
+- Rejoindre via **QR code** (plein écran en lobby) ou code à 6 caractères, sans inscription requise
 - Écran hôte : player YouTube visible en grand, barre timer, liste joueurs avec indicateurs en temps réel (🎤🎸🎵)
 - Interface joueur mobile optimisée : texte libre ou **QCM 4 choix** (style Kahoot)
 - Système de points identique au mode normal : artiste, titre, featurings scorés séparément avec bonus de vitesse
 - Avance automatique entre les manches ou mode manuel
 - Classement en temps réel, fin de partie avec rejouer / nouveau salon
+- **Reconnexion automatique** : un joueur qui se déconnecte en cours de partie (coupure réseau, veille mobile) retrouve son score et son état au retour, avec une grace period de 90 secondes
+- Code découpé en composants réutilisables (`HostCenter`, `PlayerSidebar`, `JoinForm`, `RoundPlay`, `SummaryView`, `FeedbackOverlay`)
 - 100% éphémère — aucune sauvegarde en base, parties privées
 
 ### v1.1.0 — Profils publics & confidentialité
@@ -188,10 +190,11 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ### ✅ v1.2 — Mode Salon
 
 - [x] Mode Salon Kahoot-like (hôte TV + joueurs téléphone)
-- [x] Rejoindre via QR code ou code
+- [x] Rejoindre via QR code plein écran ou code à 6 caractères
 - [x] Texte libre et QCM 4 choix
-- [x] Indicateurs de découverte en temps réel côté hôte
+- [x] Indicateurs de découverte en temps réel côté hôte (🎤🎸🎵)
 - [x] Avance automatique ou manuelle
+- [x] Reconnexion automatique en cours de partie (grace period 90s)
 
 ### 🚧 v1.3 — En réflexion
 

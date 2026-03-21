@@ -16,6 +16,7 @@ import {
 
 const SALON_CLEANUP_DELAY = 30 * 60 * 1000; // 30 min
 const HOST_RECONNECT_GRACE = 60 * 1000; // 60 s
+const PLAYER_RECONNECT_GRACE = 90 * 1000; // 90 s
 
 // ─── Code generation ──────────────────────────────────────────────────────────
 
@@ -50,8 +51,9 @@ async function loadSalonTracks(playlistId) {
         }),
       );
     }
-  } catch {}
-  // Fallback: try official room playlist
+  } catch {
+    // custom_playlist_tracks lookup failed — try official room playlist
+  }
   try {
     const { data: roomRows } = await supabase
       .from("rooms")
@@ -75,7 +77,9 @@ async function loadSalonTracks(playlistId) {
         );
       }
     }
-  } catch {}
+  } catch {
+    // fallback also failed
+  }
   return [];
 }
 
@@ -201,7 +205,8 @@ function playerFullyFound(player, track) {
 function checkEveryoneDone(code, io) {
   const salon = salonRooms[code];
   if (!salon || salon.game.phase !== "round") return;
-  const players = Object.values(salon.players);
+  // Only count connected players — disconnected ones can't answer
+  const players = Object.values(salon.players).filter((p) => !p._disconnected);
   if (players.length === 0) return;
   // In QCM mode: done when everyone has answered (right or wrong)
   // In free mode: done when everyone has found all elements
@@ -434,11 +439,67 @@ export function registerSalon(io) {
         return socket.emit("salon_error", {
           message: "Salon introuvable ou expiré.",
         });
+
+      // ── Reconnect path: player was already in the game ────────────────────
       if (salon.game.phase !== "lobby") {
+        const existing = salon.players[username];
+        if (existing) {
+          // Cancel pending removal timer
+          clearTimeout(existing._dcTimer);
+          existing._dcTimer = null;
+          existing._disconnected = false;
+          existing.socketId = socket.id;
+
+          socket.join(`salon:${code}`);
+          socket.join(`salon:players:${code}`);
+          socket.salonCode = code;
+          socket.salonRole = "player";
+          socket.salonUsername = username;
+
+          // Build reconnect payload so client can restore its UI
+          const reconnectData = {
+            username,
+            reconnecting: true,
+            settings: {
+              answerMode: salon.settings.answerMode,
+              maxRounds: salon.settings.maxRounds,
+            },
+            phase: salon.game.phase,
+            round: salon.game.currentRound,
+            score: existing.score,
+            foundArtist: existing.foundArtist,
+            foundTitle: existing.foundTitle,
+            foundFeatCount: existing.foundFeats.filter(Boolean).length,
+            allFound: existing._fullFoundCounted,
+            timerVal: salon.game.timerValue,
+            timerMax: salon.settings.roundDuration,
+          };
+          if (
+            salon.game.phase === "round" &&
+            salon.settings.answerMode === "multiple"
+          ) {
+            reconnectData.choices = salon.game.choices;
+            reconnectData.featCount =
+              salon.game.currentTrack?.featArtists?.length || 0;
+          }
+
+          socket.emit("salon_joined", reconnectData);
+
+          // Notify host the player is back
+          if (salon.hostSocketId) {
+            io.to(salon.hostSocketId).emit("salon_player_joined", {
+              players: getPlayerList(salon),
+            });
+          }
+          scheduleCleanup(code);
+          return;
+        }
+        // New player trying to join a game already in progress
         return socket.emit("salon_error", {
           message: "La partie a déjà commencé.",
         });
       }
+
       if (salon.players[username]) {
         return socket.emit("salon_error", {
           message: "Ce pseudo est déjà pris.",
@@ -746,7 +807,12 @@ export function registerSalon(io) {
         }, HOST_RECONNECT_GRACE);
       } else if (socket.salonRole === "player") {
         const username = socket.salonUsername;
-        if (username && salon.players[username]) {
+        if (!username || !salon.players[username]) return;
+
+        const player = salon.players[username];
+
+        // During lobby: remove immediately (they can re-enter with same name)
+        if (salon.game.phase === "lobby") {
           delete salon.players[username];
           const players = getPlayerList(salon);
           if (salon.hostSocketId) {
@@ -755,7 +821,35 @@ export function registerSalon(io) {
               players,
             });
           }
+          return;
         }
+
+        // During game: keep score/state, give them 90s to reconnect
+        player._disconnected = true;
+        player.socketId = null;
+
+        if (salon.hostSocketId) {
+          io.to(salon.hostSocketId).emit("salon_player_left", {
+            username,
+            players: getPlayerList(salon),
+          });
+        }
+
+        // Check if their absence unblocks round end
+        checkEveryoneDone(code, io);
+
+        player._dcTimer = setTimeout(() => {
+          const s = salonRooms[code];
+          if (!s?.players[username]) return;
+          delete s.players[username];
+          const players = getPlayerList(s);
+          if (s.hostSocketId) {
+            io.to(s.hostSocketId).emit("salon_player_left", {
+              username,
+              players,
+            });
+          }
+        }, PLAYER_RECONNECT_GRACE);
       }
     });
   });

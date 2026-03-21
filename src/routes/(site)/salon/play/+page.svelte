@@ -75,21 +75,40 @@
     });
 
     socket.on('salon_joined', (data) => {
-      joined      = true;
-      username    = data.username;
-      code        = c;
-      answerMode  = data.settings?.answerMode || 'free';
-      total       = data.settings?.maxRounds || 10;
-      phase       = 'lobby';
-      joining     = false;
-      myScore     = 0;
-      scores      = [];
-      foundArtist = false;
-      foundTitle  = false;
-      foundFeats  = [];
-      allFound    = false;
+      joined     = true;
+      username   = data.username;
+      code       = c;
+      answerMode = data.settings?.answerMode || 'free';
+      total      = data.settings?.maxRounds || 10;
+      joining    = false;
+      error      = '';
       localStorage.setItem('salon_code', c);
       localStorage.setItem('salon_user', u);
+
+      if (data.reconnecting) {
+        // Restore server-side state after a disconnection
+        phase    = data.phase || 'round';
+        myScore  = data.score ?? myScore;
+        foundArtist = data.foundArtist ?? foundArtist;
+        foundTitle  = data.foundTitle  ?? foundTitle;
+        allFound    = data.allFound    ?? allFound;
+        if (data.choices) choices = data.choices;
+        if (typeof data.featCount === 'number') {
+          foundFeats = Array(data.featCount).fill(false);
+          for (let i = 0; i < (data.foundFeatCount || 0); i++) foundFeats[i] = true;
+        }
+        timerVal = data.timerVal ?? timerVal;
+        timerMax = data.timerMax ?? timerMax;
+      } else {
+        // Fresh join — reset everything
+        phase       = 'lobby';
+        myScore     = 0;
+        scores      = [];
+        foundArtist = false;
+        foundTitle  = false;
+        foundFeats  = [];
+        allFound    = false;
+      }
     });
 
     socket.on('salon_game_starting', () => { phase = 'starting'; });

@@ -185,11 +185,9 @@
     <HostCenter
       bind:this={hostCenter}
       {phase} {code} {timerVal} {timerMax}
-      {round} {total} {currentPhrase}
-      {players} {roundEnd} {finalScores} {settings}
-      {autoNextSec}
+      {currentPhrase}
+      {players} {roundEnd} {finalScores}
       onRestart={restartGame}
-      onNextRound={nextRound}
       onNewSalon={() => window.location.href = '/salon'}
     />
 

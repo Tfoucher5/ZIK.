@@ -25,7 +25,7 @@
     {/if}
   </div>
   <div class="salon-play-scores">
-    {#each (roundEnd.scores || scores) as p, i}
+    {#each (roundEnd.scores || scores) as p, i (p.username)}
       <div class="salon-play-score-row {p.username === username ? 'me' : ''}">
         <div class="salon-play-score-rank">{medals[i] || `#${i+1}`}</div>
         <div class="salon-play-score-name">{p.username}</div>
@@ -37,7 +37,7 @@
 {:else if phase === 'gameover'}
   <p style="font-size:1.3rem;font-weight:800;text-align:center">🏆 Partie terminée !</p>
   <div class="salon-play-scores">
-    {#each finalScores as p, i}
+    {#each finalScores as p, i (p.username)}
       <div class="salon-play-score-row {p.username === username ? 'me' : ''}">
         <div class="salon-play-score-rank">{medals[i] || `#${i+1}`}</div>
         <div class="salon-play-score-name">{p.username}</div>

@@ -13,6 +13,9 @@
     onSubmitChoice,
   } = $props();
 
+  // SVG arc timer — circumference of r=44: 2π×44 ≈ 276.46
+  const CIRCUMFERENCE = 276.46;
+
   function timerPct() {
     return timerMax ? Math.max(0, (timerVal / timerMax) * 100) : 100;
   }
@@ -23,36 +26,56 @@
     if (p < 40) return 'warning';
     return '';
   }
+
+  function arcOffset() {
+    return ((1 - timerPct() / 100) * CIRCUMFERENCE).toFixed(2);
+  }
 </script>
 
+<!-- Progress bar (top of screen) -->
 <div class="salon-timer-bar">
-  <div class="salon-timer-fill" style="width:{timerPct()}%;background:{timerPct() > 60 ? '#4ade80' : timerPct() > 30 ? '#fbbf24' : '#f87171'}"></div>
+  <div class="salon-timer-fill" style="width:{timerPct()}%"></div>
 </div>
 
 <div class="salon-play-round">
   Manche <strong>{round} / {total}</strong>
 </div>
-<div class="salon-play-timer {timerClass()}">{timerVal}</div>
+
+<!-- SVG arc countdown timer -->
+<div class="salon-timer-wrap">
+  <svg class="salon-timer-svg" viewBox="0 0 100 100" aria-hidden="true">
+    <circle class="timer-track" cx="50" cy="50" r="44" />
+    <circle
+      class="timer-arc {timerClass()}"
+      cx="50" cy="50" r="44"
+      style="stroke-dashoffset: {arcOffset()}"
+    />
+  </svg>
+  <div class="salon-timer-num {timerClass()}">{timerVal}</div>
+</div>
 
 {#if answerMode === 'free'}
   <div class="salon-progress-row">
     <span class="salon-progress-chip {foundArtist ? 'found' : ''}">
-      {foundArtist ? '✓' : '○'} Artiste
+      🎤 Artiste
     </span>
-    {#each foundFeats as ff, i}
+    {#each foundFeats as ff, i (i)}
       <span class="salon-progress-chip {ff ? 'found' : ''}">
-        {ff ? '✓' : '○'} Feat {i + 1}
+        🎸 Feat {i + 1}
       </span>
     {/each}
     <span class="salon-progress-chip {foundTitle ? 'found' : ''}">
-      {foundTitle ? '✓' : '○'} Titre
+      🎵 Titre
     </span>
   </div>
 {/if}
 
 {#if allFound}
-  <p style="color:var(--accent2);font-size:.95rem;text-align:center;font-weight:700">Tout trouvé ! 🎉</p>
-  <p style="color:var(--mid);font-size:.85rem;text-align:center">En attente des autres…</p>
+  <div class="salon-all-found">
+    <div class="salon-all-found-emoji">🎉</div>
+    <div class="salon-all-found-text">Tout trouvé !</div>
+    <div class="salon-all-found-sub">En attente des autres…</div>
+  </div>
 {:else if answerMode === 'free'}
   <div class="salon-play-guess">
     <input
@@ -71,9 +94,10 @@
   </div>
 {:else if answerMode === 'multiple' && choices}
   <div class="salon-choices">
-    {#each choices as choice, i}
+    {#each choices as choice, i (i)}
       <button class="salon-choice-btn c{i}" onclick={() => onSubmitChoice(i)} disabled={allFound}>
-        {choice}
+        <span class="choice-shape"></span>
+        <span class="choice-text">{choice}</span>
       </button>
     {/each}
   </div>

@@ -122,9 +122,9 @@
           <p style="font-size:.85rem;color:var(--mid)">Aucune playlist disponible. <a href="/playlists" style="color:var(--accent2)">Crée-en une</a>.</p>
         {:else}
           <select bind:value={playlistId}>
-            {#each playlists as group}
+            {#each playlists as group (group.group)}
               <optgroup label={group.group}>
-                {#each group.items as pl}
+                {#each group.items as pl (pl.id)}
                   <option value={pl.id}>{pl.emoji} {pl.name}</option>
                 {/each}
               </optgroup>

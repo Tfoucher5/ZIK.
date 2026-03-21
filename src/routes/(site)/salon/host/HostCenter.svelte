@@ -3,12 +3,13 @@
 
   let {
     phase = 'lobby', code = '', timerVal = 0, timerMax = 30,
-    round = 0, total = 10, currentPhrase = '', players = [],
-    roundEnd = null, finalScores = [], settings = {}, autoNextSec = 0,
-    onRestart, onNextRound, onNewSalon,
+    currentPhrase = '', players = [],
+    roundEnd = null, finalScores = [],
+    onRestart, onNewSalon,
   } = $props();
 
   const medals = ['🥇', '🥈', '🥉'];
+  const VIS_BARS = Array.from({ length: 18 }, (_, i) => i);
 
   // ─── YouTube ───────────────────────────────────────────────────────────────
   let ytReady = false;
@@ -27,7 +28,7 @@
     currentStartSecs = startSeconds;
     if (ytReady && ytPlayer) {
       ytPlayer.loadVideoById({ videoId, startSeconds, suggestedQuality: 'medium' });
-      setTimeout(() => { try { ytPlayer.playVideo(); } catch {} }, 400);
+      setTimeout(() => { try { ytPlayer.playVideo(); } catch { /* YT not ready */ } }, 400);
     } else {
       const check = setInterval(() => {
         if (!ytReady) return;
@@ -43,7 +44,7 @@
 
   export function revealVideo() {
     if (!ytPlayer) return;
-    try { ytPlayer.seekTo(currentStartSecs, true); ytPlayer.playVideo(); } catch {}
+    try { ytPlayer.seekTo(currentStartSecs, true); ytPlayer.playVideo(); } catch { /* YT not ready */ }
   }
 
   function timerPct() { return timerMax ? Math.max(0, (timerVal / timerMax) * 100) : 100; }
@@ -79,14 +80,14 @@
     <!-- Round panel -->
     <div class="salon-panel" class:active={phase === 'round'}>
       <div class="salon-round-stage">
-        <div class="salon-big-timer {timerPct() < 20 ? 'danger' : timerPct() < 40 ? 'warn' : ''}">{timerVal}</div>
+        <div class="salon-big-timer {timerPct() < 20 ? 'danger' : timerPct() < 40 ? 'warn' : 'ok'}">{timerVal}</div>
         <div class="salon-phrase">{currentPhrase}</div>
         <div class="salon-visualizer">
-          {#each {length: 14} as _}<div class="salon-vis-bar"></div>{/each}
+          {#each VIS_BARS as i (i)}<div class="salon-vis-bar"></div>{/each}
         </div>
         {#if players.some(p => p.foundThisRound)}
           <div class="salon-finders">
-            {#each players.filter(p => p.foundThisRound) as p}
+            {#each players.filter(p => p.foundThisRound) as p (p.username)}
               <span class="salon-finder-chip">✓ {p.username}</span>
             {/each}
           </div>
@@ -119,7 +120,7 @@
         {/if}
       </div>
       <div class="salon-scores-table">
-        {#each players as p, i}
+        {#each players as p, i (p.username)}
           <div class="salon-scores-row {i < 3 ? 'top' : ''}">
             <div class="salon-scores-medal">{medals[i] || `#${i+1}`}</div>
             <div class="salon-scores-name">{p.username}</div>
@@ -132,7 +133,7 @@
       <div class="salon-gameover">
         <h2>🏆 Fin de la partie !</h2>
         <div class="salon-scores-table">
-          {#each finalScores as p, i}
+          {#each finalScores as p, i (p.username)}
             <div class="salon-scores-row {i < 3 ? 'top' : ''}">
               <div class="salon-scores-medal">{medals[i] || `#${i+1}`}</div>
               <div class="salon-scores-name">{p.username}</div>
