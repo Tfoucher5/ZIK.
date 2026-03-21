@@ -4,7 +4,8 @@
       "Bash(npx eslint:*)",
       "Bash(ls \"c:/Users/Teamr/Desktop/ZIK/src/routes/\\(site\\)/\")",
       "Bash(wc -l src/routes/\\\\\\(site\\\\\\)/docs/+page.svelte)",
-      "Read(//c/Users/Teamr/.claude/projects/c--Users-Teamr-Desktop-ZIK/memory/**)"
+      "Read(//c/Users/Teamr/.claude/projects/c--Users-Teamr-Desktop-ZIK/memory/**)",
+      "Bash(npm run:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Teamr\\.claude\\projects\\c--Users-Teamr-Desktop-ZIK\\memory"

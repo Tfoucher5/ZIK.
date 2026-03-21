@@ -89,15 +89,51 @@ function makeChoices(correct, allTracks) {
   const label = (t) =>
     `${displayString(t.mainArtist || t.artist)} — ${displayString(t.title)}`;
   const correctLabel = label(correct);
+  const correctArtistKey = (correct.mainArtist || correct.artist || "")
+    .toLowerCase()
+    .trim();
+
   const pool = allTracks.filter((t) => label(t) !== correctLabel);
-  const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 3);
-  const choices = [correctLabel, ...shuffled.map(label)].sort(
+
+  // Split: same artist vs different artist (for deliberate decoy feature)
+  const sameArtistPool = pool.filter(
+    (t) =>
+      (t.mainArtist || t.artist || "").toLowerCase().trim() === correctArtistKey,
+  );
+  const diffArtistPool = pool.filter(
+    (t) =>
+      (t.mainArtist || t.artist || "").toLowerCase().trim() !== correctArtistKey,
+  );
+
+  let wrongTracks;
+  // ~40% chance: deliberately include a same-artist decoy when one exists
+  // This forces players to identify the exact title, not just the artist
+  if (sameArtistPool.length >= 1 && Math.random() < 0.4) {
+    const decoy =
+      sameArtistPool[Math.floor(Math.random() * sameArtistPool.length)];
+    const remaining = diffArtistPool
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+    wrongTracks = [decoy, ...remaining].sort(() => Math.random() - 0.5);
+  } else {
+    wrongTracks = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+  }
+
+  const choices = [correctLabel, ...wrongTracks.map(label)].sort(
     () => Math.random() - 0.5,
   );
   return {
     choices,
     correctChoiceIndex: choices.indexOf(correctLabel),
   };
+}
+
+// Kahoot-style scoring: 1000pts at t=0, decreasing to 200pts at t=roundDuration
+function calcQcmPoints(timeTaken, roundDuration) {
+  const MAX_PTS = 1000;
+  const MIN_PTS = 200;
+  const ratio = Math.min(1, Math.max(0, timeTaken / Math.max(1, roundDuration)));
+  return Math.round(MAX_PTS - (MAX_PTS - MIN_PTS) * ratio);
 }
 
 // ─── Answer checking ──────────────────────────────────────────────────────────
@@ -172,6 +208,8 @@ function makePlayer(username, socketId) {
     foundTitle: false,
     foundFeats: [],
     _fullFoundCounted: false,
+    _choiceIndex: null,
+    _choiceTimeTaken: null,
   };
 }
 
@@ -191,6 +229,8 @@ function resetRoundFlags(salon) {
     p.foundTitle = false;
     p.foundFeats = [];
     p._fullFoundCounted = false;
+    p._choiceIndex = null;
+    p._choiceTimeTaken = null;
   }
 }
 
@@ -230,6 +270,49 @@ function endRound(code, reason, io) {
 
   const track = game.currentTrack;
   const answer = `${displayString(track.mainArtist || track.artist)} — ${displayString(track.title)}`;
+
+  // ── QCM deferred scoring: compute points and send individual feedback now ──
+  if (salon.settings.answerMode === "multiple") {
+    for (const p of Object.values(salon.players)) {
+      if (!p.socketId || p._disconnected) continue;
+      if (p._fullFoundCounted) {
+        // They answered — evaluate
+        const correct = p._choiceIndex === game.correctChoiceIndex;
+        if (correct) {
+          const points = calcQcmPoints(
+            p._choiceTimeTaken ?? salon.settings.roundDuration,
+            salon.settings.roundDuration,
+          );
+          p.score += points;
+          p.foundArtist = true;
+          p.foundTitle = true;
+          if (!game.firstFinder) game.firstFinder = p.username;
+          io.to(p.socketId).emit("salon_feedback", {
+            type: "success_title",
+            correct: true,
+            points,
+            msg: `Bonne réponse ! (+${points} pts)`,
+          });
+        } else {
+          io.to(p.socketId).emit("salon_feedback", {
+            type: "miss",
+            correct: false,
+            points: 0,
+            msg: "Raté !",
+          });
+        }
+      } else {
+        // Didn't answer in time
+        io.to(p.socketId).emit("salon_feedback", {
+          type: "miss",
+          correct: false,
+          points: 0,
+          msg: "Temps écoulé…",
+        });
+      }
+    }
+  }
+
   const scores = Object.values(salon.players)
     .map((p) => ({ username: p.username, score: p.score }))
     .sort((a, b) => b.score - a.score);
@@ -241,6 +324,11 @@ function endRound(code, reason, io) {
     firstFinder: game.firstFinder,
     featArtists: (track.featArtists || []).map(displayString),
     scores,
+    // For QCM: send correct index so clients can reveal which was right
+    correctChoiceIndex:
+      salon.settings.answerMode === "multiple"
+        ? game.correctChoiceIndex
+        : undefined,
   };
 
   game.history.push({ answer, cover: track.cover });
@@ -703,54 +791,23 @@ export function registerSalon(io) {
 
       const game = salon.game;
       const timeTaken = (Date.now() - game.startTime) / 1000;
-      const bonus = calcSpeedBonus(timeTaken);
-      const correct = choiceIndex === game.correctChoiceIndex;
 
-      if (correct) {
-        // Artist + title both awarded in QCM
-        const points = 2 + bonus;
-        player.score += points;
-        player.foundArtist = true;
-        player.foundTitle = true;
-        player._fullFoundCounted = true;
-        if (!game.firstFinder) game.firstFinder = username;
-        socket.emit("salon_feedback", {
-          type: "success_title",
-          correct: true,
-          points,
-          msg: `Trouvé ! (+${points} pts)`,
-        });
-      } else {
-        socket.emit("salon_feedback", {
-          type: "miss",
-          correct: false,
-          points: 0,
-          msg: "Raté…",
-        });
-      }
+      // Store choice for deferred scoring at round end (Kahoot-style suspense)
+      player._choiceIndex = choiceIndex;
+      player._choiceTimeTaken = timeTaken;
+      player._fullFoundCounted = true; // block re-submission
 
+      // Notify host that player has answered — but NOT whether it's correct
       if (salon.hostSocketId) {
-        const t = salon.game.currentTrack;
         io.to(salon.hostSocketId).emit("salon_player_answered", {
           username,
-          correct,
-          foundArtist: player.foundArtist,
-          foundTitle: player.foundTitle,
-          foundFeatCount: player.foundFeats.filter(Boolean).length,
-          totalFeatCount: t?.cleanFeatArtists?.length || 0,
+          answered: true,
+          // foundArtist/foundTitle intentionally omitted — reveal at round end
+          totalFeatCount: game.currentTrack?.cleanFeatArtists?.length || 0,
         });
       }
 
-      const scores = Object.values(salon.players)
-        .map((p) => ({ username: p.username, score: p.score }))
-        .sort((a, b) => b.score - a.score);
-      io.to(`salon:${code}`).emit("salon_scores_update", { scores });
-
-      // In QCM, wrong answer = still answered (can't retry)
-      if (!correct) {
-        player._fullFoundCounted = true; // block further attempts
-      }
-
+      // Scores are NOT updated here — deferred to endRound
       checkEveryoneDone(code, io);
     });
 
