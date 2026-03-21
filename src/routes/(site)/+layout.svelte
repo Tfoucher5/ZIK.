@@ -37,10 +37,10 @@
     } catch { return null; }
   }
   function setCachedProfile(uid, profile) {
-    try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch {}
+    try { sessionStorage.setItem('zik_profile_' + uid, JSON.stringify({ p: profile, ts: Date.now() })); } catch { /* sessionStorage unavailable */ }
   }
   function clearCachedProfile(uid) {
-    try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch {}
+    try { if (uid) sessionStorage.removeItem('zik_profile_' + uid); } catch { /* sessionStorage unavailable */ }
   }
 
   async function applyUser(user) {
@@ -120,13 +120,34 @@
 {@render children()}
 
 {#if !isGame}
-<footer class="site-footer">
-  <span class="nav-logo">ZIK<span>.</span></span>
-  <span>&copy; 2025 ZIK &mdash; Blind Test Multijoueur</span>
-  <div class="footer-links">
-    <a href="/cgu">CGU</a>
-    <a href="/confidentialite">Confidentialit&eacute;</a>
-    <a href="mailto:contact@zik.app">Contact</a>
+<footer class="site-footer-full">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <span class="footer-logo">ZIK<span>.</span></span>
+      <p class="footer-tagline">Blind test multijoueur en ligne.<br>Trouve les titres avant tout le monde.</p>
+      <p class="footer-copy">&copy; 2025 ZIK</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Jouer</div>
+      <a href="/rooms">Rooms</a>
+      <a href="/playlists">Playlists</a>
+      <a href="/salon">Mode Salon</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Aide</div>
+      <a href="/docs">Documentation</a>
+      <a href="/docs#faq">FAQ</a>
+      <a href="mailto:contact@zik.app">Contact</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Légal</div>
+      <a href="/cgu">CGU</a>
+      <a href="/confidentialite">Confidentialité</a>
+      <span class="footer-version">v1.2.0</span>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>Fait avec ❤️ et beaucoup trop de musique</span>
   </div>
 </footer>
 {/if}

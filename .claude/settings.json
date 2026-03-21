@@ -1,5 +1,9 @@
 {
   "permissions": {
-    "allow": ["Bash(npx eslint:*)"]
+    "allow": [
+      "Bash(npx eslint:*)",
+      "Bash(ls \"c:/Users/Teamr/Desktop/ZIK/src/routes/\\(site\\)/\")",
+      "Bash(wc -l src/routes/\\\\\\(site\\\\\\)/docs/+page.svelte)"
+    ]
   }
 }
