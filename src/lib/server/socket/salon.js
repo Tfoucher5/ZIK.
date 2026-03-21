@@ -15,7 +15,7 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SALON_CLEANUP_DELAY = 30 * 60 * 1000; // 30 min
-const HOST_RECONNECT_GRACE = 60 * 1000; // 60 s
+const HOST_RECONNECT_GRACE = 120 * 1000; // 2 min
 const PLAYER_RECONNECT_GRACE = 90 * 1000; // 90 s
 
 // ─── Code generation ──────────────────────────────────────────────────────────

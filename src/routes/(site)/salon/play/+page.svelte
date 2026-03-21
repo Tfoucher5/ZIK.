@@ -35,9 +35,10 @@
   let guess        = $state('');
   let roundEnd     = $state(null);
   let finalScores  = $state([]);
-  let feedback     = $state(null);
+  let feedback      = $state(null);
   let feedbackTimer = null;
-  let error        = $state('');
+  let error         = $state('');
+  let errorTimer    = null;
 
   let socket;
 
@@ -166,12 +167,16 @@
     });
 
     socket.on('salon_error', ({ message }) => {
-      error   = message;
       joining = false;
       if (!joined) {
         joinError = message;
         socket?.disconnect();
+        return;
       }
+      // Mid-game error: show briefly then auto-dismiss
+      error = message;
+      clearTimeout(errorTimer);
+      errorTimer = setTimeout(() => { error = ''; }, 6000);
     });
   }
 
@@ -186,6 +191,7 @@
   onDestroy(() => {
     socket?.disconnect();
     clearTimeout(feedbackTimer);
+    clearTimeout(errorTimer);
   });
 </script>
 
