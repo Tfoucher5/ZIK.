@@ -552,6 +552,27 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+/* During summary/gameover: stage fixed at 58%, info fills the rest */
+.salon-host-center.phase-summary .salon-host-stage {
+  flex: 0 0 58%;
+  min-height: 0;
+}
+.salon-host-center.phase-summary .salon-host-info {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+}
+/* Gameover keeps its own centered layout inside the expanded info area */
+.salon-host-center.phase-summary .salon-gameover {
+  overflow-y: auto;
+  height: 100%;
+  justify-content: center;
+}
 .salon-info-placeholder {
   height: 1px;
 }
@@ -1994,15 +2015,34 @@ body {
 
 .salon-host-summary-layout {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 16px;
+  grid-template-columns: 240px 1fr;
+  height: 100%;
+  align-items: stretch;
   width: 100%;
-  align-items: start;
 }
+
+/* Left column: track info, scrollable if too tall */
+.salon-host-summary-layout .salon-summary {
+  height: 100%;
+  overflow-y: auto;
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  margin: 0;
+  animation: none;
+}
+
+/* Right column: leaderboard fills height, table scrolls */
 .salon-host-scores-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 20px 14px 16px;
+  gap: 10px;
 }
 .salon-host-round-label {
   font-size: 0.7rem;
@@ -2010,10 +2050,18 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--mid);
+  flex-shrink: 0;
 }
 .salon-host-round-of {
   color: var(--dim);
   font-weight: 500;
+}
+.salon-host-scores-col .salon-scores-table {
+  flex: 1;
+  overflow-y: auto;
+  max-width: none;
+  min-height: 0;
+  border-radius: 10px;
 }
 
 /* ─── Partial badge on host sidebar ─────────────────────────────────────────── */

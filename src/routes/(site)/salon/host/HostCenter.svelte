@@ -58,7 +58,7 @@
   onDestroy(() => { if (ytPlayer?.destroy) ytPlayer.destroy(); });
 </script>
 
-<div class="salon-host-center">
+<div class="salon-host-center" class:phase-summary={phase === 'summary' || phase === 'gameover'}>
 
   <!-- Stage: 3 overlapping absolute panels -->
   <div class="salon-host-stage">
