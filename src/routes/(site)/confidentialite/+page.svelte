@@ -54,7 +54,7 @@
   <section>
     <h2>5. Vos droits (RGPD)</h2>
     <p>Conform&eacute;ment au R&egrave;glement G&eacute;n&eacute;ral sur la Protection des Donn&eacute;es, vous disposez d&apos;un droit d&apos;acc&egrave;s, de rectification et de suppression de vos donn&eacute;es. Pour exercer ces droits, contactez-nous &agrave; : <a href="mailto:contact@zik.app">contact@zik.app</a></p>
-    <p>Vous pouvez supprimer votre compte depuis votre profil, ce qui entra&icirc;ne la suppression de toutes vos donn&eacute;es personnelles.</p>
+    <p>Pour exercer votre droit &agrave; la suppression, envoyez un e-mail &agrave; <a href="mailto:contact@zik.app">contact@zik.app</a> avec votre pseudo et adresse e-mail. Vos donn&eacute;es seront supprim&eacute;es sous 72h. Vous pouvez aussi passer votre profil en &laquo;&nbsp;priv&eacute;&nbsp;&raquo; depuis les <a href="/settings">Param&egrave;tres</a> pour ne plus appara&icirc;tre dans les recherches.</p>
   </section>
 
   <section>

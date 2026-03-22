@@ -106,45 +106,55 @@
 </script>
 
 <svelte:head>
-  <title>ZIK — Blind Test Multijoueur en Ligne | Jeu Musical Gratuit</title>
-  <meta name="description" content="Joue au blind test musical en ligne avec tes amis ! Identifie les chansons en temps réel, importe tes playlists Spotify ou Deezer, et grimpe au classement ELO. Gratuit, sans installation.">
+  <title>ZIK — Blind Test Musical Multijoueur en Ligne | Gratuit</title>
+  <meta name="description" content="Le blind test musical multijoueur gratuit : identifie les chansons avant tout le monde, importe tes playlists Spotify ou Deezer, joue en Mode Salon Kahoot-like et grimpe au classement ELO. Sans installation.">
+  <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://www.zik-music.fr/">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="ZIK — Blind Test Multijoueur en Ligne">
-  <meta property="og:description" content="Joue au blind test musical en ligne avec tes amis ! Identifie les chansons en temps réel, importe tes playlists Spotify ou Deezer, et grimpe au classement ELO. Gratuit, sans installation.">
+  <meta property="og:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit">
+  <meta property="og:description" content="Le blind test musical multijoueur gratuit ! Identifie les chansons avant tout le monde, importe tes playlists Spotify/Deezer, Mode Salon Kahoot-like, classement ELO. Sans installation.">
   <meta property="og:url" content="https://www.zik-music.fr/">
 
   <!-- Twitter Card -->
-  <meta name="twitter:title" content="ZIK — Blind Test Multijoueur en Ligne">
-  <meta name="twitter:description" content="Joue au blind test musical en ligne avec tes amis ! Identifie les chansons en temps réel, importe tes playlists Spotify ou Deezer, et grimpe au classement ELO.">
+  <meta name="twitter:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit">
+  <meta name="twitter:description" content="Blind test musical multijoueur gratuit en ligne. Playlists Spotify/Deezer, Mode Salon Kahoot-like, classement ELO. Sans inscription requise.">
 
   <script type="application/ld+json">
-  <!-- JSON-LD Structured Data -->
   {@html JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
+    "@context": "https://schema.org",
+    "@type": ["WebApplication", "VideoGame"],
+    "name": "ZIK — Blind Test Musical",
+    "url": "https://www.zik-music.fr/",
+    "description": "Jeu de blind test musical multijoueur en ligne. Identifiez les chansons avant tout le monde, importez vos playlists Spotify ou Deezer, et grimpez au classement ELO. Gratuit, sans installation.",
+    "applicationCategory": "GameApplication",
+    "genre": ["Music", "Quiz", "Trivia"],
+    "operatingSystem": "Any",
+    "browserRequirements": "Navigateur web moderne (Chrome, Firefox, Safari, Edge)",
+    "inLanguage": "fr-FR",
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    },
+    "featureList": [
+      "Blind test musical multijoueur en temps réel",
+      "Import de playlists Spotify et Deezer",
+      "Mode Salon Kahoot-like (QCM sur smartphone)",
+      "Classement ELO et statistiques joueur",
+      "Rooms privées avec code partageable",
+      "Mode invité sans inscription",
+      "Playlists personnalisées partageables",
+      "Détection intelligente des réponses (accents, fautes de frappe)"
+    ],
+    "screenshot": "https://www.zik-music.fr/og.png",
+    "author": {
+      "@type": "Organization",
       "name": "ZIK",
-      "url": "https://www.zik-music.fr/",
-      "description": "Blind test musical multijoueur en ligne. Identifie les chansons avant tout le monde, importe tes playlists et grimpe au classement ELO.",
-      "applicationCategory": "GameApplication",
-      "genre": "Music",
-      "operatingSystem": "Web",
-      "inLanguage": "fr",
-      "isAccessibleForFree": true,
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "EUR"
-      },
-      "featureList": [
-        "Blind test multijoueur en temps réel",
-        "Import de playlists Spotify et Deezer",
-        "Classement ELO",
-        "Rooms privées et publiques",
-        "Mode invité sans inscription"
-      ]
-    })}
+      "url": "https://www.zik-music.fr"
+    }
+  })}
   </script>
 
   <link rel="stylesheet" href="/css/home.css">

@@ -34,12 +34,86 @@
 </script>
 
 <svelte:head>
-  <title>Documentation — ZIK</title>
-  <meta name="description" content="Guide complet de ZIK : rejoindre une partie, système de points, Mode Salon Kahoot-like, playlists Spotify/Deezer, classement ELO." />
+  <title>Guide complet — Blind Test ZIK | Règles, Points, Mode Salon</title>
+  <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Spotify/Deezer, classement ELO, FAQ. Gratuit en ligne." />
+  <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.zik-music.fr/docs" />
-  <meta property="og:title" content="Documentation — ZIK" />
-  <meta property="og:description" content="Guide complet de ZIK : rejoindre une partie, système de points, Mode Salon Kahoot-like, playlists Spotify/Deezer, classement ELO." />
+  <meta property="og:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
+  <meta property="og:description" content="Guide complet du blind test ZIK : comment jouer, système de points, Mode Salon Kahoot-like, import Spotify/Deezer, classement ELO, FAQ." />
   <meta property="og:url" content="https://www.zik-music.fr/docs" />
+
+  <script type="application/ld+json">
+  {@html JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Faut-il un compte pour jouer au blind test sur ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Non, le mode invité permet de jouer immédiatement sans inscription, juste avec un pseudo. Créer un compte gratuit vous donne accès au classement ELO, aux statistiques personnelles et aux playlists personnalisées."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment rejoindre une partie de blind test en ligne sur ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Deux façons : rejoindre une room officielle depuis la page d'accueil en cliquant sur JOUER, ou entrer un code de room partagé par un ami. Aucune installation requise, tout se passe dans le navigateur."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment fonctionne le système de points au blind test ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "En mode texte libre : Artiste trouvé = 1 pt + bonus vitesse, Titre trouvé = 1 pt + bonus vitesse. Le bonus vitesse va de +3 pts en moins de 3 secondes à 0 pt après 18 secondes. En Mode Salon QCM : entre 1 000 pts (réponse immédiate) et 200 pts (dernière seconde), selon la rapidité."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Qu'est-ce que le Mode Salon de ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Le Mode Salon est un blind test à la Kahoot conçu pour les soirées, événements et salles de classe. L'hôte projette un écran de contrôle sur TV, et chaque joueur participe sur son smartphone via un QR code ou un code court. Disponible en mode texte libre ou QCM avec 4 boutons colorés."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment importer une playlist Spotify ou Deezer sur ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Rendez-vous sur la page Playlists, cliquez sur Nouvelle playlist, choisissez Spotify ou Deezer, et collez le lien de votre playlist. Les titres sont importés automatiquement. Vous pouvez ensuite créer une room de blind test basée sur cette playlist et la partager."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "La saisie au blind test ZIK est-elle sensible aux accents et aux fautes de frappe ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Non ! Le moteur de détection ignore les accents, les majuscules et tolère les petites fautes de frappe grâce à un algorithme de similarité. beyonce sera accepté pour Beyoncé, Pokr Face pour Poker Face."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment fonctionne le classement ELO sur ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Le classement ELO s'inspire du système utilisé aux échecs. Chaque partie dans une room officielle ajuste votre ELO. Il existe aussi un classement hebdomadaire qui repart à zéro chaque lundi. Consultez les deux classements depuis la page d'accueil."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment supprimer mon compte ZIK ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Envoyez un e-mail à contact@zik.app avec votre pseudo pour demander la suppression de votre compte. Toutes vos données seront supprimées sous 72h. Vous pouvez aussi passer votre profil en privé depuis les Paramètres pour ne plus apparaître dans les recherches."
+        }
+      }
+    ]
+  })}
+  </script>
 </svelte:head>
 
 <div class="doc-root">
@@ -269,15 +343,15 @@
           </tr>
           <tr>
             <td>QCM Mode Salon (artiste + titre)</td>
-            <td>2 pts</td>
-            <td>+ bonus vitesse</td>
+            <td>200 – 1 000 pts</td>
+            <td>Selon la vitesse de réponse (Kahoot-style)</td>
           </tr>
         </tbody>
       </table>
 
-      <h3>Le bonus vitesse</h3>
+      <h3>Le bonus vitesse (mode texte libre)</h3>
       <p>
-        Le bonus vitesse récompense les joueurs qui trouvent la réponse rapidement. Il est calculé à partir du <strong>temps écoulé depuis le début de la manche</strong> et diminue progressivement au fil des secondes. Voici des exemples concrets pour une manche de 30 secondes :
+        En mode texte libre, un bonus vitesse récompense les joueurs qui trouvent la réponse rapidement. Il est calculé à partir du <strong>temps écoulé depuis le début de la manche</strong> et diminue progressivement. Voici des exemples concrets pour une manche de 30 secondes :
       </p>
       <table class="doc-table">
         <thead>
@@ -302,6 +376,37 @@
           <tr>
             <td>18 secondes et plus</td>
             <td>+0 pt</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Le score Kahoot (Mode Salon QCM)</h3>
+      <p>
+        En Mode Salon avec le QCM, le scoring fonctionne différemment : <strong>plus tu réponds vite, plus tu gagnes de points</strong>. Le score maximal est de <strong>1 000 points</strong> si tu réponds immédiatement, et il descend progressivement jusqu'à un minimum de <strong>200 points</strong> si tu réponds à la dernière seconde. Répondre faux ou ne pas répondre donne 0 point.
+      </p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Moment de réponse</th>
+            <th>Points gagnés (si correct)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Immédiatement (t = 0s)</td>
+            <td>1 000 pts</td>
+          </tr>
+          <tr>
+            <td>À mi-temps (ex : 15s sur 30s)</td>
+            <td>~600 pts</td>
+          </tr>
+          <tr>
+            <td>Dernière seconde</td>
+            <td>200 pts</td>
+          </tr>
+          <tr>
+            <td>Pas de réponse / réponse incorrecte</td>
+            <td>0 pt</td>
           </tr>
         </tbody>
       </table>
@@ -409,11 +514,11 @@
         <li><strong>Timer SVG :</strong> Un cercle SVG décompte le temps restant visuellement, avec changement de couleur progressif (vert → orange → rouge)</li>
         <li><strong>Mode texte libre :</strong> Champ de saisie classique, même moteur de détection que les rooms normales</li>
         <li><strong>Mode QCM :</strong> 4 boutons avec les formes emblématiques — ▲ Triangle, ◆ Losange, ● Cercle, ■ Carré — chacun avec une couleur distincte. Un seul appui suffit pour valider.</li>
-        <li><strong>Feedback immédiat :</strong> L'écran indique si la réponse est correcte ou incorrecte avec une animation</li>
+        <li><strong>Suspense jusqu'à la fin :</strong> En mode QCM, la bonne réponse et les points gagnés ne sont révélés qu'à la fin du chrono ou quand tout le monde a répondu — personne ne sait si les autres ont bon avant la révélation !</li>
       </ul>
 
       <h3>QCM — les 4 choix</h3>
-      <p>En mode QCM, les 4 options proposées incluent toujours la bonne réponse (artiste + titre) et 3 leurres générés automatiquement depuis d'autres titres de la playlist. Les formes et couleurs sont fixes :</p>
+      <p>En mode QCM, les 4 options proposées incluent toujours la bonne réponse (artiste + titre) et 3 leurres générés automatiquement depuis d'autres titres de la playlist. <strong>Attention :</strong> parfois, plusieurs titres du même artiste peuvent apparaître dans les choix — il faut donc vraiment reconnaître la chanson et pas seulement l'artiste ! Les formes et couleurs sont fixes :</p>
       <table class="doc-table">
         <thead>
           <tr>
@@ -726,7 +831,7 @@
           <summary>Comment supprimer mon compte ?</summary>
           <div class="faq-body">
             <p>
-              La suppression de compte se fait via <a href="/settings">Paramètres</a> → "Supprimer mon compte". Cette action est <strong>irréversible</strong> : vos scores, playlists, classement ELO et profil seront définitivement supprimés. Si vous avez un doute, commencez par passer votre profil en "privé" plutôt que de supprimer votre compte.
+              La suppression de compte en libre-service sera disponible prochainement. En attendant, envoyez simplement un e-mail à <a href="mailto:contact@zik.app">contact@zik.app</a> avec votre pseudo et votre adresse e-mail — nous supprimerons toutes vos données personnelles sous 72h. Si vous souhaitez juste que votre profil disparaisse des recherches, vous pouvez déjà passer votre profil en <strong>privé</strong> depuis les <a href="/settings">Paramètres</a>.
             </p>
           </div>
         </details>
