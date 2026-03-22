@@ -2015,7 +2015,7 @@ body {
 
 .salon-host-summary-layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 1fr 1fr;
   height: 100%;
   align-items: stretch;
   width: 100%;
@@ -2030,9 +2030,29 @@ body {
   border-bottom: none;
   border-left: none;
   border-right: 1px solid var(--border);
-  padding: 20px 16px;
+  padding: 24px 20px;
   margin: 0;
   animation: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.salon-host-summary-layout .salon-summary-cover {
+  width: 140px;
+  height: 140px;
+  border-radius: 14px;
+  margin: 0 0 4px;
+}
+.salon-host-summary-layout .salon-summary-answer {
+  font-size: 1.6rem;
+}
+.salon-host-summary-layout .salon-summary-reason {
+  font-size: 0.85rem;
+}
+.salon-host-summary-layout .salon-summary-first {
+  font-size: 0.95rem;
 }
 
 /* Right column: leaderboard fills height, table scrolls */
