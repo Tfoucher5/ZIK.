@@ -320,7 +320,11 @@ function endRound(code, reason, io) {
   }
 
   const scores = Object.values(salon.players)
-    .map((p) => ({ username: p.username, score: p.score, delta: p.score - (p.scoreBeforeRound ?? 0) }))
+    .map((p) => ({
+      username: p.username,
+      score: p.score,
+      delta: p.score - (p.scoreBeforeRound ?? 0),
+    }))
     .sort((a, b) => b.score - a.score);
 
   const roundSummary = {
