@@ -21,7 +21,7 @@
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.8.3",
     "string-similarity": "^4.0.4",
-    "svelte": "^5.53.7",
+    "svelte": "^5.54.1",
     "yt-search": "^2.10.4"
   },
   "devDependencies": {
