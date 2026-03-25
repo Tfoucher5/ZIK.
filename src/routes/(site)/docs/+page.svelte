@@ -176,7 +176,7 @@
       <div class="doc-tip">
         <span class="doc-tip-icon">💡</span>
         <div>
-          <strong>Astuce débutant :</strong> Commencez par une room officielle "Pop française" ou "Hits 2010s" pour vous familiariser avec l'interface avant d'affronter des joueurs expérimentés dans les rooms compétitives.
+          <strong>Astuce débutant :</strong> Commencez par une room officielle "Pop française" ou "Hits 2010s" pour vous familiariser avec l'interface avant de créer et jouer dans vos propres rooms !
         </div>
       </div>
     </section>
@@ -830,9 +830,8 @@
         <details class="faq-item">
           <summary>Comment supprimer mon compte ?</summary>
           <div class="faq-body">
-            <p>
-              La suppression de compte en libre-service sera disponible prochainement. En attendant, envoyez simplement un e-mail à <a href="mailto:contact@zik.app">contact@zik.app</a> avec votre pseudo et votre adresse e-mail — nous supprimerons toutes vos données personnelles sous 72h. Si vous souhaitez juste que votre profil disparaisse des recherches, vous pouvez déjà passer votre profil en <strong>privé</strong> depuis les <a href="/settings">Paramètres</a>.
-            </p>
+            <p>La suppression de votre compte se fait depuis votre page de paramètres, tout en bas, dans la section "Danger". </p><br> 
+            <p>⚠️ - Toute suppression du compte est définitive !</p>           
           </div>
         </details>
       </div>

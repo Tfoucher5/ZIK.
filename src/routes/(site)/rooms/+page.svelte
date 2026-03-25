@@ -185,7 +185,7 @@
   <title>ZIK — Rooms de Blind Test | Rejoins une Partie</title>
   <meta name="description" content="Browse les rooms de blind test publiques ou crée la tienne. Rejoins des joueurs en live, configure ta playlist et lance une partie musicale en quelques secondes.">
   <link rel="canonical" href="https://www.zik-music.fr/rooms">
-  <meta name="robots" content="noindex, follow">
+  <meta name="robots" content="index, follow">
 
   <!-- Open Graph -->
   <meta property="og:title" content="ZIK — Rooms de Blind Test">

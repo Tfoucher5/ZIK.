@@ -212,8 +212,6 @@
 
   <div id="rooms-grid" class="rooms-grid">
     {#each rooms as room, i}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="room-card" style="--rc-color:{room.color};--rc-gradient:{room.gradient};animation-delay:{i * 60}ms"
         onclick={() => joinRoom(room.id)} role="button" tabindex="0">
         <div class="room-stripe"></div>
