@@ -6,9 +6,11 @@ const BASE = "https://www.zik-music.fr";
 const STATIC_URLS = [
   { loc: "/", changefreq: "weekly", priority: "1.0" },
   { loc: "/docs", changefreq: "weekly", priority: "0.9" },
-  { loc: "/portfolio", changefreq: "yearly", priority: "0.8" },
+  { loc: "/rooms", changefreq: "daily", priority: "0.8" },
+  { loc: "/portfolio", changefreq: "yearly", priority: "0.7" },
   { loc: "/cgu", changefreq: "yearly", priority: "0.2" },
   { loc: "/confidentialite", changefreq: "yearly", priority: "0.2" },
+  { loc: "/mentions-legales", changefreq: "yearly", priority: "0.2" },
 ];
 
 export async function GET() {

@@ -8,6 +8,7 @@
 
   let animOn     = $state(true);
   let volVal     = $state(50);
+  let activeTheme = $state('dark');
   let isPrivate  = $state(false);
   let privLoading = $state(false);
 
@@ -70,9 +71,22 @@
 
   onDestroy(() => clearTimeout(_toastTimer));
 
+  const THEMES = [
+    { id: 'dark',   label: 'Sombre',  bg: '#070b10', accent: '#3ecfff' },
+    { id: 'light',  label: 'Clair',   bg: '#f4f6fb', accent: '#0ea5e9' },
+    { id: 'violet', label: 'Violet',  bg: '#0c0814', accent: '#a78bfa' },
+  ];
+
+  function setTheme(t) {
+    activeTheme = t;
+    localStorage.setItem('zik_theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+  }
+
   onMount(() => {
     animOn = localStorage.getItem('zik_animations') !== 'off';
     volVal = parseInt(localStorage.getItem('zik_vol') ?? '50');
+    activeTheme = localStorage.getItem('zik_theme') || 'dark';
     const el = document.getElementById('pref-volume');
     if (el) el.style.setProperty('--vol', volVal + '%');
   });
@@ -135,6 +149,29 @@
 
     <section class="settings-section">
       <h2 class="settings-section-title">Visuel</h2>
+      <div class="settings-row settings-row-theme">
+        <div class="settings-row-info">
+          <div class="settings-row-label">Th&egrave;me</div>
+          <div class="settings-row-desc">Choisis l&apos;apparence de l&apos;interface.</div>
+        </div>
+        <div class="theme-picker">
+          {#each THEMES as theme}
+            <button
+              class="theme-swatch {activeTheme === theme.id ? 'active' : ''}"
+              style="--swatch-bg:{theme.bg};--swatch-accent:{theme.accent}"
+              onclick={() => setTheme(theme.id)}
+              aria-label="Th&egrave;me {theme.label}"
+              title={theme.label}
+            >
+              <span class="swatch-preview">
+                <span class="swatch-bar"></span>
+                <span class="swatch-dot"></span>
+              </span>
+              <span class="swatch-label">{theme.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
       <div class="settings-row">
         <div class="settings-row-info">
           <div class="settings-row-label">Animations</div>

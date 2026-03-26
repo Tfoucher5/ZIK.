@@ -15,7 +15,14 @@
       "Bash(timeout 10 npx vite dev --port 5200)",
       "Bash(timeout 12 npx vite dev --port 5200)",
       "Bash(xargs grep:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(wc -l /c/Users/Teamr/Desktop/ZIK/src/routes/\\\\\\(site\\\\\\)/docs/+page.svelte)",
+      "Bash(head -500 /c/Users/Teamr/Desktop/ZIK/src/routes/\\\\\\(site\\\\\\)/docs/+page.svelte)",
+      "Bash(sed -n '356,363p' c:/Users/Teamr/Desktop/ZIK/static/css/home.css)",
+      "Bash(sed -n '879,884p' c:/Users/Teamr/Desktop/ZIK/static/css/home.css)",
+      "Bash(sed -n '1123,1131p' c:/Users/Teamr/Desktop/ZIK/static/css/home.css)",
+      "Bash(sed -i 's/color: #f87171;/color: var\\(--danger\\);/g' static/css/settings.css static/css/rooms.css static/css/profile.css static/css/playlists.css)",
+      "Bash(sed -i 's/border-color: #f87171;/border-color: var\\(--danger\\);/g' static/css/settings.css)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Teamr\\.claude\\projects\\c--Users-Teamr-Desktop-ZIK\\memory"

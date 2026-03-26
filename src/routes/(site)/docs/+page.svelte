@@ -35,12 +35,33 @@
 
 <svelte:head>
   <title>Guide complet — Blind Test ZIK | Règles, Points, Mode Salon</title>
-  <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Spotify/Deezer, classement ELO, FAQ. Gratuit en ligne." />
+  <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Gratuit en ligne." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.zik-music.fr/docs" />
   <meta property="og:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
-  <meta property="og:description" content="Guide complet du blind test ZIK : comment jouer, système de points, Mode Salon Kahoot-like, import Spotify/Deezer, classement ELO, FAQ." />
+  <meta property="og:description" content="Guide complet du blind test ZIK : comment jouer, système de points, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ." />
   <meta property="og:url" content="https://www.zik-music.fr/docs" />
+  <meta name="twitter:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
+  <meta name="twitter:description" content="Comment jouer, système de points, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Guide complet du blind test ZIK." />
+
+  <script type="application/ld+json">
+  {@html JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Guide complet — Blind Test ZIK",
+    "url": "https://www.zik-music.fr/docs",
+    "description": "Guide complet du blind test ZIK : comment jouer, système de points, Mode Salon Kahoot-like, import Spotify/Deezer, classement ELO, FAQ.",
+    "inLanguage": "fr-FR",
+    "isPartOf": { "@type": "WebSite", "url": "https://www.zik-music.fr/", "name": "ZIK" },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://www.zik-music.fr/" },
+        { "@type": "ListItem", "position": 2, "name": "Documentation", "item": "https://www.zik-music.fr/docs" }
+      ]
+    }
+  })}
+  </script>
 
   <script type="application/ld+json">
   {@html JSON.stringify({
@@ -81,10 +102,10 @@
       },
       {
         "@type": "Question",
-        "name": "Comment importer une playlist Spotify ou Deezer sur ZIK ?",
+        "name": "Comment importer une playlist Deezer sur ZIK ?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Rendez-vous sur la page Playlists, cliquez sur Nouvelle playlist, choisissez Spotify ou Deezer, et collez le lien de votre playlist. Les titres sont importés automatiquement. Vous pouvez ensuite créer une room de blind test basée sur cette playlist et la partager."
+          "text": "Rendez-vous sur la page Playlists, cliquez sur Nouvelle playlist, puis collez le lien de votre playlist Deezer (format : https://www.deezer.com/fr/playlist/...). Les titres sont importés automatiquement. Vous pouvez ensuite créer une room de blind test basée sur cette playlist et la partager."
         }
       },
       {
@@ -108,7 +129,7 @@
         "name": "Comment supprimer mon compte ZIK ?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Envoyez un e-mail à contact@zik.app avec votre pseudo pour demander la suppression de votre compte. Toutes vos données seront supprimées sous 72h. Vous pouvez aussi passer votre profil en privé depuis les Paramètres pour ne plus apparaître dans les recherches."
+          "text": "Vous pouvez supprimer votre compte directement depuis vos Paramètres (section Zone dangereuse). La suppression est immédiate et irréversible : profil, playlists, scores et toutes vos données sont effacés instantanément. Vous pouvez aussi passer votre profil en Privé depuis les Paramètres pour ne plus apparaître dans les recherches, sans supprimer votre compte."
         }
       }
     ]
@@ -585,15 +606,10 @@
       <ol class="doc-list">
         <li>Rendez-vous sur <a href="/playlists">Playlists</a> → "Créer une playlist"</li>
         <li>Donnez-lui un nom et une description</li>
-        <li>Ajoutez des titres manuellement (recherche intégrée) ou importez depuis Spotify/Deezer</li>
+        <li>Ajoutez des titres manuellement (recherche intégrée) ou importez depuis Deezer</li>
         <li>Choisissez si la playlist est publique ou privée</li>
         <li>Sauvegardez</li>
       </ol>
-
-      <h3>Importer depuis Spotify</h3>
-      <p>
-        Copiez le <strong>lien de partage</strong> d'une playlist Spotify (Format : <code>https://open.spotify.com/playlist/...</code>) et collez-le dans le champ d'import. ZIK récupère automatiquement les titres et artistes. Notez que seuls les titres disponibles dans la base de données de ZIK seront ajoutés — les titres très rares ou récents peuvent ne pas être disponibles.
-      </p>
 
       <h3>Importer depuis Deezer</h3>
       <p>
@@ -603,7 +619,7 @@
       <div class="doc-tip">
         <span class="doc-tip-icon">💡</span>
         <div>
-          <strong>Conseil pour le Mode Salon :</strong> Créez une playlist dédiée à votre événement avant la soirée. Importez vos favoris depuis Spotify, ajustez manuellement si besoin, puis sélectionnez cette playlist lors de la création de votre salon.
+          <strong>Conseil pour le Mode Salon :</strong> Créez une playlist dédiée à votre événement avant la soirée. Importez vos favoris depuis Deezer, ajustez manuellement si besoin, puis sélectionnez cette playlist lors de la création de votre salon.
         </div>
       </div>
 
@@ -795,7 +811,7 @@
           <summary>Puis-je jouer avec mes propres chansons ?</summary>
           <div class="faq-body">
             <p>
-              Pas directement depuis vos fichiers locaux. En revanche, vous pouvez importer une playlist depuis Spotify ou Deezer contenant vos titres favoris. ZIK utilisera ses propres extraits audio (sous licence) pour ces titres. Si un titre n'est pas dans notre base de données, il ne sera pas inclus dans la partie.
+              Pas directement depuis vos fichiers locaux. En revanche, vous pouvez importer une playlist depuis Deezer contenant vos titres favoris. ZIK utilisera ses propres extraits audio (via YouTube) pour ces titres. Si un titre n'est pas trouvé, il ne sera pas inclus dans la partie.
             </p>
           </div>
         </details>
@@ -813,7 +829,7 @@
           <summary>Comment changer mon pseudo ?</summary>
           <div class="faq-body">
             <p>
-              Allez dans <a href="/settings">Paramètres</a> → section "Profil". Vous pouvez modifier votre pseudo une fois toutes les 30 jours. Le changement est immédiatement visible sur votre profil public et dans les parties. L'historique de vos anciens pseudos n'est pas public.
+              Allez dans <a href="/profile">Profil</a> et cliquez sur l&rsquo;ic&ocirc;ne d&rsquo;&eacute;dition. Le changement est imm&eacute;diatement visible sur votre profil public et dans les parties. Le pseudo doit contenir entre 3 et 20 caract&egrave;res (lettres, chiffres, <code>_</code> et <code>-</code> autoris&eacute;s).
             </p>
           </div>
         </details>
@@ -838,7 +854,7 @@
     </section>
 
     <div class="doc-footer-note">
-      <p>Documentation mise à jour — mars 2026. Une question non couverte ? <a href="mailto:contact@zik.app">Contactez-nous</a>.</p>
+      <p>Documentation mise &agrave; jour &mdash; mars 2026. Une question non couverte&nbsp;? Ouvrez une <a href="https://github.com/Tfoucher5/ZIK/issues" target="_blank" rel="noopener noreferrer">issue GitHub</a>.</p>
     </div>
   </main>
 </div>

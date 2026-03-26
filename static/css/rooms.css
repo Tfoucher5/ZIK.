@@ -1,3 +1,14 @@
+:root {
+  --c-glass: 255 255 255;
+}
+
+[data-theme="light"] {
+  --c-glass: 0 0 0;
+}
+[data-theme="violet"] {
+  --c-glass: 255 255 255;
+}
+
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 .rooms-tabs {
   display: flex;
@@ -24,7 +35,7 @@
     color 0.15s;
 }
 .rtab.active {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(var(--c-glass) / 0.07);
   color: var(--fg, var(--text));
 }
 .rtab:hover:not(.active) {
@@ -58,7 +69,7 @@
 }
 .room-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgb(var(--c-glass) / 0.15);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
 }
 
@@ -101,13 +112,13 @@
   color: var(--dim);
 }
 .room-card-tag {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--c-glass) / 0.05);
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 2px 7px;
 }
 .room-card-private {
-  color: #f87171;
+  color: var(--danger);
   border-color: rgba(248, 113, 113, 0.3);
   background: rgba(248, 113, 113, 0.06);
 }
@@ -128,7 +139,7 @@
 .room-select {
   width: 100%;
   padding: 11px 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--c-glass) / 0.05);
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);
@@ -144,7 +155,7 @@
   border-color: var(--accent);
 }
 .room-select option {
-  background: #111827;
+  background: var(--bg2);
 }
 
 /* ── Empty state ──────────────────────────────────────────────────────────── */
@@ -167,7 +178,7 @@
 .btn-delete-room {
   background: transparent;
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  color: var(--danger);
   padding: 6px 12px;
   border-radius: 50px;
   font-size: 0.75rem;
@@ -205,7 +216,7 @@
   width: 100%;
   max-width: 420px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--c-glass) / 0.05);
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);

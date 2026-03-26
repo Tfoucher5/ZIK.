@@ -2,11 +2,11 @@
 :root {
   --bg: #060810;
   --bg2: #0c1018;
-  --surface: rgba(255, 255, 255, 0.04);
-  --surface2: rgba(255, 255, 255, 0.07);
-  --surface3: rgba(255, 255, 255, 0.11);
-  --border: rgba(255, 255, 255, 0.09);
-  --border2: rgba(255, 255, 255, 0.15);
+  --surface: rgb(var(--c-glass) / 0.04);
+  --surface2: rgb(var(--c-glass) / 0.07);
+  --surface3: rgb(var(--c-glass) / 0.11);
+  --border: rgb(var(--c-glass) / 0.09);
+  --border2: rgb(var(--c-glass) / 0.15);
   --accent: #7c3aed;
   --accent2: #a855f7;
   --accent3: #c084fc;
@@ -26,8 +26,27 @@
   --glow-green: rgba(74, 222, 128, 0.35);
   --glow-red: rgba(248, 113, 113, 0.35);
   --glow-yellow: rgba(251, 191, 36, 0.35);
+  --c-glass: 255 255 255;
 }
 
+[data-theme="light"] {
+  --c-glass: 0 0 0;
+  --bg: #f4f6fb;
+  --bg2: #e9ecf4;
+  --accent: #0ea5e9;
+  --accent2: #7c3aed;
+  --text: #0f172a;
+  --mid: #475569;
+}
+[data-theme="violet"] {
+  --c-glass: 255 255 255;
+  --bg: #0c0814;
+  --bg2: #130d22;
+  --accent: #a78bfa;
+  --accent2: #f472b6;
+  --text: #f0eeff;
+  --mid: #9d8dc4;
+}
 *,
 *::before,
 *::after {
@@ -119,7 +138,7 @@ body {
 }
 
 .salon-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(var(--c-glass) / 0.04);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid var(--border2);
@@ -128,7 +147,7 @@ body {
   width: 100%;
   max-width: 520px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgb(var(--c-glass) / 0.04),
     0 32px 64px rgba(0, 0, 0, 0.4);
 }
 
@@ -877,7 +896,7 @@ body {
 /* ─── Summary + Gameover (host info area) ───────────────────────────────────── */
 
 .salon-summary {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(var(--c-glass) / 0.04);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   padding: 20px 28px;
@@ -1451,7 +1470,7 @@ body {
 }
 .timer-track {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.07);
+  stroke: rgb(var(--c-glass) / 0.07);
   stroke-width: 7;
 }
 .timer-arc {
@@ -1658,11 +1677,11 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0);
+  background: rgb(var(--c-glass) / 0);
   transition: background 0.15s;
 }
 .salon-choice-btn:hover:not(:disabled)::after {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(var(--c-glass) / 0.08);
 }
 .salon-choice-btn:active:not(:disabled) {
   transform: scale(0.96);
@@ -1674,7 +1693,7 @@ body {
 
 /* ── QCM: waiting state (player has clicked, awaiting round end) ── */
 .salon-choice-btn.is-selected {
-  outline: 3px solid rgba(255, 255, 255, 0.85);
+  outline: 3px solid rgb(var(--c-glass) / 0.85);
   outline-offset: 2px;
   opacity: 1;
   transform: scale(1.02);
@@ -1811,7 +1830,7 @@ body {
   background: rgba(6, 8, 16, 0.7);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(var(--c-glass) / 0.1);
   border-radius: 24px;
   padding: 36px 56px;
   text-align: center;
@@ -1878,7 +1897,7 @@ body {
 
 .salon-play-roundend {
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(var(--c-glass) / 0.04);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   padding: 22px;
@@ -1949,7 +1968,7 @@ body {
 }
 
 .salon-join-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(var(--c-glass) / 0.04);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--border2);
@@ -1961,7 +1980,7 @@ body {
   flex-direction: column;
   gap: 14px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgb(var(--c-glass) / 0.04),
     0 40px 80px rgba(0, 0, 0, 0.5);
   position: relative;
   z-index: 1;
@@ -2165,7 +2184,7 @@ body {
 .salon-score-delta {
   font-size: 0.68em;
   font-weight: 700;
-  color: #4ade80;
+  color: var(--success);
   margin-left: 3px;
   vertical-align: super;
 }

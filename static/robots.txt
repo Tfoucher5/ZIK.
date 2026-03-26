@@ -1,10 +1,10 @@
 User-agent: *
 Allow: /
 Allow: /docs
-Allow: /room/
 Allow: /portfolio
-Disallow: /game
+
 Disallow: /api/
+Disallow: /game
 Disallow: /settings
 Disallow: /profile
 Disallow: /salon/host

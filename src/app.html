@@ -2,24 +2,27 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    %sveltekit.head%
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
-    <!-- Dark mode / animation preference (inline to avoid FOUC) -->
+    %sveltekit.head%
+    <!-- Theme / animation preference (inline to avoid FOUC) -->
     <script>
       (function () {
-        const dm = localStorage.getItem("zik_dark");
-        if (
-          dm === "on" ||
-          (dm === null &&
-            window.matchMedia?.("(prefers-color-scheme: dark)").matches)
-        ) {
-          document.documentElement.setAttribute("data-theme", "dark");
+        var t = localStorage.getItem("zik_theme") || "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        // Legacy: migrate zik_dark → zik_theme
+        if (!localStorage.getItem("zik_theme")) {
+          var d = localStorage.getItem("zik_dark");
+          if (d === "false") {
+            localStorage.setItem("zik_theme", "light");
+            document.documentElement.setAttribute("data-theme", "light");
+          }
         }
         if (localStorage.getItem("zik_animations") === "off") {
           document.documentElement.classList.add("no-animations");
