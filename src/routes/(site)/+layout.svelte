@@ -143,14 +143,13 @@
       <div class="footer-col-title">Aide</div>
       <a href="/docs">Documentation</a>
       <a href="/docs#faq">FAQ</a>
-      <a href="/docs#faq">FAQ</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Légal</div>
       <a href="/mentions-legales">Mentions légales</a>
       <a href="/cgu">CGU</a>
       <a href="/confidentialite">Confidentialité</a>
-      <span class="footer-version">v1.2.1</span>
+      <span class="footer-version">v1.2.2</span>
     </div>
   </div>
   <div class="footer-bottom">
