@@ -15,7 +15,9 @@
       "Bash(timeout 10 npx vite dev --port 5200)",
       "Bash(timeout 12 npx vite dev --port 5200)",
       "Bash(xargs grep:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(wc -l /c/Users/Teamr/Desktop/ZIK/src/routes/\\\\\\(site\\\\\\)/docs/+page.svelte)",
+      "Bash(head -500 /c/Users/Teamr/Desktop/ZIK/src/routes/\\\\\\(site\\\\\\)/docs/+page.svelte)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Teamr\\.claude\\projects\\c--Users-Teamr-Desktop-ZIK\\memory"

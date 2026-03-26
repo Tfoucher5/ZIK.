@@ -88,14 +88,18 @@
 
 <svelte:head>
   <meta name="description" content="ZIK — Blind test musical multijoueur en ligne. Rejoins une room, trouve les titres avant tout le monde et grimpe dans le classement ELO. Gratuit, sans téléchargement.">
-  <meta name="keywords" content="blind test, quiz musical, blind test en ligne, blind test multijoueur, jeu musique, deviner chansons, blind test gratuit, musique en ligne">
+  <meta name="keywords" content="blind test, blind test en ligne, blind test gratuit, blind test multijoueur, quiz musical en ligne, jeu de musique, deviner les chansons, jeu musique gratuit, blind test kahoot, blind test soirée, blind test spotify, blind test deezer, jeu blind test, musique en ligne">
   <meta name="author" content="ZIK">
   <meta name="theme-color" content="#7c3aed">
+  <meta name="format-detection" content="telephone=no">
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="ZIK">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="fr_FR">
+  <meta property="og:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit">
+  <meta property="og:description" content="Le blind test musical multijoueur gratuit en ligne. Trouve les titres avant tout le monde, importe tes playlists Spotify/Deezer, Mode Salon Kahoot-like. Sans installation.">
+  <meta property="og:url" content="https://www.zik-music.fr/">
   <meta property="og:image" content="https://www.zik-music.fr/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -103,6 +107,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit">
+  <meta name="twitter:description" content="Blind test musical multijoueur gratuit en ligne. Playlists Spotify/Deezer, Mode Salon Kahoot-like, classement ELO. Sans inscription requise.">
   <meta name="twitter:image" content="https://www.zik-music.fr/og.png">
 
   <link rel="stylesheet" href="/css/home.css">
@@ -137,10 +143,11 @@
       <div class="footer-col-title">Aide</div>
       <a href="/docs">Documentation</a>
       <a href="/docs#faq">FAQ</a>
-      <a href="mailto:contact@zik.app">Contact</a>
+      <a href="/docs#faq">FAQ</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Légal</div>
+      <a href="/mentions-legales">Mentions légales</a>
       <a href="/cgu">CGU</a>
       <a href="/confidentialite">Confidentialité</a>
       <span class="footer-version">v1.2.1</span>

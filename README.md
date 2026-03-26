@@ -129,6 +129,9 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 │       ├── settings/          # Paramètres (visuel, jeu, confidentialité)
 │       ├── rooms/             # Browsing des rooms
 │       ├── playlists/         # Gestion des playlists
+│       ├── cgu/               # Conditions Générales d'Utilisation
+│       ├── confidentialite/   # Politique de confidentialité
+│       ├── mentions-legales/  # Mentions légales (LCEN)
 │       └── api/               # Endpoints REST
 ├── static/css/                # Styles par page
 └── supabase_schema.sql        # Schéma complet de la base de données
@@ -137,6 +140,16 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ---
 
 ## 📋 Changelog
+
+### v1.2.2 — Légal, SEO & nettoyage
+
+- **Page Mentions Légales** (`/mentions-legales`) : conformité légale française (LCEN), informations éditeur, hébergeur, propriété intellectuelle, droits applicables
+- **CGU & Confidentialité** enrichies : Spotify/Deezer détaillés, droits RGPD complets (accès, rectification, effacement, portabilité, opposition), lien CNIL, RLS Supabase mentionné
+- **Footer** : lien Mentions légales ajouté dans la colonne Légal
+- **SEO** : structured data enrichie (`WebSite`, `Organization`, `WebPage`, `BreadcrumbList`), Twitter Card sur toutes les pages clés, `preconnect` Google Fonts gstatic, keywords étendus
+- **Sitemap** : `/rooms` et `/mentions-legales` ajoutés
+- **robots.txt** : règles simplifiées et nettoyées
+- **Nettoyage** : suppression du répertoire `public/css/` (doublon mort de `static/css/`)
 
 ### v1.2.1 — Documentation, footer & polish UI
 
@@ -216,10 +229,19 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - [x] Documentation en ligne complète (`/docs`)
 - [x] Footer 4 colonnes professionnel
 
+### ✅ v1.2.2 — Légal & SEO
+
+- [x] Page Mentions Légales (`/mentions-legales`)
+- [x] CGU et Politique de confidentialité enrichies (RGPD complet)
+- [x] SEO avancé : JSON-LD WebSite/Organization/BreadcrumbList, Twitter Card, keywords
+- [x] Sitemap étendu (`/rooms`, `/mentions-legales`)
+- [x] Nettoyage répertoire `public/css/` mort
+
 ### 🚧 v1.3 — En réflexion
 
 - [ ] Répondre avec la voix (mobile uniquement)
 - [ ] Formulaire de contact intégré
+- [ ] Historique de parties sur le profil
 
 ---
 
