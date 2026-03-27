@@ -1,52 +1,5 @@
-/* ─── Variables & Reset ────────────────────────────────────────────────────── */
-:root {
-  --bg: #060810;
-  --bg2: #0c1018;
-  --surface: rgb(var(--c-glass) / 0.04);
-  --surface2: rgb(var(--c-glass) / 0.07);
-  --surface3: rgb(var(--c-glass) / 0.11);
-  --border: rgb(var(--c-glass) / 0.09);
-  --border2: rgb(var(--c-glass) / 0.15);
-  --accent: #7c3aed;
-  --accent2: #a855f7;
-  --accent3: #c084fc;
-  --success: #4ade80;
-  --danger: #f87171;
-  --warn: #fbbf24;
-  --text: #eef0f5;
-  --mid: #8896aa;
-  --dim: #3d4a5c;
-  --radius: 16px;
-  --radius-sm: 10px;
-  --c-red: #dc2626;
-  --c-blue: #2563eb;
-  --c-yellow: #d97706;
-  --c-green: #16a34a;
-  --glow-purple: rgba(168, 85, 247, 0.35);
-  --glow-green: rgba(74, 222, 128, 0.35);
-  --glow-red: rgba(248, 113, 113, 0.35);
-  --glow-yellow: rgba(251, 191, 36, 0.35);
-  --c-glass: 255 255 255;
-}
-
-[data-theme="light"] {
-  --c-glass: 0 0 0;
-  --bg: #f4f6fb;
-  --bg2: #e9ecf4;
-  --accent: #0ea5e9;
-  --accent2: #7c3aed;
-  --text: #0f172a;
-  --mid: #475569;
-}
-[data-theme="violet"] {
-  --c-glass: 255 255 255;
-  --bg: #0c0814;
-  --bg2: #130d22;
-  --accent: #a78bfa;
-  --accent2: #f472b6;
-  --text: #f0eeff;
-  --mid: #9d8dc4;
-}
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+/* Les variables de thème (bg, text, accent, glow…) viennent de theme.css.  */
 *,
 *::before,
 *::after {

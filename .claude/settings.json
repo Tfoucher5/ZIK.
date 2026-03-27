@@ -22,7 +22,10 @@
       "Bash(sed -n '879,884p' c:/Users/Teamr/Desktop/ZIK/static/css/home.css)",
       "Bash(sed -n '1123,1131p' c:/Users/Teamr/Desktop/ZIK/static/css/home.css)",
       "Bash(sed -i 's/color: #f87171;/color: var\\(--danger\\);/g' static/css/settings.css static/css/rooms.css static/css/profile.css static/css/playlists.css)",
-      "Bash(sed -i 's/border-color: #f87171;/border-color: var\\(--danger\\);/g' static/css/settings.css)"
+      "Bash(sed -i 's/border-color: #f87171;/border-color: var\\(--danger\\);/g' static/css/settings.css)",
+      "Bash(grep -E \"\\\\.\\(ts|js|svelte\\)$\")",
+      "Bash(find /c/Users/Teamr/Desktop/ZIK/src/lib -type f -name *.ts -o -name *.js)",
+      "Bash(grep -r \"no-animations\\\\|zik_animations\\\\|zik_vol\" /c/Users/Teamr/Desktop/ZIK/src --include=*.svelte --include=*.ts --include=*.js)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Teamr\\.claude\\projects\\c--Users-Teamr-Desktop-ZIK\\memory"

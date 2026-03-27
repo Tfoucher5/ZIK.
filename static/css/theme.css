@@ -1,0 +1,168 @@
+/* ── ZIK — Variables de thème ────────────────────────────────────────────────
+   Source unique de vérité pour les 3 thèmes (sombre, clair, violet).
+   Chargé en premier via app.html → disponible sur TOUTES les pages.
+
+   Architecture :
+   • :root              → variables fixes (layout, rayons, couleurs sémantiques)
+                          Spécificité (0,1,0) — les fichiers CSS peuvent surcharger.
+   • html[data-theme]   → variables qui changent selon le thème choisi
+                          Spécificité (0,1,1) — gagne sur tout :root dans d'autres
+                          fichiers CSS, garantissant que le thème est toujours appliqué.
+*/
+
+/* ── Variables fixes (indépendantes du thème) ───────────────────────────── */
+:root {
+  --nav-h: 62px;
+  --r: 14px;
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  /* Couleurs sémantiques figées */
+  --silver: #94a3b8;
+  --c-red: #dc2626;
+  --c-blue: #2563eb;
+  --c-yellow: #d97706;
+  --c-green: #16a34a;
+}
+
+/* ── Thème sombre (défaut) ──────────────────────────────────────────────── */
+:root,
+html[data-theme="dark"] {
+  /* Fonds */
+  --bg: #070b10;
+  --bg2: #0c1018;
+
+  /* Verre (RGB sans alpha — utilisé avec rgb(var(--c-glass) / opacité)) */
+  --c-glass: 255 255 255;
+
+  /* Surfaces & bordures */
+  --surface: rgb(var(--c-glass) / 0.04);
+  --surface2: rgb(var(--c-glass) / 0.07);
+  --surface3: rgb(var(--c-glass) / 0.11);
+  --border: rgb(var(--c-glass) / 0.08);
+  --border2: rgb(var(--c-glass) / 0.15);
+
+  /* Accents */
+  --accent: #3ecfff;
+  --accent2: #a78bfa;
+  --accent3: #c084fc;
+  --accent-rgb: 62 207 255;
+  --accent2-rgb: 167 139 250;
+
+  /* États */
+  --success: #4ade80;
+  --danger: #f87171;
+  --warn: #fbbf24;
+  --gold: #fbbf24;
+
+  /* Texte */
+  --text: #eef0f5;
+  --mid: #8896aa;
+  --dim: #4a5568;
+
+  /* Navigation */
+  --nav-bg: rgba(7, 11, 16, 0.85);
+
+  /* Glows */
+  --glow-purple: rgba(168, 85, 247, 0.35);
+  --glow-green: rgba(74, 222, 128, 0.35);
+  --glow-red: rgba(248, 113, 113, 0.35);
+  --glow-yellow: rgba(251, 191, 36, 0.35);
+}
+
+/* ── Thème clair ────────────────────────────────────────────────────────── */
+html[data-theme="light"] {
+  --bg: #e8edf8;
+  --bg2: #d8e0f0;
+  --c-glass: 0 0 0;
+  /* Surfaces et bordures renforcées pour être visibles sur fond clair */
+  --surface: rgb(var(--c-glass) / 0.05);
+  --surface2: rgb(var(--c-glass) / 0.08);
+  --surface3: rgb(var(--c-glass) / 0.12);
+  --border: rgb(var(--c-glass) / 0.12);
+  --border2: rgb(var(--c-glass) / 0.20);
+  --accent: #0ea5e9;
+  --accent2: #7c3aed;
+  --accent3: #9f67ff;
+  --accent-rgb: 14 165 233;
+  --accent2-rgb: 124 58 237;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warn: #d97706;
+  --gold: #d97706;
+  --text: #0f172a;
+  --mid: #475569;
+  --dim: #94a3b8;
+  --nav-bg: rgba(244, 246, 251, 0.92);
+  --glow-purple: rgba(124, 58, 237, 0.25);
+  --glow-green: rgba(22, 163, 74, 0.25);
+  --glow-red: rgba(220, 38, 38, 0.25);
+  --glow-yellow: rgba(217, 119, 6, 0.25);
+}
+
+/* ── Thème violet ───────────────────────────────────────────────────────── */
+html[data-theme="violet"] {
+  --bg: #0c0814;
+  --bg2: #130d22;
+  --c-glass: 255 255 255;
+  --accent: #a78bfa;
+  --accent2: #f472b6;
+  --accent3: #c084fc;
+  --accent-rgb: 167 139 250;
+  --accent2-rgb: 244 114 182;
+  --success: #4ade80;
+  --danger: #f87171;
+  --warn: #fbbf24;
+  --gold: #fbbf24;
+  --text: #f0eeff;
+  --mid: #9d8dc4;
+  --dim: #5b4d8a;
+  --nav-bg: rgba(12, 8, 20, 0.88);
+  --glow-purple: rgba(167, 139, 250, 0.4);
+  --glow-green: rgba(74, 222, 128, 0.35);
+  --glow-red: rgba(248, 113, 113, 0.35);
+  --glow-yellow: rgba(251, 191, 36, 0.35);
+}
+
+/* ── Application directe du thème sur body ───────────────────────────────── */
+/* Sélecteurs composés html[...] body = spécificité (0,1,2).
+   Bat toute règle :global(body) ou body { } d'un composant Svelte (0,0,1).
+   Garantit que le fond ET la couleur suivent le thème sur TOUTES les pages. */
+
+html[data-theme="dark"] body,
+html:not([data-theme]) body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+html[data-theme="light"] body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+html[data-theme="violet"] body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* ── Hero mockup — overrides hardcoded dark bg in home.css ──────────────── */
+html[data-theme="light"] .hero-mockup {
+  background: var(--bg2);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.08),
+    0 40px 80px rgba(0, 0, 0, 0.12),
+    0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+html[data-theme="violet"] .hero-mockup {
+  background: rgba(19, 13, 34, 0.95);
+}
+
+/* ── Animations désactivées ─────────────────────────────────────────────── */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
