@@ -149,11 +149,12 @@
       <a href="/mentions-legales">Mentions légales</a>
       <a href="/cgu">CGU</a>
       <a href="/confidentialite">Confidentialité</a>
-      <span class="footer-version">v1.2.2</span>
+      <span class="footer-version">v1.3.0</span>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>Fait avec ❤️ et beaucoup trop de musique</span>
+    <span>Fait avec ❤️ et beaucoup trop de musique par:</span><br><br>
+    <a href="/portfolio">Theo Foucher</a>
   </div>
 </footer>
 {/if}

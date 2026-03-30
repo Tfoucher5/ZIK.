@@ -92,8 +92,12 @@
 </script>
 
 <svelte:head>
-  <title>ZIK — Mode Salon</title>
-  <meta name="robots" content="noindex, nofollow">
+  <title>ZIK - Mode Salon</title>
+  <!-- Autoriser l’indexation -->
+  <meta name="robots" content="index, follow">
+  <!-- Description SEO -->
+  <meta name="description"content="Créer un salon Kahoot-Like pour jouer en famille ou entre amis !">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 </svelte:head>
 
 <div class="salon-setup">

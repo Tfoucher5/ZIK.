@@ -5,7 +5,10 @@ const BASE = "https://www.zik-music.fr";
 // Static high-value pages
 const STATIC_URLS = [
   { loc: "/", changefreq: "weekly", priority: "1.0" },
-  { loc: "/docs", changefreq: "weekly", priority: "0.9" },
+  { loc: "/docs#faq", changefreq: "weekly", priority: "0.9" },
+  { loc: "/docs", changefreq: "weekly", priority: "0.8" },
+  { loc: "/salon/host", changefreq: "weekly", priority: "0.8" },
+  { loc: "/salon/play", changefreq: "weekly", priority: "0.8" },
   { loc: "/rooms", changefreq: "daily", priority: "0.8" },
   { loc: "/portfolio", changefreq: "yearly", priority: "0.7" },
   { loc: "/cgu", changefreq: "yearly", priority: "0.2" },

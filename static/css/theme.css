@@ -1,11 +1,11 @@
 /* ── ZIK — Variables de thème ────────────────────────────────────────────────
-   Source unique de vérité pour les 3 thèmes (sombre, clair, violet).
-   Chargé en premier via app.html → disponible sur TOUTES les pages.
+  Source unique de vérité pour les 3 thèmes (sombre, clair, violet).
+  Chargé en premier via app.html → disponible sur TOUTES les pages.
 
-   Architecture :
-   • :root              → variables fixes (layout, rayons, couleurs sémantiques)
+  Architecture :
+  • :root              → variables fixes (layout, rayons, couleurs sémantiques)
                           Spécificité (0,1,0) — les fichiers CSS peuvent surcharger.
-   • html[data-theme]   → variables qui changent selon le thème choisi
+  • html[data-theme]   → variables qui changent selon le thème choisi
                           Spécificité (0,1,1) — gagne sur tout :root dans d'autres
                           fichiers CSS, garantissant que le thème est toujours appliqué.
 */

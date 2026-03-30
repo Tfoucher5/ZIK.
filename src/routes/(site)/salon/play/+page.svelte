@@ -218,8 +218,11 @@
 </script>
 
 <svelte:head>
-  <title>ZIK Salon — Rejoindre</title>
-  <meta name="robots" content="noindex, nofollow">
+  <title>ZIK Salon - Rejoindre</title>
+  <!-- Autoriser l’indexation -->
+  <meta name="robots" content="index, follow">
+  <!-- Description SEO -->
+  <meta name="description"content="Rejoindre un salon avec un code.">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 </svelte:head>
 

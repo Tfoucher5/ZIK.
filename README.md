@@ -141,6 +141,11 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 ## 📋 Changelog
 
+### v1.3.0 — Customisation - Thèmes
+
+- **Page Paramètres** (`/parametres`): Ajout des boutons pour sélectionner le thème d'affichage
+- **Styles**: Ajout d'un fichier global pour centraliser les couleurs des thèmes
+
 ### v1.2.2 — Légal, SEO & nettoyage
 
 - **Page Mentions Légales** (`/mentions-legales`) : conformité légale française (LCEN), informations éditeur, hébergeur, propriété intellectuelle, droits applicables
@@ -237,11 +242,10 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - [x] Sitemap étendu (`/rooms`, `/mentions-legales`)
 - [x] Nettoyage répertoire `public/css/` mort
 
-### 🚧 v1.3 — En réflexion
+### ✅ v1.3.0 - Personalisation - Thèmes
 
-- [ ] Répondre avec la voix (mobile uniquement)
-- [ ] Formulaire de contact intégré
-- [ ] Historique de parties sur le profil
+- [x] Page paramètres modifiée (`/parametres`)
+- [x] Ajout feuille de style globale (`/static/css/theme.css`)
 
 ---
 
