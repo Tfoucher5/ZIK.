@@ -1674,23 +1674,26 @@ footer,
 
 /* ── Responsive hero visual ── */
 @media (max-width: 980px) {
-  .hero-content {
-    flex-direction: column;
-    gap: 48px;
-    align-items: flex-start;
-  }
-  .hero-text {
-    max-width: 100%;
-  }
   .hero-visual {
-    flex: none;
-    width: 100%;
-    max-width: 420px;
-    align-self: center;
+    display: none;
   }
-  .hero-visual::before {
-    width: 340px;
-    height: 340px;
+  /* Sur mobile, cacher les feats moins importantes et le lien Explorer */
+  .hero-feat-hide-sm {
+    display: none;
+  }
+  .hero-cta-explore {
+    display: none;
+  }
+  /* Steps : police plus petite sur mobile */
+  .hero-steps {
+    margin: 14px 0 4px;
+    gap: 8px;
+  }
+  .hero-step strong {
+    font-size: 0.78rem;
+  }
+  .hero-step small {
+    font-size: 0.7rem;
   }
 }
 @media (max-width: 600px) {
