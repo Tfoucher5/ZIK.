@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><style>
+@media (prefers-color-scheme: dark) {
+  .z { fill: #ffffff }
+}
+@media (prefers-color-scheme: light) {
+  .z { fill: #000000 }
+}
+</style><path class="z" d="M14 54.206V43.794L36.055 19v-.822h-21.37V9H48.11v11.301L26.808 44.274v.753H49v9.179z"></path><rect width="11" height="11" x="45" y="48" rx="1.375" fill="#7c3aed"></rect><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
+@media (prefers-color-scheme: dark) { :root { filter: none; } }
+</style></svg>
