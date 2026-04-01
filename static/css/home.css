@@ -1173,13 +1173,15 @@ footer,
   .lb-grid {
     grid-template-columns: 1fr;
   }
-  /* Hero actions stack on mobile */
+  /* Hero actions stack on mobile — pleine largeur */
   .hero-actions {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
+  .hero-cta,
   .hero-cta-sec {
-    width: auto;
+    text-align: center;
+    width: 100%;
   }
   /* Private room join bar full width */
   .private-room-join {
@@ -2378,17 +2380,7 @@ footer,
   color: var(--accent);
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-  .pub-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 420px) {
-  .pub-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* Responsive — auto-fill gère seul les colonnes via minmax(260px, 1fr) */
 
 /* ── Leaderboard Podium (top 3) ──────────────────────────────────────────────── */
 .lb-podium {
