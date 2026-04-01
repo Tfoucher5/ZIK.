@@ -6,7 +6,8 @@
     currentPhrase = '', players = [],
     roundEnd = null, finalScores = [],
     round = 0, total = 10,
-    onRestart, onNewSalon,
+    choices = null, answerMode = 'free',
+    onRestart, onNewSalon, onMusicReady,
   } = $props();
 
   const medals = ['🥇', '🥈', '🥉'];
@@ -71,7 +72,12 @@
         ytPlayer = new window.YT.Player('salon-yt-player', {
           height: '100%', width: '100%', videoId,
           playerVars: { autoplay: 1, controls: 1, enablejsapi: 1, start: startSeconds, rel: 0, modestbranding: 1 },
-          events: { onReady: (e) => e.target.playVideo() },
+          events: {
+            onReady: (e) => e.target.playVideo(),
+            onStateChange: (e) => {
+              if (e.data === 1 /* PLAYING */) onMusicReady?.();
+            },
+          },
         });
       }, 200);
     }
@@ -124,6 +130,17 @@
           <div class="salon-finders">
             {#each players.filter(p => p.foundThisRound) as p (p.username)}
               <span class="salon-finder-chip">✓ {p.username}</span>
+            {/each}
+          </div>
+        {/if}
+
+        {#if answerMode === 'multiple' && choices && timerVal > 0}
+          <div class="salon-choices salon-host-choices">
+            {#each choices as choice, i (i)}
+              <div class="salon-choice-btn c{i}">
+                <span class="choice-shape"></span>
+                <span class="choice-text">{choice}</span>
+              </div>
             {/each}
           </div>
         {/if}

@@ -17,6 +17,7 @@
   let roundEnd      = $state(null);
   let finalScores   = $state([]);
   let settings      = $state({});
+  let choices       = $state(null);
   let error         = $state('');
   let autoNextSec   = $state(0);
   let autoNextTimer = null;
@@ -85,6 +86,8 @@
       round    = data.round;
       total    = data.total;
       roundEnd = null;
+      timerVal = 0;
+      choices  = data.choices || null;
       clearAutoNext();
       pickPhrase();
       players = players.map(p => ({
@@ -96,6 +99,7 @@
       hostCenter?.loadVideo(data.videoId, data.startSeconds);
     });
 
+    socket.on('salon_timer_started', ({ max }) => { timerVal = max; timerMax = max; });
     socket.on('salon_timer_update', ({ current, max }) => { timerVal = current; timerMax = max; });
 
     socket.on('salon_player_answered', ({ username, correct, answered, foundArtist, foundTitle, foundFeatCount, totalFeatCount }) => {
@@ -118,6 +122,7 @@
 
     socket.on('salon_round_end', (data) => {
       phase    = 'summary';
+      choices  = null;
       roundEnd = data;
       setTimeout(() => hostCenter?.revealVideo(), 200);
       if (data.scores) {
@@ -192,8 +197,11 @@
       {currentPhrase}
       {players} {roundEnd} {finalScores}
       {round} {total}
+      {choices}
+      answerMode={settings.answerMode || 'free'}
       onRestart={restartGame}
       onNewSalon={() => window.location.href = '/salon'}
+      onMusicReady={() => socket?.emit('salon_music_ready')}
     />
 
     <PlayerSidebar {players} {phase} answerMode={settings.answerMode || 'free'} />

@@ -1529,6 +1529,18 @@ body {
   color: var(--mid);
 }
 
+/* ─── Music loading state ────────────────────────────────────────────────────── */
+
+.salon-music-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  color: var(--mid);
+  font-size: 0.9rem;
+}
+
 /* ─── Free text input ────────────────────────────────────────────────────────── */
 
 .salon-play-guess {
@@ -1596,6 +1608,18 @@ body {
 }
 
 /* ─── Multiple choice (Kahoot-style) ─────────────────────────────────────────── */
+
+/* Host TV view: smaller, non-interactive */
+.salon-host-choices .salon-choice-btn {
+  min-height: 64px;
+  font-size: 0.78rem;
+  padding: 10px 8px 12px;
+  cursor: default;
+  pointer-events: none;
+}
+.salon-host-choices .salon-choice-btn::after {
+  display: none;
+}
 
 .salon-choices {
   width: 100%;
