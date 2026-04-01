@@ -142,6 +142,20 @@ img {
   background: rgba(248, 113, 113, 0.08);
   color: var(--danger);
 }
+.nav-dd-sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+/* Liens nav visibles uniquement dans le dropdown en mobile */
+.nav-dd-mobile-only {
+  display: none;
+}
+@media (max-width: 540px) {
+  .nav-dd-mobile-only {
+    display: block;
+  }
+}
 
 /* Google OAuth button */
 .btn-google {
@@ -1174,6 +1188,7 @@ footer,
   }
   .private-room-bar {
     min-width: 0;
+    flex-direction: column;
   }
 }
 @media (max-width: 540px) {

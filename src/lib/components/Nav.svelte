@@ -31,6 +31,10 @@
             <span class="nav-chevron">&#x25BE;</span>
           </button>
           <div class="nav-dropdown" class:open={dropdownOpen}>
+            <a href="/rooms"     class="nav-dd-item nav-dd-mobile-only">Rooms</a>
+            <a href="/playlists" class="nav-dd-item nav-dd-mobile-only">Mes playlists</a>
+            <a href="/salon"     class="nav-dd-item nav-dd-mobile-only">Mode Salon</a>
+            <hr class="nav-dd-sep nav-dd-mobile-only">
             <a href="/profile"  class="nav-dd-item">Mon profil</a>
             <a href="/settings" class="nav-dd-item">Param&egrave;tres</a>
             <button class="nav-dd-item nav-dd-logout" onclick={onLogout}>D&eacute;connexion</button>
