@@ -96,6 +96,7 @@
       hostCenter?.loadVideo(data.videoId, data.startSeconds);
     });
 
+    socket.on('salon_timer_started', ({ max }) => { timerVal = max; timerMax = max; });
     socket.on('salon_timer_update', ({ current, max }) => { timerVal = current; timerMax = max; });
 
     socket.on('salon_player_answered', ({ username, correct, answered, foundArtist, foundTitle, foundFeatCount, totalFeatCount }) => {
@@ -194,6 +195,7 @@
       {round} {total}
       onRestart={restartGame}
       onNewSalon={() => window.location.href = '/salon'}
+      onMusicReady={() => socket?.emit('salon_music_ready')}
     />
 
     <PlayerSidebar {players} {phase} answerMode={settings.answerMode || 'free'} />

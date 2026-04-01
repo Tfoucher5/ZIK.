@@ -6,7 +6,7 @@
     currentPhrase = '', players = [],
     roundEnd = null, finalScores = [],
     round = 0, total = 10,
-    onRestart, onNewSalon,
+    onRestart, onNewSalon, onMusicReady,
   } = $props();
 
   const medals = ['🥇', '🥈', '🥉'];
@@ -71,7 +71,12 @@
         ytPlayer = new window.YT.Player('salon-yt-player', {
           height: '100%', width: '100%', videoId,
           playerVars: { autoplay: 1, controls: 1, enablejsapi: 1, start: startSeconds, rel: 0, modestbranding: 1 },
-          events: { onReady: (e) => e.target.playVideo() },
+          events: {
+            onReady: (e) => e.target.playVideo(),
+            onStateChange: (e) => {
+              if (e.data === 1 /* PLAYING */) onMusicReady?.();
+            },
+          },
         });
       }, 200);
     }

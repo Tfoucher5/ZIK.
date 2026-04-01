@@ -1,7 +1,7 @@
 <script>
   let {
     round = 0, total = 10,
-    timerVal = 0, timerMax = 30,
+    timerVal = 0, timerMax = 30, timerStarted = false,
     answerMode = 'free',
     choices = null,
     foundArtist = false,
@@ -56,7 +56,13 @@
   <div class="salon-timer-num {timerClass()}">{timerVal}</div>
 </div>
 
-{#if answerMode === 'free'}
+{#if !timerStarted}
+  <div class="salon-music-loading">
+    <div class="waiting-dots"><span>●</span><span>●</span><span>●</span></div>
+    <p>Chargement de la musique…</p>
+  </div>
+
+{:else if answerMode === 'free'}
   <div class="salon-progress-row">
     <span class="salon-progress-chip {foundArtist ? 'found' : ''}">
       🎤 Artiste

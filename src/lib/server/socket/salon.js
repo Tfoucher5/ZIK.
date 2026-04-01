@@ -181,6 +181,7 @@ function scheduleCleanup(code) {
     if (s) {
       clearInterval(s.game.interval);
       clearTimeout(s.game.breakTimer);
+      clearTimeout(s.game.musicReadyTimer);
     }
     delete salonRooms[code];
     console.log(`Salon "${code}" libere de la memoire`);
@@ -193,6 +194,7 @@ function cleanupNow(code, io) {
   clearTimeout(salon._cleanupTimer);
   clearInterval(salon.game.interval);
   clearTimeout(salon.game.breakTimer);
+  clearTimeout(salon.game.musicReadyTimer);
   if (io) {
     io.to(`salon:${code}`).emit("salon_error", {
       message: "L'hôte a quitté le salon.",
@@ -265,6 +267,34 @@ function checkEveryoneDone(code, io) {
 
 // ─── Game loop ────────────────────────────────────────────────────────────────
 
+// Called when the host signals that the music is actually playing.
+// Also called by a fallback timeout if no signal arrives within 5s.
+function startTimer(code, io) {
+  const salon = salonRooms[code];
+  if (!salon || salon.game.phase !== "round" || salon.game.interval) return;
+  const game = salon.game;
+  const duration = salon.settings.roundDuration;
+
+  clearTimeout(game.musicReadyTimer);
+  game.musicReadyTimer = null;
+  game.startTime = Date.now();
+  game.timerValue = duration;
+  game.timerActive = true;
+
+  io.to(`salon:${code}`).emit("salon_timer_started", { max: duration });
+
+  game.interval = setInterval(() => {
+    game.timerValue--;
+    io.to(`salon:${code}`).emit("salon_timer_update", {
+      current: game.timerValue,
+      max: duration,
+    });
+    if (game.timerValue <= 0) {
+      endRound(code, "Temps écoulé !", io);
+    }
+  }, 1000);
+}
+
 function endRound(code, reason, io) {
   const salon = salonRooms[code];
   if (!salon) return;
@@ -279,6 +309,22 @@ function endRound(code, reason, io) {
 
   // ── QCM deferred scoring: compute points and send individual feedback now ──
   if (salon.settings.answerMode === "multiple") {
+    // Determine firstFinder: the correct player with the lowest timeTaken
+    if (!game.firstFinder) {
+      const firstCorrect = Object.values(salon.players)
+        .filter(
+          (p) =>
+            p._fullFoundCounted &&
+            p._choiceIndex === game.correctChoiceIndex &&
+            !p._disconnected,
+        )
+        .sort(
+          (a, b) =>
+            (a._choiceTimeTaken ?? Infinity) - (b._choiceTimeTaken ?? Infinity),
+        )[0];
+      if (firstCorrect) game.firstFinder = firstCorrect.username;
+    }
+
     for (const p of Object.values(salon.players)) {
       if (!p.socketId || p._disconnected) continue;
       if (p._fullFoundCounted) {
@@ -292,7 +338,6 @@ function endRound(code, reason, io) {
           p.score += points;
           p.foundArtist = true;
           p.foundTitle = true;
-          if (!game.firstFinder) game.firstFinder = p.username;
           io.to(p.socketId).emit("salon_feedback", {
             type: "success_title",
             correct: true,
@@ -394,8 +439,9 @@ async function startNextRound(code, io) {
     );
 
     game.phase = "round";
-    game.timerValue = duration;
-    game.startTime = Date.now();
+    game.timerActive = false;
+    game.timerValue = 0;
+    game.startTime = 0;
 
     let choices = undefined;
     if (salon.settings.answerMode === "multiple") {
@@ -432,17 +478,8 @@ async function startNextRound(code, io) {
     // Send to players (no answer info)
     io.to(`salon:players:${code}`).emit("salon_round_start", roundData);
 
-    // Timer
-    game.interval = setInterval(() => {
-      game.timerValue--;
-      io.to(`salon:${code}`).emit("salon_timer_update", {
-        current: game.timerValue,
-        max: duration,
-      });
-      if (game.timerValue <= 0) {
-        endRound(code, "Temps écoulé !", io);
-      }
-    }, 1000);
+    // Wait for host to signal music is playing (max 5s fallback)
+    game.musicReadyTimer = setTimeout(() => startTimer(code, io), 5000);
   } catch (err) {
     console.error(`Salon skip "${track.title}":`, err.message);
     startNextRound(code, io);
@@ -486,7 +523,9 @@ export async function createSalonRoom({ playlistId, settings }) {
       correctChoiceIndex: null,
       interval: null,
       breakTimer: null,
+      musicReadyTimer: null,
       timerValue: 0,
+      timerActive: false,
       startTime: 0,
       firstFinder: null,
       history: [],
@@ -571,6 +610,7 @@ export function registerSalon(io) {
             allFound: existing._fullFoundCounted,
             timerVal: salon.game.timerValue,
             timerMax: salon.settings.roundDuration,
+            timerActive: salon.game.timerActive,
           };
           if (
             salon.game.phase === "round" &&
@@ -644,6 +684,16 @@ export function registerSalon(io) {
 
       io.to(`salon:${code}`).emit("salon_game_starting");
       startNextRound(code, io);
+    });
+
+    // ── Host signals music has started playing ────────────────────────────────
+    socket.on("salon_music_ready", () => {
+      if (socket.salonRole !== "host") return;
+      const code = socket.salonCode;
+      const salon = salonRooms[code];
+      if (!salon || salon.game.phase !== "round" || salon.game.timerActive)
+        return;
+      startTimer(code, io);
     });
 
     // ── Host triggers next round (manual mode) ────────────────────────────────

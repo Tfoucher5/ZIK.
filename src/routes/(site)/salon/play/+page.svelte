@@ -32,6 +32,7 @@
   let foundFeats   = $state([]);
   let allFound     = $state(false);
 
+  let timerStarted       = $state(false); // true once the host signals music is playing
   let chosenIndex        = $state(null);  // QCM: index clicked by this player
   let revealCorrectIndex = $state(null);  // QCM: index of correct answer (from round_end)
   let revealTimer        = null;          // delay before transitioning to summary
@@ -103,8 +104,9 @@
           foundFeats = Array(data.featCount).fill(false);
           for (let i = 0; i < (data.foundFeatCount || 0); i++) foundFeats[i] = true;
         }
-        timerVal = data.timerVal ?? timerVal;
-        timerMax = data.timerMax ?? timerMax;
+        timerVal     = data.timerVal ?? timerVal;
+        timerMax     = data.timerMax ?? timerMax;
+        timerStarted = data.timerActive ?? (data.timerVal > 0);
       } else {
         // Fresh join — reset everything
         phase       = 'lobby';
@@ -132,8 +134,16 @@
       allFound           = false;
       chosenIndex        = null;
       revealCorrectIndex = null;
+      timerStarted       = false;
+      timerVal           = 0;
       clearTimeout(revealTimer);
       revealTimer        = null;
+    });
+
+    socket.on('salon_timer_started', ({ max }) => {
+      timerVal     = max;
+      timerMax     = max;
+      timerStarted = true;
       if (answerMode === 'free') {
         setTimeout(() => { document.getElementById('salon-guess-input')?.focus(); }, 100);
       }
@@ -256,7 +266,7 @@
       {:else if phase === 'round'}
         <RoundPlay
           {round} {total}
-          {timerVal} {timerMax}
+          {timerVal} {timerMax} {timerStarted}
           {answerMode} {choices}
           {foundArtist} {foundTitle} {foundFeats}
           {allFound}
