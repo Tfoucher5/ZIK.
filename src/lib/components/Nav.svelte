@@ -26,7 +26,7 @@
         <a href="/playlists" class="btn-ghost sm" style="text-decoration:none">Mes playlists</a>
         <div class="nav-profile-wrap">
           <button class="nav-avatar-wrap" onclick={toggleDropdown} aria-haspopup="true">
-            <img id="nav-avatar" src={avatar} alt="">
+            <img id="nav-avatar" src={avatar} alt="" width="28" height="28">
             <span id="nav-username">{name}</span>
             <span class="nav-chevron">&#x25BE;</span>
           </button>

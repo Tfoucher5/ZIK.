@@ -695,6 +695,8 @@
                   class="pod-avatar"
                   src={weeklyLb[1].avatar_url}
                   alt={weeklyLb[1].username}
+                  width="40" height="40"
+                  loading="lazy"
                 />
               {:else}
                 <div class="pod-avatar pod-avatar-fallback">
@@ -713,6 +715,8 @@
                   class="pod-avatar"
                   src={weeklyLb[0].avatar_url}
                   alt={weeklyLb[0].username}
+                  width="48" height="48"
+                  loading="lazy"
                 />
               {:else}
                 <div class="pod-avatar pod-avatar-fallback">
@@ -731,6 +735,8 @@
                   class="pod-avatar"
                   src={weeklyLb[2].avatar_url}
                   alt={weeklyLb[2].username}
+                  width="40" height="40"
+                  loading="lazy"
                 />
               {:else}
                 <div class="pod-avatar pod-avatar-fallback">
@@ -780,6 +786,8 @@
                   class="pod-avatar"
                   src={eloLb[1].avatar_url}
                   alt={eloLb[1].username}
+                  width="40" height="40"
+                  loading="lazy"
                 />
               {:else}
                 <div class="pod-avatar pod-avatar-fallback">
@@ -798,6 +806,8 @@
                   class="pod-avatar"
                   src={eloLb[0].avatar_url}
                   alt={eloLb[0].username}
+                  width="48" height="48"
+                  loading="lazy"
                 />
               {:else}
                 <div class="pod-avatar pod-avatar-fallback">
@@ -816,6 +826,8 @@
                   class="pod-avatar"
                   src={eloLb[2].avatar_url}
                   alt={eloLb[2].username}
+                  width="40" height="40"
+                  loading="lazy"
                 />
               {:else}
                 <div class="pod-avatar pod-avatar-fallback">
