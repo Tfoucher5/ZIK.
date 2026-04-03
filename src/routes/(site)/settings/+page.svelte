@@ -6,7 +6,8 @@
   const user = $derived(_ctx.user);
   const authReady = $derived(_ctx.authReady);
 
-  let animOn     = $state(true);
+  let animOn       = $state(true);
+  let hideAnnouncements = $state(false);
   let volVal     = $state(50);
   let activeTheme = $state('dark');
   let isPrivate  = $state(false);
@@ -85,6 +86,7 @@
 
   onMount(() => {
     animOn = localStorage.getItem('zik_animations') !== 'off';
+    hideAnnouncements = localStorage.getItem('zik_hide_announcements') === 'true';
     volVal = parseInt(localStorage.getItem('zik_vol') ?? '50');
     activeTheme = localStorage.getItem('zik_theme') || 'dark';
     const el = document.getElementById('pref-volume');
@@ -102,6 +104,11 @@
     animOn = e.target.checked;
     localStorage.setItem('zik_animations', animOn ? 'on' : 'off');
     document.documentElement.classList.toggle('no-animations', !animOn);
+  }
+
+  function toggleHideAnnouncements(e) {
+    hideAnnouncements = e.target.checked;
+    localStorage.setItem('zik_hide_announcements', hideAnnouncements ? 'true' : 'false');
   }
 
   function changeVol(e) {
@@ -179,6 +186,16 @@
         </div>
         <label class="toggle-switch" aria-label="Activer les animations">
           <input type="checkbox" checked={animOn} onchange={toggleAnim}>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-info">
+          <div class="settings-row-label">Masquer les annonces</div>
+          <div class="settings-row-desc">Ne plus afficher la fen&ecirc;tre d&apos;informations au chargement du site.</div>
+        </div>
+        <label class="toggle-switch" aria-label="Masquer les annonces">
+          <input type="checkbox" checked={hideAnnouncements} onchange={toggleHideAnnouncements}>
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
       </div>
