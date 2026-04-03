@@ -12,6 +12,17 @@
   const desc = room.description || `Rejoins la room ${room.name} sur ZIK pour un blind test musical multijoueur en ligne.`;
   const pageTitle = `${room.emoji} ${room.name} — Blind Test ZIK`;
   const canonicalUrl = `https://www.zik-music.fr/room/${room.code}`;
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Game",
+    "name": `${room.name} — Blind Test ZIK`,
+    "description": desc,
+    "url": canonicalUrl,
+    "genre": ["Music", "Quiz", "Trivia"],
+    "isAccessibleForFree": true,
+    "inLanguage": "fr-FR",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+  });
 
   onMount(() => {
     const uid   = sessionStorage.getItem('zik_uid');
@@ -52,19 +63,7 @@
   <meta property="og:url" content={canonicalUrl}>
   <meta property="og:type" content="website">
 
-  <script type="application/ld+json">
-  {@html JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Game",
-    "name": `${room.name} — Blind Test ZIK`,
-    "description": desc,
-    "url": canonicalUrl,
-    "genre": ["Music", "Quiz", "Trivia"],
-    "isAccessibleForFree": true,
-    "inLanguage": "fr-FR",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
-  })}
-  </script>
+  <script type="application/ld+json">{@html jsonLd}</script>
 
   <link rel="stylesheet" href="/css/home.css">
 </svelte:head>

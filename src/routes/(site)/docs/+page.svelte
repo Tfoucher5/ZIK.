@@ -31,21 +31,8 @@
     headings.forEach((h) => observer.observe(h));
     return () => observer.disconnect();
   });
-</script>
 
-<svelte:head>
-  <title>Guide complet — Blind Test ZIK | Règles, Points, Mode Salon</title>
-  <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Gratuit en ligne." />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://www.zik-music.fr/docs" />
-  <meta property="og:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
-  <meta property="og:description" content="Guide complet du blind test ZIK : comment jouer, système de points, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ." />
-  <meta property="og:url" content="https://www.zik-music.fr/docs" />
-  <meta name="twitter:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
-  <meta name="twitter:description" content="Comment jouer, système de points, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Guide complet du blind test ZIK." />
-
-  <script type="application/ld+json">
-  {@html JSON.stringify({
+  const jsonLdPage = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebPage",
     "name": "Guide complet — Blind Test ZIK",
@@ -60,81 +47,37 @@
         { "@type": "ListItem", "position": 2, "name": "Documentation", "item": "https://www.zik-music.fr/docs" }
       ]
     }
-  })}
-  </script>
+  });
 
-  <script type="application/ld+json">
-  {@html JSON.stringify({
+  const jsonLdFaq = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Faut-il un compte pour jouer au blind test sur ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Non, le mode invité permet de jouer immédiatement sans inscription, juste avec un pseudo. Créer un compte gratuit vous donne accès au classement ELO, aux statistiques personnelles et aux playlists personnalisées."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Comment rejoindre une partie de blind test en ligne sur ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Deux façons : rejoindre une room officielle depuis la page d'accueil en cliquant sur JOUER, ou entrer un code de room partagé par un ami. Aucune installation requise, tout se passe dans le navigateur."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Comment fonctionne le système de points au blind test ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "En mode texte libre : Artiste trouvé = 1 pt + bonus vitesse, Titre trouvé = 1 pt + bonus vitesse. Le bonus vitesse va de +3 pts en moins de 3 secondes à 0 pt après 18 secondes. En Mode Salon QCM : entre 1 000 pts (réponse immédiate) et 200 pts (dernière seconde), selon la rapidité."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Qu'est-ce que le Mode Salon de ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Le Mode Salon est un blind test à la Kahoot conçu pour les soirées, événements et salles de classe. L'hôte projette un écran de contrôle sur TV, et chaque joueur participe sur son smartphone via un QR code ou un code court. Disponible en mode texte libre ou QCM avec 4 boutons colorés."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Comment importer une playlist Deezer sur ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Rendez-vous sur la page Playlists, cliquez sur Nouvelle playlist, puis collez le lien de votre playlist Deezer (format : https://www.deezer.com/fr/playlist/...). Les titres sont importés automatiquement. Vous pouvez ensuite créer une room de blind test basée sur cette playlist et la partager."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "La saisie au blind test ZIK est-elle sensible aux accents et aux fautes de frappe ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Non ! Le moteur de détection ignore les accents, les majuscules et tolère les petites fautes de frappe grâce à un algorithme de similarité. beyonce sera accepté pour Beyoncé, Pokr Face pour Poker Face."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Comment fonctionne le classement ELO sur ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Le classement ELO s'inspire du système utilisé aux échecs. Chaque partie dans une room officielle ajuste votre ELO. Il existe aussi un classement hebdomadaire qui repart à zéro chaque lundi. Consultez les deux classements depuis la page d'accueil."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Comment supprimer mon compte ZIK ?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Vous pouvez supprimer votre compte directement depuis vos Paramètres (section Zone dangereuse). La suppression est immédiate et irréversible : profil, playlists, scores et toutes vos données sont effacés instantanément. Vous pouvez aussi passer votre profil en Privé depuis les Paramètres pour ne plus apparaître dans les recherches, sans supprimer votre compte."
-        }
-      }
+      { "@type": "Question", "name": "Faut-il un compte pour jouer au blind test sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Non, le mode invité permet de jouer immédiatement sans inscription, juste avec un pseudo. Créer un compte gratuit vous donne accès au classement ELO, aux statistiques personnelles et aux playlists personnalisées." } },
+      { "@type": "Question", "name": "Comment rejoindre une partie de blind test en ligne sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Deux façons : rejoindre une room officielle depuis la page d'accueil en cliquant sur JOUER, ou entrer un code de room partagé par un ami. Aucune installation requise, tout se passe dans le navigateur." } },
+      { "@type": "Question", "name": "Comment fonctionne le système de points au blind test ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "En mode texte libre : Artiste trouvé = 1 pt + bonus vitesse, Titre trouvé = 1 pt + bonus vitesse. Le bonus vitesse va de +3 pts en moins de 3 secondes à 0 pt après 18 secondes. En Mode Salon QCM : entre 1 000 pts (réponse immédiate) et 200 pts (dernière seconde), selon la rapidité." } },
+      { "@type": "Question", "name": "Qu'est-ce que le Mode Salon de ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Le Mode Salon est un blind test à la Kahoot conçu pour les soirées, événements et salles de classe. L'hôte projette un écran de contrôle sur TV, et chaque joueur participe sur son smartphone via un QR code ou un code court. Disponible en mode texte libre ou QCM avec 4 boutons colorés." } },
+      { "@type": "Question", "name": "Comment importer une playlist Deezer sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Rendez-vous sur la page Playlists, cliquez sur Nouvelle playlist, puis collez le lien de votre playlist Deezer (format : https://www.deezer.com/fr/playlist/...). Les titres sont importés automatiquement. Vous pouvez ensuite créer une room de blind test basée sur cette playlist et la partager." } },
+      { "@type": "Question", "name": "La saisie au blind test ZIK est-elle sensible aux accents et aux fautes de frappe ?", "acceptedAnswer": { "@type": "Answer", "text": "Non ! Le moteur de détection ignore les accents, les majuscules et tolère les petites fautes de frappe grâce à un algorithme de similarité. beyonce sera accepté pour Beyoncé, Pokr Face pour Poker Face." } },
+      { "@type": "Question", "name": "Comment fonctionne le classement ELO sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Le classement ELO s'inspire du système utilisé aux échecs. Chaque partie dans une room officielle ajuste votre ELO. Il existe aussi un classement hebdomadaire qui repart à zéro chaque lundi. Consultez les deux classements depuis la page d'accueil." } },
+      { "@type": "Question", "name": "Comment supprimer mon compte ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Vous pouvez supprimer votre compte directement depuis vos Paramètres (section Zone dangereuse). La suppression est immédiate et irréversible : profil, playlists, scores et toutes vos données sont effacés instantanément." } }
     ]
-  })}
-  </script>
+  });
+</script>
+
+<svelte:head>
+  <title>Guide complet — Blind Test ZIK | Règles, Points, Mode Salon</title>
+  <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Gratuit en ligne." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.zik-music.fr/docs" />
+  <meta property="og:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
+  <meta property="og:description" content="Guide complet du blind test ZIK : comment jouer, système de points, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ." />
+  <meta property="og:url" content="https://www.zik-music.fr/docs" />
+  <meta name="twitter:title" content="Guide complet — Blind Test ZIK | Règles, Points, Mode Salon" />
+  <meta name="twitter:description" content="Comment jouer, système de points, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Guide complet du blind test ZIK." />
+
+  <script type="application/ld+json">{@html jsonLdPage}</script>
+  <script type="application/ld+json">{@html jsonLdFaq}</script>
 </svelte:head>
 
 <div class="doc-root">
