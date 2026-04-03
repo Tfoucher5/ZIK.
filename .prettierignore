@@ -3,3 +3,6 @@ node_modules/
 build/
 .svelte-kit/
 dist/
+static/.well-known/
+static/favicon/
+supabase/

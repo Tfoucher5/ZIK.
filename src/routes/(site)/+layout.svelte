@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import Nav from '$lib/components/Nav.svelte';
   import AuthModal from '$lib/components/AuthModal.svelte';
+  import AnnouncementPopup from '$lib/components/AnnouncementPopup.svelte';
   import { createSupabaseClient } from '$lib/supabase.js';
 
   const isGame = $derived(page.url.pathname.startsWith('/game'));
@@ -122,6 +123,8 @@
   onLogout={() => sb?.auth.signOut()}
 />
 {/if}
+
+<AnnouncementPopup {sb} />
 
 {@render children()}
 

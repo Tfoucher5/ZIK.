@@ -28,7 +28,18 @@
       "Bash(grep -r \"no-animations\\\\|zik_animations\\\\|zik_vol\" /c/Users/Teamr/Desktop/ZIK/src --include=*.svelte --include=*.ts --include=*.js)",
       "Read(//c/Users/Teamr/**)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "mcp__claude_ai_Notion__notion-update-page",
+      "Bash(gh pr create --title 'fix: correctifs responsive et UI mobile' --body ':*)",
+      "Bash(claude mcp:*)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(gh pr create --title 'feat\\(salon\\): multi-playlists, sliders+input, obligation playlist rooms' --body ':*)",
+      "Bash(where gh:*)",
+      "Bash(winget list:*)",
+      "Bash(git pull:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Teamr\\.claude\\projects\\c--Users-Teamr-Desktop-ZIK\\memory",

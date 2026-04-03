@@ -390,7 +390,7 @@
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 540px) {
+@media (max-width: 640px) {
   .settings-row {
     flex-wrap: wrap;
     gap: 12px;
@@ -405,5 +405,11 @@
   }
   .theme-swatch {
     flex: 1;
+    min-width: 0;
+  }
+  .swatch-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
