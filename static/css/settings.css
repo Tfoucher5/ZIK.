@@ -388,3 +388,22 @@
   cursor: not-allowed;
   filter: none;
 }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .settings-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .settings-row-theme {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .theme-picker {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .theme-swatch {
+    flex: 1;
+  }
+}

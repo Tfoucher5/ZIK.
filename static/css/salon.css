@@ -104,6 +104,119 @@ body {
     0 32px 64px rgba(0, 0, 0, 0.4);
 }
 
+/* ─── Setup 2-column grid ───────────────────────────────────────────────────── */
+
+.salon-setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;
+}
+.salon-setup-grid .salon-card {
+  max-width: none;
+}
+.salon-setup-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 900px;
+}
+.salon-join-link {
+  font-size: 0.85rem;
+  color: var(--mid);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.salon-join-link:hover {
+  color: var(--accent2);
+}
+
+/* ─── Playlist picker ───────────────────────────────────────────────────────── */
+
+.salon-playlist-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgb(var(--c-accent2, 168 85 247) / 0.08);
+  border: 1px solid var(--accent2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.salon-playlist-search {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  margin-bottom: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.salon-playlist-search:focus {
+  outline: none;
+  border-color: var(--accent2);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+.salon-playlist-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+}
+.salon-playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.salon-playlist-item:hover {
+  background: rgb(var(--c-glass) / 0.06);
+}
+.salon-playlist-item.selected {
+  background: rgb(var(--c-accent2, 168 85 247) / 0.08);
+  border-color: var(--accent2);
+}
+.salon-playlist-emoji {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.salon-playlist-info {
+  flex: 1;
+  min-width: 0;
+}
+.salon-playlist-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.salon-playlist-meta {
+  font-size: 0.72rem;
+  color: var(--dim);
+  margin-top: 1px;
+}
+.salon-playlist-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent2);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .salon-card h2 {
   font-size: 1.1rem;
   font-weight: 700;
@@ -2294,6 +2407,16 @@ body {
   }
 }
 
+@media (max-width: 760px) {
+  .salon-setup-grid {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+  }
+  .salon-setup-actions {
+    max-width: 520px;
+  }
+}
+
 @media (max-width: 640px) {
   .salon-host-url-full {
     display: none;
@@ -2306,6 +2429,16 @@ body {
   }
   .salon-choice-btn {
     min-height: 80px;
+  }
+  /* Sur mobile (écran joueur) : les boutons remplissent l'espace restant */
+  .salon-play-body .salon-choices {
+    flex: 1;
+    align-self: stretch;
+    grid-auto-rows: 1fr;
+  }
+  .salon-play-body .salon-choice-btn {
+    min-height: unset;
+    height: 100%;
   }
   .salon-lobby-code {
     font-size: 2.5rem;
