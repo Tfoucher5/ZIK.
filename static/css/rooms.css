@@ -219,7 +219,10 @@
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
   font-family: inherit;
 }
 .rooms-filter-chip:hover {
@@ -242,7 +245,9 @@
   font-family: inherit;
   text-decoration: underline;
 }
-.rooms-filter-reset:hover { color: var(--mid); }
+.rooms-filter-reset:hover {
+  color: var(--mid);
+}
 
 /* ── Official badge & auto tag ────────────────────────────────────────────── */
 .room-badge-official {
@@ -288,4 +293,3 @@
 .rooms-search::placeholder {
   color: var(--dim);
 }
-

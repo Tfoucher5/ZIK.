@@ -488,7 +488,9 @@ async function startNextRound(code, io) {
 export async function createSalonRoom({ playlistIds, settings }) {
   const tracks = await loadSalonTracks(playlistIds);
   if (tracks.length < 3) {
-    throw new Error("Playlists introuvables ou trop courtes (min. 3 titres au total).");
+    throw new Error(
+      "Playlists introuvables ou trop courtes (min. 3 titres au total).",
+    );
   }
 
   const code = generateCode();
