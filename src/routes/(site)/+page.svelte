@@ -291,6 +291,34 @@
         grimpe en ELO. La partie commence&nbsp;maintenant.
       </p>
 
+      <!-- AJOUT TEMPORAIRE DU MESSAGE INFORMATIONS  -->
+      <div style="
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #d9534f, #b52b27);
+        color: white;
+        border-radius: 8px;
+        font-family: 'Segoe UI', sans-serif;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      ">
+        <strong>⚠️ ATTENTION :</strong> Le site est encore en cours de développement.<br>
+        Vous pourriez rencontrer certains bugs. Je fais mon maximum pour que vous puissiez jouer dans les meilleures conditions.
+      </div>
+
+      <div style="
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #f0a35e, #d97a2f);
+        color: #2b2b2b;
+        border-radius: 8px;
+        font-family: 'Segoe UI', sans-serif;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      ">
+        <strong>ℹ️ NOTE :</strong> Les rooms officielles suplémentaires seront ajoutées plus tard, et de nouvelles arriveront également.<br>
+        Pour le moment, vous pouvez créer vos playlists ou rooms personnalisées et les rendre publiques si vous le souhaitez.  
+        Cela permettra aux autres utilisateurs de se tester sur vos rooms et vos musiques !
+      </div>
+
       <div class="hero-feats">
         <div class="hero-feat"><span>&#x1F3AE;</span> Multijoueur live</div>
         <div class="hero-feat"><span>&#x1F3B5;</span> Spotify &amp; Deezer</div>
