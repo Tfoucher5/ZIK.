@@ -21,6 +21,20 @@ const AUTO_START_DELAY = 5; // seconds
 // Map: roomId -> { timer, startAt, seconds }
 const autoStartCountdowns = {};
 
+// ─── Emit helpers ────────────────────────────────────────────────────────────
+
+function sanitizePlayer(p) {
+  return {
+    name: p.name,
+    userId: p.userId,
+    isGuest: p.isGuest,
+    score: p.score,
+    foundArtist: p.foundArtist,
+    foundTitle: p.foundTitle,
+    foundFeats: p.foundFeats || [],
+  };
+}
+
 // ─── Room state management ────────────────────────────────────────────────────
 
 function getOrCreateRoom(roomId) {
@@ -87,7 +101,7 @@ function resetScores(room, io) {
   });
   io.to(`room:${room.roomId}`).emit(
     "update_players",
-    Object.values(room.players),
+    Object.values(room.players).map(sanitizePlayer),
   );
 }
 
@@ -168,9 +182,9 @@ async function startNextRound(roomId, io) {
     game.sessionPlaylist.length === 0
   ) {
     game.isActive = false;
-    const finalScores = Object.values(room.players).sort(
-      (a, b) => b.score - a.score,
-    );
+    const finalScores = Object.values(room.players)
+      .sort((a, b) => b.score - a.score)
+      .map(sanitizePlayer);
     io.to(`room:${roomId}`).emit("game_over", finalScores);
     await saveGameResults(roomId, finalScores);
     return;
@@ -369,7 +383,9 @@ function leaveRoom(socket, roomId, io) {
       room.players[name]._dcTimer = setTimeout(() => {
         if (!roomGames[roomId]) return;
         delete room.players[name];
-        const active = Object.values(room.players).filter((p) => !p._dcTimer);
+        const active = Object.values(room.players)
+          .filter((p) => !p._dcTimer)
+          .map(sanitizePlayer);
         io.to(`room:${roomId}`).emit("update_players", active);
 
         if (active.length === 0) {
@@ -455,7 +471,7 @@ export function register(io) {
 
       io.to(`room:${roomId}`).emit(
         "update_players",
-        Object.values(room.players),
+        Object.values(room.players).map(sanitizePlayer),
       );
 
       if (!playlistCache[roomId] && dbRooms[roomId]) {
@@ -663,7 +679,7 @@ export function register(io) {
 
       io.to(`room:${roomId}`).emit(
         "update_players",
-        Object.values(room.players),
+        Object.values(room.players).map(sanitizePlayer),
       );
 
       const allFeatsFound = track.cleanFeatArtists.every(

@@ -70,9 +70,13 @@
   }
 
   onMount(async () => {
-    if (!sb) return;
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) await applyUser(session.user);
+    if (!sb) { authReady = true; return; }
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) await applyUser(session.user);
+    } catch {
+      /* session fetch failed — still mark auth as ready */
+    }
 
     authReady = true;
     sb.auth.onAuthStateChange(async (event, session) => {
