@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
 
   let { data } = $props();
 
@@ -17,7 +18,7 @@
   }
 
   function setFilter(key, value) {
-    const p = new URLSearchParams(page.url.searchParams);
+    const p = new SvelteURLSearchParams(page.url.searchParams);
     if (value) p.set(key, value); else p.delete(key);
     goto(`?${p.toString()}`);
   }
