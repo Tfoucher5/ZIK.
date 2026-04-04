@@ -205,7 +205,7 @@ async function startNextRound(roomId, io) {
       round: game.currentRound,
       total: game.maxRounds,
       featCount: game.currentTrack.featArtists.length,
-      previewUrl: game.currentTrack.preview_url || null,
+      previewUrl: null,
     };
 
     io.to(`room:${roomId}`).emit("start_round", game.lastRoundData);
