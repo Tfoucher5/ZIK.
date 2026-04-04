@@ -74,7 +74,16 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - Rooms publiques browsables + rejoindre par code
 - Navigation fluide avec animations
 - Noms de joueurs **cliquables** partout (classements, scoreboard en jeu, écran de fin)
-- **Footer** complet avec navigation par catégories (Jouer / Aide / Légal)
+- **Footer** complet avec navigation par catégories (Jouer / Aide / Légal / Contact)
+- **Signalement** : menu ⋯ sur chaque joueur en partie, bouton bug dans le header
+
+### 🛡️ Modération & Admin
+
+- **Formulaire de contact** accessible depuis le footer (modal, aucune navigation)
+- **Signalement joueur** : motif (insultes, triche, spam, autre) + description libre, stocké en base
+- **Signalement bug** : contexte de room inclus automatiquement
+- **Interface admin** `/admin/reports` : protégée super_admin, filtres type/statut, actions et notes internes
+- **Notifications email** instantanées pour chaque nouveau report (Resend via Edge Function Supabase)
 
 ### 📖 Documentation
 
@@ -96,7 +105,8 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 | **Musique**          | YouTube IFrame API (lecture)             |
 | **Import playlists** | Spotify Web API + Deezer API             |
 | **Style**            | CSS vanilla (variables, dark mode natif) |
-| **Déploiement**      | Vercel (frontend) + serveur Node dédié   |
+| **Email**            | Resend (via Supabase Edge Functions)     |
+| **Déploiement**      | Railway (serveur Node)                   |
 
 ---
 
@@ -140,6 +150,16 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ---
 
 ## 📋 Changelog
+
+### v1.4.0 — Contact, Signalements & Admin
+
+- **Formulaire de contact** : lien dans le footer → modal (`ContactModal.svelte`) avec champs nom, email, objet, message — stocké en base et notifié par email
+- **Signalement en jeu** : menu ⋯ sur chaque carte joueur → dropdown → `ReportModal` (motif + description) + bouton 🐛 dans le header pour signaler un bug
+- **Table `reports`** : stockage de tous les signalements (bug, joueur, contact) avec statut, note admin, horodatage — RLS Supabase (INSERT public, lecture/modif super_admin uniquement)
+- **Notifications email** : Edge Function Supabase `send-report` → Resend → email formaté avec lien vers l'interface admin
+- **Interface admin** (`/admin/reports`) : page protégée super_admin avec liste dépliable des reports, filtres type/statut, boutons Résolu/Ignorer/Rouvrir, note interne
+- **Refonte interface de jeu** : nouveau layout 3 colonnes glassmorphism (sidebar scores + centre + sidebar historique), pochette avec glow cinématique, slots artiste/titre redesignés, barre d'input pill avec bouton toujours visible, responsive mobile avec overlay de résumé et layout colonne
+- **SEO Bing** : protocole IndexNow (clé + endpoint `/api/indexnow` protégé), GitHub Action de soumission automatique après chaque push master, sitemap étendu, robots.txt simplifié, pages légales et playlists passées en `index, follow`
 
 ### v1.3.0 — Customisation - Thèmes
 
@@ -246,6 +266,17 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 - [x] Page paramètres modifiée (`/parametres`)
 - [x] Ajout feuille de style globale (`/static/css/theme.css`)
+
+### ✅ v1.4.0 — Contact, Signalements & Admin
+
+- [x] Formulaire de contact (footer → modal)
+- [x] Signalement joueur en jeu (menu ⋯ → formulaire motif + description)
+- [x] Signalement bug en jeu (bouton 🐛 dans le header)
+- [x] Table `reports` Supabase avec RLS (INSERT public, admin uniquement pour lecture/modif)
+- [x] Notifications email via Edge Function Supabase `send-report` → Resend
+- [x] Interface admin `/admin/reports` (protégée super_admin, filtres, actions)
+- [x] Refonte complète de l'interface de jeu (layout 3 colonnes, glassmorphism, mobile)
+- [x] SEO Bing / IndexNow (soumission automatique via GitHub Action)
 
 ---
 
