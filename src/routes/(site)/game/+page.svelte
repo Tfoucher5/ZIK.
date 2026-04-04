@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
+  import ReportModal from '$lib/components/ReportModal.svelte';
 
   // URL params — read once on mount
   let ROOM_ID  = 'pop';
@@ -34,6 +35,25 @@
   let guessDisabled = $state(true);
   let showDcBanner = $state(false);
   let volValue    = $state(50);
+
+  // Signalement
+  let reportOpen     = $state(false);
+  let reportType     = $state('user');
+  let reportUsername = $state('');
+  let reportUserId   = $state(null);
+  let openMenuFor    = $state(null); // nom du joueur dont le dropdown est ouvert
+
+  function openUserReport(p) {
+    reportType     = 'user';
+    reportUsername = p.name;
+    reportUserId   = p.userId || null;
+    reportOpen     = true;
+    openMenuFor    = null;
+  }
+  function openBugReport() {
+    reportType = 'bug';
+    reportOpen = true;
+  }
   let isAdmin     = $state(false);
   let autoStart   = $state(false);
   let hasOwner    = $state(false);
@@ -348,9 +368,12 @@
       <div class="g-room-name">{roomLabel}</div>
       <div class="g-round-info">{roundInfo}</div>
     </div>
-    <div class="g-vol">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-      <input type="range" id="volSlider" min="0" max="100" value={volValue} oninput={e => setVol(parseInt(e.target.value))}>
+    <div class="g-header-right">
+      <button class="g-bug-btn" onclick={openBugReport} title="Signaler un bug">🐛</button>
+      <div class="g-vol">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        <input type="range" id="volSlider" min="0" max="100" value={volValue} oninput={e => setVol(parseInt(e.target.value))}>
+      </div>
     </div>
   </header>
 
@@ -373,6 +396,18 @@
               {#if p.foundFeats?.some(Boolean)}<span class="g-badge found">F</span>{/if}
             </div>
             <span class="g-player-score {p.scored ? 'flash' : ''}">{p.score}<small>pt</small></span>
+            {#if p.name !== USERNAME}
+              <div class="g-player-menu">
+                <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
+                <span class="g-menu-dot" role="button" tabindex="0" onclick={e => { e.stopPropagation(); openMenuFor = openMenuFor === p.name ? null : p.name; }}>⋯</span>
+                {#if openMenuFor === p.name}
+                  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+                  <div class="g-dropdown" role="menu" tabindex="-1" onclick={e => e.stopPropagation()}>
+                    <button class="g-dd-item" onclick={() => openUserReport(p)}>🚨 Signaler ce joueur</button>
+                  </div>
+                {/if}
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
@@ -582,6 +617,22 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Signalement joueur / bug -->
+<ReportModal
+  bind:open={reportOpen}
+  type={reportType}
+  reportedUsername={reportUsername}
+  reportedUserId={reportUserId}
+  roomId={ROOM_ID}
+  reporterId={USER_ID}
+  reporterName={USERNAME}
+/>
+
+<!-- Fermeture dropdown au clic extérieur -->
+{#if openMenuFor}
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:98" onclick={() => { openMenuFor = null; }}></div>
 {/if}
 
 <!-- Hidden YouTube player -->

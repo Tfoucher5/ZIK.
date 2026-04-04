@@ -789,15 +789,30 @@
         <details class="faq-item">
           <summary>Comment supprimer mon compte ?</summary>
           <div class="faq-body">
-            <p>La suppression de votre compte se fait depuis votre page de paramètres, tout en bas, dans la section "Danger". </p><br> 
-            <p>⚠️ - Toute suppression du compte est définitive !</p>           
+            <p>La suppression de votre compte se fait depuis votre page de paramètres, tout en bas, dans la section "Danger". </p><br>
+            <p>⚠️ - Toute suppression du compte est définitive !</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Comment signaler un joueur ou un bug en cours de partie ?</summary>
+          <div class="faq-body">
+            <p>
+              <strong>Signaler un joueur :</strong> cliquez sur le bouton <strong>⋯</strong> à droite du nom d'un joueur dans le classement latéral, puis choisissez « Signaler ce joueur ». Un formulaire vous invite à choisir le motif (insultes, triche, spam…) et à ajouter une description. Le signalement est anonyme.
+            </p>
+            <p style="margin-top:10px">
+              <strong>Signaler un bug :</strong> cliquez sur le bouton <strong>🐛</strong> dans le header de la page de jeu, décrivez ce qui s'est passé et envoyez. Votre room et votre pseudo sont inclus automatiquement pour nous aider à reproduire le problème.
+            </p>
+            <p style="margin-top:10px">
+              Vous pouvez aussi nous écrire via le lien <strong>Contact</strong> dans le footer pour toute demande ou question.
+            </p>
           </div>
         </details>
       </div>
     </section>
 
     <div class="doc-footer-note">
-      <p>Documentation mise &agrave; jour &mdash; mars 2026. Une question non couverte&nbsp;? Ouvrez une <a href="https://github.com/Tfoucher5/ZIK/issues" target="_blank" rel="noopener noreferrer">issue GitHub</a>.</p>
+      <p>Documentation mise &agrave; jour &mdash; avril 2026. Une question non couverte&nbsp;? Utilisez le <strong>formulaire de contact</strong> dans le footer ou ouvrez une <a href="https://github.com/Tfoucher5/ZIK/issues" target="_blank" rel="noopener noreferrer">issue GitHub</a>.</p>
     </div>
   </main>
 </div>

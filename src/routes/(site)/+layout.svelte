@@ -4,6 +4,7 @@
   import Nav from '$lib/components/Nav.svelte';
   import AuthModal from '$lib/components/AuthModal.svelte';
   import AnnouncementPopup from '$lib/components/AnnouncementPopup.svelte';
+  import ContactModal from '$lib/components/ContactModal.svelte';
   import { createSupabaseClient } from '$lib/supabase.js';
 
   const isGame = $derived(page.url.pathname.startsWith('/game'));
@@ -16,8 +17,9 @@
 
   let currentUser = $state(null);
   let authReady   = $state(false);
-  let authOpen    = $state(false);
-  let authView    = $state('login');
+  let authOpen     = $state(false);
+  let authView     = $state('login');
+  let contactOpen  = $state(false);
 
   setContext('zik', {
     get sb()          { return sb; },
@@ -146,13 +148,15 @@
       <div class="footer-col-title">Aide</div>
       <a href="/docs">Documentation</a>
       <a href="/docs#faq">FAQ</a>
+      <!-- svelte-ignore a11y_invalid_attribute -->
+      <a href="#" onclick={(e) => { e.preventDefault(); contactOpen = true; }}>Contact</a>
     </div>
     <div class="footer-col">
       <div class="footer-col-title">Légal</div>
       <a href="/mentions-legales">Mentions légales</a>
       <a href="/cgu">CGU</a>
       <a href="/confidentialite">Confidentialité</a>
-      <span class="footer-version">v1.3.2</span>
+      <span class="footer-version">v1.4.0</span>
     </div>
   </div>
   <div class="footer-bottom">
@@ -168,3 +172,5 @@
   bind:view={authView}
   onClose={() => { authOpen = false; }}
 />
+
+<ContactModal bind:open={contactOpen} />
