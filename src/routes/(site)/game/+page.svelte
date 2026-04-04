@@ -162,6 +162,7 @@
     if (val && !guessDisabled && socket) {
       socket.emit('submit_guess', val);
       guessVal = '';
+      setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
     }
   }
 
@@ -330,266 +331,258 @@
 </svelte:head>
 
 {#if showDcBanner}
-  <div id="dc-banner" style="display:block;position:fixed;top:0;left:0;right:0;z-index:9999;background:#b45309;color:#fff;text-align:center;padding:8px;font-size:.875rem;font-weight:600">
-    Reconnexion en cours&hellip;
-  </div>
+  <div class="g-dc-banner">Reconnexion en cours&hellip;</div>
 {/if}
 
 <audio id="previewAudio" style="display:none" preload="auto"></audio>
-<div id="app">
-  <!-- Timer bar -->
-  <div id="timer-wrap">
-    <div id="timer-bar" style="width:{timerPct}%;background:{timerColor};transition:width 1s linear,background .4s"></div>
-  </div>
 
-  <div id="game-screen">
+<!-- Timer bar (fixed top) -->
+<div class="g-timer"><div class="g-timer-fill" style="width:{timerPct}%;background:{timerColor}"></div></div>
 
-    <!-- Header -->
-    <header class="g-header">
-      <a href="/" class="back">&larr; Rooms</a>
-      <div class="header-mid">
-        <div id="room-label" class="room-label">{roomLabel}</div>
-        <div id="round-info" class="round-info">{roundInfo}</div>
-      </div>
-      <div class="vol-ctrl">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-        <input type="range" id="volSlider" min="0" max="100" value={volValue} oninput={e => setVol(parseInt(e.target.value))}>
-      </div>
-    </header>
+<div class="g-app">
 
-    <!-- Left: scoreboard -->
-    <aside id="sidebar-left">
-      <div class="side-title">Joueurs</div>
-      <div id="player-list">
+  <!-- Header -->
+  <header class="g-header">
+    <a href="/" class="g-back">&#x2190; Rooms</a>
+    <div class="g-header-mid">
+      <div class="g-room-name">{roomLabel}</div>
+      <div class="g-round-info">{roundInfo}</div>
+    </div>
+    <div class="g-vol">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      <input type="range" id="volSlider" min="0" max="100" value={volValue} oninput={e => setVol(parseInt(e.target.value))}>
+    </div>
+  </header>
+
+  <!-- Corps principal -->
+  <div class="g-body">
+
+    <!-- Sidebar gauche : classement -->
+    <aside class="g-sidebar g-sidebar-scores">
+      <div class="g-sidebar-title">Classement</div>
+      <div class="g-player-list" id="player-list">
         {#each players as p, i (p.name)}
-          <div class="p-card rank-{i+1}">
-            <span class="p-name">{p.rank} <a href="/user/{p.name}" class="p-name-link" onclick={e => e.stopPropagation()}>{p.name}</a></span>
-            <div class="p-right">
-              <div class="p-badge {p.foundArtist ? 'f' : ''}">A</div>
-              <div class="p-badge {p.foundTitle  ? 'f' : ''}">T</div>
-              {#if p.foundFeats?.some(Boolean)}<div class="p-badge f">F</div>{/if}
-              <span class="p-score{p.scored ? ' flash' : ''}">{p.score}pt</span>
+          <div class="g-player rank-{i+1}">
+            <span class="g-player-rank">{p.rank}</span>
+            <span class="g-player-name">
+              <a href="/user/{p.name}" class="g-player-link" onclick={e => e.stopPropagation()}>{p.name}</a>
+            </span>
+            <div class="g-badges">
+              <span class="g-badge {p.foundArtist ? 'found' : ''}">A</span>
+              <span class="g-badge {p.foundTitle ? 'found' : ''}">T</span>
+              {#if p.foundFeats?.some(Boolean)}<span class="g-badge found">F</span>{/if}
             </div>
+            <span class="g-player-score {p.scored ? 'flash' : ''}">{p.score}<small>pt</small></span>
           </div>
         {/each}
       </div>
     </aside>
 
-    <!-- Center -->
-    <main id="center">
+    <!-- Colonne centrale -->
+    <div class="g-col-center">
+      <main class="g-center">
 
-      <!-- Cover -->
-      <div id="cover-wrap">
-        {#if !showCover}
-          <div id="cover-placeholder">
-            <div class="vinyl"></div>
-            <span class="vinyl-q">?</span>
+        <!-- Pochette -->
+        <div class="g-cover-wrap">
+          {#if !showCover}
+            <div class="g-cover-placeholder">
+              <div class="vinyl"></div>
+              <span class="vinyl-q">?</span>
+            </div>
+          {:else}
+            <img class="g-cover-img" src={coverSrc} alt="Pochette">
+          {/if}
+        </div>
+
+        <!-- Slots artiste / titre -->
+        <div class="g-slots">
+          <div class="g-slot {slotArtist.state || ''}">
+            <span class="g-slot-label">Artiste</span>
+            <div class="g-slot-val">{slotArtist.val}</div>
           </div>
-        {:else}
-          <img id="cover-img" src={coverSrc} alt="Album cover" style="display:block">
+          {#each featSlots as fs, i}
+            <div class="g-slot g-slot-feat {fs.state || ''}">
+              <span class="g-slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
+              <div class="g-slot-val">{fs.val}</div>
+            </div>
+          {/each}
+          <div class="g-slot {slotTitle.state || ''}">
+            <span class="g-slot-label">Titre</span>
+            <div class="g-slot-val">{slotTitle.val}</div>
+          </div>
+        </div>
+
+        <!-- Feedback toast -->
+        <div class="g-feedback {feedback.msg ? 'show ' + feedback.cls : ''}">{feedback.msg}</div>
+
+        <!-- Round summary (desktop inline, mobile overlay géré séparément) -->
+        {#if summaryShow}
+          <div class="g-summary g-summary-desktop">
+            <p class="g-summary-reason">{summaryReason}</p>
+            <p class="g-summary-finder">{summaryFinder}</p>
+          </div>
         {/if}
-      </div>
 
-      <!-- Slots -->
-      <div class="slots" id="slots-wrap">
-        <div class="slot {slotArtist.state || ''}" id="slot-artist">
-          <span class="slot-label">Artiste</span>
-          <div class="slot-val">{slotArtist.val}</div>
-        </div>
-        {#each featSlots as fs, i}
-          <div class="slot slot-feat {fs.state || ''}" id="slot-feat-{i}">
-            <span class="slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
-            <div class="slot-val">{fs.val}</div>
-          </div>
-        {/each}
-        <div class="slot {slotTitle.state || ''}" id="slot-title">
-          <span class="slot-label">Titre</span>
-          <div class="slot-val">{slotTitle.val}</div>
-        </div>
-      </div>
+        <!-- Erreur -->
+        {#if errorMsg}
+          <div class="g-error">{errorMsg}</div>
+        {/if}
 
-      <!-- Feedback -->
-      {#if feedback.msg}
-        <div id="feedback" class="show {feedback.cls}">{feedback.msg}</div>
-      {:else}
-        <div id="feedback"></div>
-      {/if}
-
-      <!-- Round summary -->
-      {#if summaryShow}
-        <div id="round-summary" style="display:block">
-          <p id="summary-reason">{summaryReason}</p>
-          <p id="summary-finder">{summaryFinder}</p>
-        </div>
-      {/if}
-
-      <!-- Error -->
-      {#if errorMsg}
-        <div id="error-msg" style="display:block">{errorMsg}</div>
-      {/if}
-
-      <!-- Start button / countdown / waiting info -->
-      {#if showStart}
-        {#if showCountdown}
-          <div class="auto-countdown">
-            <div class="countdown-circle">{countdownVal}</div>
-            <p class="countdown-label">La partie d&eacute;marre automatiquement&hellip;</p>
-          </div>
-        {:else if hasOwner && autoStart && !isAdmin}
-          <div class="info-waiting">&#x23F3; La partie va d&eacute;marrer automatiquement&hellip;</div>
-        {:else if hasOwner && !autoStart && !isAdmin}
-          <div class="info-waiting">
-            &#x23F3; En attente de l&apos;administrateur&hellip;<br>
-            <small>Seul le cr&eacute;ateur de cette room peut d&eacute;marrer la partie.</small>
-          </div>
-        {:else}
-          <button id="startBtn" class="start-btn" onclick={requestGame} disabled={startDisabled}>
-            {#if startLabel === 'Chargement\u2026'}Chargement&hellip;{:else}&#x1F3AE; Lancer la partie{/if}
-          </button>
-          {#if hasOwner && !autoStart}
-            <p class="info-admin-hint">Tu es l&apos;admin &mdash; toi seul peux lancer la partie.</p>
+        <!-- Start / countdown / attente -->
+        {#if showStart}
+          {#if showCountdown}
+            <div class="g-countdown">
+              <div class="g-countdown-circle">{countdownVal}</div>
+              <p class="g-countdown-label">La partie d&eacute;marre&hellip;</p>
+            </div>
+          {:else if hasOwner && autoStart && !isAdmin}
+            <div class="g-waiting">&#x23F3; La partie va d&eacute;marrer automatiquement&hellip;</div>
+          {:else if hasOwner && !autoStart && !isAdmin}
+            <div class="g-waiting">
+              &#x23F3; En attente de l&apos;administrateur&hellip;<br>
+              <small>Seul le cr&eacute;ateur peut lancer la partie.</small>
+            </div>
+          {:else}
+            <button class="g-start-btn" onclick={requestGame} disabled={startDisabled}>
+              {#if startLabel === 'Chargement\u2026'}Chargement&hellip;{:else}&#x1F3AE; Lancer la partie{/if}
+            </button>
+            {#if hasOwner && !autoStart}
+              <p class="g-admin-hint">Tu es l&apos;admin &mdash; toi seul peux lancer.</p>
+            {/if}
           {/if}
         {/if}
-      {/if}
 
-    </main>
+      </main>
 
-    <!-- Right: history -->
-    <aside id="sidebar-right">
-      <div class="side-title">Historique</div>
-      <div id="history-list">
+      <!-- Input bar (dans la colonne centrale) -->
+      <div class="g-input-bar">
+        <div class="g-input-wrap">
+          <input
+            type="text"
+            id="guessInput"
+            class="g-input"
+            placeholder="Artiste ou titre&hellip;"
+            disabled={guessDisabled}
+            bind:value={guessVal}
+            autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" maxlength="100"
+            onkeydown={e => { if (e.key === 'Enter') submitGuess(); }}
+          >
+          <button class="g-submit-btn" disabled={guessDisabled} onclick={submitGuess} aria-label="Valider">&#x2192;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar droite : historique -->
+    <aside class="g-sidebar g-sidebar-history">
+      <div class="g-sidebar-title">Historique</div>
+      <div class="g-history-list" id="history-list">
         {#each history as item (item.answer + item.round)}
           {@const _di = item.answer.indexOf(' - ')}
           {@const _ha = _di > -1 ? item.answer.slice(0, _di) : item.answer}
           {@const _ht = _di > -1 ? item.answer.slice(_di + 3) : '—'}
-          <div class="h-item">
+          <div class="g-hitem">
             {#if item.cover}
-              <img src={item.cover} alt="">
+              <img src={item.cover} alt="" class="g-hitem-img">
             {:else}
-              <div class="h-no-img">&#x266A;</div>
+              <div class="g-hitem-img g-hitem-noimg">&#x266A;</div>
             {/if}
-            <div class="h-info">
-              <div class="h-artist" class:h-found={item.foundArtist}>{_ha}</div>
+            <div class="g-hitem-info">
+              <div class="g-hitem-artist" class:found={item.foundArtist}>{_ha}</div>
               {#if item.featArtists?.length}
-                <div class="h-feats">
-                  {#each item.featArtists as fa, fi}
-                    <span class="h-feat" class:h-found={item.foundFeats?.[fi]}>feat. {fa}</span>
-                  {/each}
-                </div>
+                {#each item.featArtists as fa, fi}
+                  <div class="g-hitem-feat" class:found={item.foundFeats?.[fi]}>feat. {fa}</div>
+                {/each}
               {/if}
-              <div class="h-title" class:h-found={item.foundTitle}>{_ht}</div>
+              <div class="g-hitem-title" class:found={item.foundTitle}>{_ht}</div>
             </div>
           </div>
         {/each}
       </div>
     </aside>
 
-    <!-- Footer input -->
-    <footer class="g-footer">
-      <div class="guess-wrap">
-        <input
-          type="text"
-          id="guessInput"
-          placeholder="Artiste ou titre…"
-          disabled={guessDisabled}
-          bind:value={guessVal}
-          autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" maxlength="100"
-          onkeydown={e => { if (e.key === 'Enter') submitGuess(); }}
-        >
-        <button id="submitBtn" class="guess-submit" disabled={guessDisabled} onclick={submitGuess} aria-label="Valider">&rarr;</button>
-      </div>
-    </footer>
-
   </div>
 
-  <!-- Game Over -->
-  {#if gameoverShow}
-    <div id="gameover" style="display:flex">
-      <div class="go-card">
-        <div class="go-title">&#x1F3C6; Classement Final</div>
+</div>
 
-        <!-- Podium top 3 -->
-        <div class="go-podium">
+<!-- Round summary MOBILE (overlay fixe au dessus de l'input) -->
+{#if summaryShow}
+  <div class="g-summary-mobile">
+    <p class="g-summary-reason">{summaryReason}</p>
+    <p class="g-summary-finder">{summaryFinder}</p>
+  </div>
+{/if}
 
-          <!-- 2nd place — left -->
-          <div class="go-podium-slot pos-2">
-            {#if gameoverScores[1]}
-              <div class="go-podium-player" class:go-player-revealed={revealStep >= 2}>
-                <div class="go-podium-avatar">{gameoverScores[1].name[0]?.toUpperCase() ?? '?'}</div>
-                <div class="go-podium-name">{gameoverScores[1].name}</div>
-                <div class="go-podium-score">{gameoverScores[1].score}&nbsp;pts</div>
-              </div>
-            {:else}
-              <div class="go-podium-player go-podium-placeholder go-player-revealed">
-                <div class="go-podium-avatar empty">?</div>
-                <div class="go-podium-name">&mdash;</div>
-              </div>
-            {/if}
-            <div class="go-podium-block pos-2">&#x1F948;</div>
-          </div>
+<!-- Game Over -->
+{#if gameoverShow}
+  <div class="g-gameover">
+    <div class="g-go-card">
+      <div class="g-go-title">&#x1F3C6; Classement Final</div>
 
-          <!-- 1st place — center -->
-          <div class="go-podium-slot pos-1">
-            {#if gameoverScores[0]}
-              <div class="go-podium-player" class:go-player-revealed={revealStep >= 3}>
-                <div class="go-podium-avatar gold">{gameoverScores[0].name[0]?.toUpperCase() ?? '?'}</div>
-                <div class="go-podium-name">{gameoverScores[0].name}</div>
-                <div class="go-podium-score">{gameoverScores[0].score}&nbsp;pts</div>
-              </div>
-            {:else}
-              <div class="go-podium-player go-podium-placeholder go-player-revealed">
-                <div class="go-podium-avatar empty">?</div>
-                <div class="go-podium-name">&mdash;</div>
-              </div>
-            {/if}
-            <div class="go-podium-block pos-1">&#x1F947;</div>
-          </div>
-
-          <!-- 3rd place — right -->
-          <div class="go-podium-slot pos-3">
-            {#if gameoverScores[2]}
-              <div class="go-podium-player" class:go-player-revealed={revealStep >= 1}>
-                <div class="go-podium-avatar">{gameoverScores[2].name[0]?.toUpperCase() ?? '?'}</div>
-                <div class="go-podium-name">{gameoverScores[2].name}</div>
-                <div class="go-podium-score">{gameoverScores[2].score}&nbsp;pts</div>
-              </div>
-            {:else}
-              <div class="go-podium-player go-podium-placeholder go-player-revealed">
-                <div class="go-podium-avatar empty">?</div>
-                <div class="go-podium-name">&mdash;</div>
-              </div>
-            {/if}
-            <div class="go-podium-block pos-3">&#x1F949;</div>
-          </div>
-
-        </div>
-
-        <!-- Rest: rank 4+ -->
-        {#if gameoverScores.length > 3}
-          <div class="go-rest">
-            {#each gameoverScores.slice(3) as p, i}
-              <div class="go-row">
-                <span class="go-medal">#{i + 4}</span>
-                <span class="go-name">{#if p.isGuest}{p.name}&nbsp;<span style="font-size:.7rem;opacity:.5">(invit&eacute;)</span>{:else}<a href="/user/{p.name}" class="go-name-link">{p.name}</a>{/if}</span>
-                <span class="go-score">{p.score}&nbsp;pts</span>
-              </div>
-            {/each}
-          </div>
-        {/if}
-
-        <div class="go-actions">
-          {#if !hasOwner || autoStart || isAdmin}
-            <button class="start-btn" onclick={requestGame}>&#x1F504; Rejouer</button>
+      <div class="g-go-podium">
+        <!-- 2e -->
+        <div class="g-podium-slot pos-2">
+          {#if gameoverScores[1]}
+            <div class="g-podium-player" class:revealed={revealStep >= 2}>
+              <div class="g-podium-avatar">{gameoverScores[1].name[0]?.toUpperCase() ?? '?'}</div>
+              <div class="g-podium-name">{gameoverScores[1].name}</div>
+              <div class="g-podium-score">{gameoverScores[1].score}&nbsp;pts</div>
+            </div>
           {:else}
-            <div class="info-waiting" style="font-size:.8rem">&#x23F3; En attente de l&apos;admin pour rejouer.</div>
+            <div class="g-podium-player g-podium-empty revealed"><div class="g-podium-avatar empty">?</div><div class="g-podium-name">&mdash;</div></div>
           {/if}
-          <a href="/" class="go-back">&larr; Changer de room</a>
+          <div class="g-podium-block pos-2">&#x1F948;</div>
+        </div>
+        <!-- 1er -->
+        <div class="g-podium-slot pos-1">
+          {#if gameoverScores[0]}
+            <div class="g-podium-player" class:revealed={revealStep >= 3}>
+              <div class="g-podium-avatar gold">{gameoverScores[0].name[0]?.toUpperCase() ?? '?'}</div>
+              <div class="g-podium-name">{gameoverScores[0].name}</div>
+              <div class="g-podium-score">{gameoverScores[0].score}&nbsp;pts</div>
+            </div>
+          {:else}
+            <div class="g-podium-player g-podium-empty revealed"><div class="g-podium-avatar empty">?</div><div class="g-podium-name">&mdash;</div></div>
+          {/if}
+          <div class="g-podium-block pos-1">&#x1F947;</div>
+        </div>
+        <!-- 3e -->
+        <div class="g-podium-slot pos-3">
+          {#if gameoverScores[2]}
+            <div class="g-podium-player" class:revealed={revealStep >= 1}>
+              <div class="g-podium-avatar">{gameoverScores[2].name[0]?.toUpperCase() ?? '?'}</div>
+              <div class="g-podium-name">{gameoverScores[2].name}</div>
+              <div class="g-podium-score">{gameoverScores[2].score}&nbsp;pts</div>
+            </div>
+          {:else}
+            <div class="g-podium-player g-podium-empty revealed"><div class="g-podium-avatar empty">?</div><div class="g-podium-name">&mdash;</div></div>
+          {/if}
+          <div class="g-podium-block pos-3">&#x1F949;</div>
         </div>
       </div>
-    </div>
-  {/if}
 
-</div>
+      {#if gameoverScores.length > 3}
+        <div class="g-go-rest">
+          {#each gameoverScores.slice(3) as p, i}
+            <div class="g-go-row">
+              <span class="g-go-medal">#{i + 4}</span>
+              <span class="g-go-name">{#if p.isGuest}{p.name}&nbsp;<span class="g-go-guest">(invit&eacute;)</span>{:else}<a href="/user/{p.name}" class="g-go-link">{p.name}</a>{/if}</span>
+              <span class="g-go-score">{p.score}&nbsp;pts</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="g-go-actions">
+        {#if !hasOwner || autoStart || isAdmin}
+          <button class="g-start-btn" onclick={requestGame}>&#x1F504; Rejouer</button>
+        {:else}
+          <div class="g-waiting" style="font-size:.8rem">&#x23F3; En attente de l&apos;admin pour rejouer.</div>
+        {/if}
+        <a href="/" class="g-go-back">&#x2190; Changer de room</a>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Hidden YouTube player -->
 <div id="yt-player" style="position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;overflow:hidden;pointer-events:none"></div>
