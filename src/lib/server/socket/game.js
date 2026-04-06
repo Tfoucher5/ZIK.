@@ -423,12 +423,14 @@ export function register(io) {
       // Fetch from DB if not cached, or if cache is stale (missing auto_start/owner_id fields added later)
       if (
         !customRooms[roomId] &&
-        (!dbRooms[roomId] || dbRooms[roomId].owner_id === undefined)
+        (!dbRooms[roomId] ||
+          dbRooms[roomId].owner_id === undefined ||
+          dbRooms[roomId].id === undefined)
       ) {
         const { data: freshRoom } = await supabase
           .from("rooms")
           .select(
-            "code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id",
+            "id, code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id",
           )
           .eq("code", roomId)
           .single();

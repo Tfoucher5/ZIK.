@@ -27,26 +27,35 @@
   });
   let publicRooms  = $state([]);
   let myRooms      = $state([]);
-  let userPlaylists = $state([]);
-
   let pubLoading  = $state(true);
   let mineLoading = $state(false);
 
   // Room modal
-  let roomModalOpen  = $state(false);
-  let editingRoomId  = $state(null);
-  let editingCode    = $state(null);
-  let roomName       = $state('');
-  let roomEmoji      = $state('&#x1F3B5;');
-  let roomDesc       = $state('');
-  let roomPlaylistId = $state('');
-  let roomMaxRounds  = $state(10);
-  let roomDuration   = $state(30);
-  let roomBreak      = $state(7);
-  let roomPublic     = $state(true);
-  let roomAutoStart  = $state(false);
-  let roomError      = $state('');
-  let roomSaving     = $state(false);
+  let roomModalOpen   = $state(false);
+  let editingRoomId   = $state(null);
+  let editingCode     = $state(null);
+  let roomName        = $state('');
+  let roomEmoji       = $state('&#x1F3B5;');
+  let roomDesc        = $state('');
+  let roomPlaylistIds = $state([]);
+  let roomMaxRounds   = $state(10);
+  let roomDuration    = $state(30);
+  let roomBreak       = $state(7);
+  let roomPublic      = $state(true);
+  let roomAutoStart   = $state(false);
+  let roomError       = $state('');
+  let roomSaving      = $state(false);
+
+  // Playlist picker dans la modal
+  let allPlaylists     = $state([]);
+  let plSearch         = $state('');
+  let filteredPlaylists = $derived(
+    plSearch.trim()
+      ? allPlaylists.filter(p => p.name.toLowerCase().includes(plSearch.trim().toLowerCase()))
+      : allPlaylists
+  );
+  let selectedPlaylists  = $derived(allPlaylists.filter(p => roomPlaylistIds.includes(p.id)));
+  let totalTrackCount    = $derived(selectedPlaylists.reduce((s, p) => s + (p.track_count || 0), 0));
 
   // Delete modal
   let deleteModalOpen = $state(false);
@@ -106,8 +115,27 @@
 
   async function loadPlaylists() {
     if (!user || !sb) return;
-    const { data } = await sb.from('custom_playlists').select('id, name, emoji').eq('owner_id', user.id).order('name');
-    userPlaylists = data || [];
+    try {
+      const [{ data: mine }, { data: shared }] = await Promise.all([
+        sb.from('custom_playlists').select('id, name, emoji, track_count').eq('owner_id', user.id).order('name'),
+        sb.from('custom_playlists').select('id, name, emoji, track_count, is_official').or('is_public.eq.true,is_official.eq.true').neq('owner_id', user.id).order('name'),
+      ]);
+      const flat = [];
+      for (const p of mine || []) flat.push({ id: p.id, name: p.name, emoji: p.emoji || '🎵', track_count: p.track_count, group: 'Mes playlists' });
+      for (const p of shared || []) {
+        if (flat.some(f => f.id === p.id)) continue;
+        flat.push({ id: p.id, name: p.name, emoji: p.emoji || '🎵', track_count: p.track_count, group: p.is_official ? 'Officielles' : 'Publiques' });
+      }
+      allPlaylists = flat;
+    } catch { allPlaylists = []; }
+  }
+
+  function togglePlaylist(pl) {
+    if (roomPlaylistIds.includes(pl.id)) {
+      roomPlaylistIds = roomPlaylistIds.filter(id => id !== pl.id);
+    } else {
+      roomPlaylistIds = [...roomPlaylistIds, pl.id];
+    }
   }
 
   function joinRoom(code) {
@@ -123,7 +151,8 @@
     await loadPlaylists();
     editingRoomId = null; editingCode = null;
     roomName = ''; roomEmoji = '🎵'; roomDesc = '';
-    roomPlaylistId = ''; roomMaxRounds = 10; roomDuration = 30; roomBreak = 7; roomPublic = true; roomAutoStart = false;
+    roomPlaylistIds = []; plSearch = '';
+    roomMaxRounds = 10; roomDuration = 30; roomBreak = 7; roomPublic = true; roomAutoStart = false;
     roomError = '';
     roomModalOpen = true;
   }
@@ -132,13 +161,15 @@
     if (!user) return;
     await loadPlaylists();
     editingRoomId = id; editingCode = code;
+    plSearch = '';
     try {
       const token = await getToken();
       const r = await fetch(`/api/rooms/${code}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const room = await r.json();
       roomName = room.name || ''; roomEmoji = room.emoji || '🎵'; roomDesc = room.description || '';
-      roomPlaylistId = room.playlist_id || ''; roomMaxRounds = room.max_rounds || 10;
+      roomPlaylistIds = room.playlist_ids || [];
+      roomMaxRounds = room.max_rounds || 10;
       roomDuration = room.round_duration || 30; roomBreak = room.break_duration || 7;
       roomPublic = room.is_public !== false;
       roomAutoStart = room.auto_start || false;
@@ -149,14 +180,14 @@
 
   async function saveRoom() {
     if (!roomName.trim()) { roomError = 'Le nom est requis.'; return; }
-    if (!roomPlaylistId) { roomError = 'Sélectionne une playlist pour ta room.'; return; }
+    if (!roomPlaylistIds.length) { roomError = 'S\u00e9lectionne au moins une playlist.'; return; }
     roomSaving = true; roomError = '';
     try {
       const token = await getToken();
       if (!token) throw new Error('Session expir\u00e9e, reconnecte-toi.');
       const body = {
         name: roomName, emoji: roomEmoji || '🎵', description: roomDesc,
-        playlist_id: roomPlaylistId || null, is_public: roomPublic,
+        playlist_ids: roomPlaylistIds, is_public: roomPublic,
         max_rounds: roomMaxRounds, round_duration: roomDuration, break_duration: roomBreak,
         auto_start: roomAutoStart,
       };
@@ -281,6 +312,8 @@
               <div class="room-card-meta">
                 <span class="room-card-tag">{r.max_rounds} manches</span>
                 <span class="room-card-tag">{r.round_duration}s/manche</span>
+                {#if r.track_count > 0}<span class="room-card-tag">🎵 {r.track_count} titres</span>{/if}
+                {#if r.online > 0}<span class="room-card-tag room-card-online">🟢 {r.online} en ligne</span>{/if}
                 {#if r.auto_start}<span class="room-card-tag room-card-auto">⚡ Auto</span>{/if}
                 <span class="room-card-tag">Code&nbsp;<strong>{r.code}</strong></span>
                 {#if !r.is_public}<span class="room-card-tag room-card-private">Priv&eacute;e</span>{/if}
@@ -314,6 +347,8 @@
               <div class="room-card-meta">
                 <span class="room-card-tag">{r.max_rounds} manches</span>
                 <span class="room-card-tag">{r.round_duration}s/manche</span>
+                {#if r.track_count > 0}<span class="room-card-tag">🎵 {r.track_count} titres</span>{/if}
+                {#if r.online > 0}<span class="room-card-tag room-card-online">🟢 {r.online} en ligne</span>{/if}
                 <span class="room-card-tag">Code&nbsp;<strong>{r.code}</strong></span>
                 {#if !r.is_public}<span class="room-card-tag room-card-private">Priv&eacute;e</span>{/if}
               </div>
@@ -359,14 +394,43 @@
     </div>
 
     <div class="field">
-      <label for="playlist">Playlist</label>
-      <select bind:value={roomPlaylistId} class="room-select">
-        <option value="">Choisir une playlist...</option>
-        {#each userPlaylists as pl (pl.id)}
-          <option value={pl.id}>{pl.emoji} {pl.name}</option>
-        {/each}
-      </select>
-      <p style="font-size:.75rem;color:var(--dim);margin-top:4px">Au moins 3 titres requis. <a href="/playlists" style="color:var(--accent)">G&eacute;rer mes playlists</a></p>
+      <label for="pl-search">Playlists
+        {#if roomPlaylistIds.length > 0}
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--accent)">
+            ({roomPlaylistIds.length} sélectionnée{roomPlaylistIds.length > 1 ? 's' : ''} · {totalTrackCount} titres)
+          </span>
+        {/if}
+      </label>
+      <input
+        id="pl-search"
+        type="search"
+        bind:value={plSearch}
+        placeholder="Rechercher une playlist..."
+        style="margin-bottom:6px"
+      />
+      <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border, rgba(255,255,255,.1));border-radius:8px;padding:4px 0">
+        {#if filteredPlaylists.length === 0}
+          <div style="padding:10px 14px;font-size:.8rem;color:var(--dim)">Aucune playlist trouvée.</div>
+        {:else}
+          {#each filteredPlaylists as pl (pl.id)}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_interactive_supports_focus -->
+            <div
+              role="option"
+              aria-selected={roomPlaylistIds.includes(pl.id)}
+              class="pl-picker-row"
+              class:selected={roomPlaylistIds.includes(pl.id)}
+              onclick={() => togglePlaylist(pl)}
+            >
+              <span class="pl-picker-check">{roomPlaylistIds.includes(pl.id) ? '✓' : ''}</span>
+              <span>{pl.emoji} {pl.name}</span>
+              {#if pl.group !== 'Mes playlists'}<span class="pl-picker-group">{pl.group}</span>{/if}
+              <span class="pl-picker-count">{pl.track_count ?? 0} titres</span>
+            </div>
+          {/each}
+        {/if}
+      </div>
+      <p style="font-size:.75rem;color:var(--dim);margin-top:4px">Au moins 3 titres requis au total. <a href="/playlists" style="color:var(--accent)">Gérer mes playlists</a></p>
     </div>
 
     <div style="display:flex;gap:14px">
