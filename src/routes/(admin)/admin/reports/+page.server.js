@@ -15,9 +15,36 @@ export async function load({ url }) {
   if (type) query = query.eq("type", type);
 
   const { data: reports, error } = await query;
+  const rows = reports || [];
+
+  // Résoudre les noms de reporters et de rooms en parallèle
+  const reporterIds = [...new Set(rows.filter((r) => r.reporter_id).map((r) => r.reporter_id))];
+  const roomCodes = [...new Set(rows.filter((r) => r.room_id).map((r) => r.room_id))];
+
+  const [profilesRes, roomsRes] = await Promise.all([
+    reporterIds.length
+      ? supabase.from("profiles").select("id, username").in("id", reporterIds)
+      : { data: [] },
+    roomCodes.length
+      ? supabase.from("rooms").select("code, name, emoji").in("code", roomCodes)
+      : { data: [] },
+  ]);
+
+  const profileMap = Object.fromEntries(
+    (profilesRes.data || []).map((p) => [p.id, p]),
+  );
+  const roomMap = Object.fromEntries(
+    (roomsRes.data || []).map((r) => [r.code, r]),
+  );
+
+  const enriched = rows.map((r) => ({
+    ...r,
+    resolved_username: profileMap[r.reporter_id]?.username || r.reporter_name || null,
+    resolved_room: roomMap[r.room_id] || null,
+  }));
 
   return {
-    reports: reports || [],
+    reports: enriched,
     filters: { status, type },
     error: error?.message || null,
   };
