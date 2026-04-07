@@ -48,12 +48,19 @@ export async function POST({ request }) {
   }
 
   const supabase = getAdminClient();
+
+  let resolvedEmail = reporter_email?.trim() || null;
+  if (!resolvedEmail && reporter_id) {
+    const { data: authUser } = await supabase.auth.admin.getUserById(reporter_id);
+    resolvedEmail = authUser?.user?.email || null;
+  }
+
   const { error } = await supabase.from("reports").insert({
     type,
     message: message.trim(),
     reporter_id: reporter_id || null,
     reporter_name: reporter_name?.trim() || null,
-    reporter_email: reporter_email?.trim() || null,
+    reporter_email: resolvedEmail,
     reported_user_id: reported_user_id || null,
     reported_username: reported_username?.trim() || null,
     room_id: room_id || null,

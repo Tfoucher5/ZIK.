@@ -8,6 +8,7 @@
 
   let expandedId = $state(null);
   let noteValues = $state({});
+  let replyValues = $state({});
 
   const TYPE_LABELS  = { bug: '🐛 Bug', user: '🚨 Joueur', contact: '✉️ Contact' };
   const STATUS_COLORS = { pending: '#f59e0b', resolved: '#4ade80', dismissed: '#6b7280' };
@@ -90,6 +91,14 @@
             <form method="POST" action="?/updateStatus" use:enhance class="rp-actions">
               <input type="hidden" name="id" value={r.id}>
 
+              <textarea
+                name="admin_note"
+                class="rp-note"
+                placeholder="Note interne (optionnel)…"
+                rows="2"
+                bind:value={noteValues[r.id]}
+              >{r.admin_note || ''}</textarea>
+
               {#if r.reporter_email || r.resolved_username}
                 <div class="rp-reply-wrap">
                   <label class="rp-label" for="reply-{r.id}">
@@ -99,25 +108,17 @@
                   </label>
                   <textarea
                     id="reply-{r.id}"
-                    name="admin_note"
+                    name="admin_reply"
                     class="rp-note rp-note-reply"
                     placeholder="Écris ta réponse ici…"
                     rows="3"
-                    bind:value={noteValues[r.id]}
-                  >{r.admin_note || ''}</textarea>
+                    bind:value={replyValues[r.id]}
+                  >{r.admin_reply || ''}</textarea>
                 </div>
-              {:else}
-                <textarea
-                  name="admin_note"
-                  class="rp-note"
-                  placeholder="Note interne (optionnel)…"
-                  rows="2"
-                  bind:value={noteValues[r.id]}
-                >{r.admin_note || ''}</textarea>
               {/if}
 
-              {#if r.admin_note}
-                <p class="rp-note-saved">💾 Réponse enregistrée : <em>{r.admin_note}</em></p>
+              {#if r.admin_reply}
+                <p class="rp-note-saved">💾 Réponse enregistrée : <em>{r.admin_reply}</em></p>
               {/if}
 
               <div class="rp-btns">
