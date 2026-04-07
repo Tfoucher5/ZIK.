@@ -132,9 +132,9 @@
         ZIK s'adresse à tous les amateurs de musique, des connaisseurs de tubes pop aux nostalgiques des années 80, en passant par les fans de rap, rock, électro ou jazz. Les playlists officielles couvrent un large spectre de genres et d'époques. Vous pouvez aussi créer vos propres playlists thématiques et les partager avec votre communauté.
       </p>
 
-      <h3>Gratuit pour toujours ?</h3>
+      <h3>Faut-il payer pour jouer ?</h3>
       <p>
-        Oui. ZIK est et restera gratuit. L'inscription n'est pas obligatoire pour jouer, mais elle vous permet de sauvegarder vos scores, d'apparaître dans les classements ELO et de personnaliser votre profil public.
+        Non. ZIK est accessible sans abonnement ni paiement. L'inscription n'est pas obligatoire pour jouer, mais elle vous permet de sauvegarder vos scores, d'apparaître dans les classements ELO et de personnaliser votre profil public.
       </p>
 
       <div class="doc-tip">

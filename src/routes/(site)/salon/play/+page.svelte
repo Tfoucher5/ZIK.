@@ -27,10 +27,12 @@
   let choices      = $state(null);
 
   // Per-element found state
-  let foundArtist  = $state(false);
-  let foundTitle   = $state(false);
-  let foundFeats   = $state([]);
-  let allFound     = $state(false);
+  let foundArtist = $state(false);
+  let foundTitle  = $state(false);
+  let foundFeats  = $state([]);
+  let foundExtras = $state([]);
+  let extras      = $state([]); // labels des réponses supplémentaires du round
+  let allFound    = $state(false);
 
   let timerStarted       = $state(false); // true once the host signals music is playing
   let chosenIndex        = $state(null);  // QCM: index clicked by this player
@@ -104,6 +106,11 @@
           foundFeats = Array(data.featCount).fill(false);
           for (let i = 0; i < (data.foundFeatCount || 0); i++) foundFeats[i] = true;
         }
+        if (data.extras) {
+          extras = data.extras.map(e => e.label);
+          foundExtras = Array(extras.length).fill(false);
+          for (let i = 0; i < (data.foundExtrasCount || 0); i++) foundExtras[i] = true;
+        }
         timerVal     = data.timerVal ?? timerVal;
         timerMax     = data.timerMax ?? timerMax;
         timerStarted = data.timerActive ?? (data.timerVal > 0);
@@ -115,6 +122,8 @@
         foundArtist = false;
         foundTitle  = false;
         foundFeats  = [];
+        foundExtras = [];
+        extras      = [];
         allFound    = false;
       }
     });
@@ -128,9 +137,6 @@
       choices            = data.choices || null;
       roundEnd           = null;
       guess              = '';
-      foundArtist        = false;
-      foundTitle         = false;
-      foundFeats         = Array(data.featCount || 0).fill(false);
       allFound           = false;
       chosenIndex        = null;
       revealCorrectIndex = null;
@@ -138,6 +144,11 @@
       timerVal           = 0;
       clearTimeout(revealTimer);
       revealTimer        = null;
+      foundArtist = false;
+      foundTitle  = false;
+      foundFeats  = Array(data.featCount || 0).fill(false);
+      extras      = (data.extras || []).map(e => e.label);
+      foundExtras = Array(extras.length).fill(false);
     });
 
     socket.on('salon_timer_started', ({ max }) => {
@@ -162,8 +173,11 @@
         } else if (data.type === 'success_feat') {
           const idx = foundFeats.findIndex(f => !f);
           if (idx !== -1) foundFeats = foundFeats.map((f, i) => i === idx ? true : f);
+        } else if (data.type === 'success_extra') {
+          const ei = data.extraIndex;
+          if (ei !== undefined) foundExtras = foundExtras.map((f, i) => i === ei ? true : f);
         }
-        allFound = foundArtist && foundTitle && foundFeats.every(Boolean);
+        allFound = foundArtist && foundTitle && foundFeats.every(Boolean) && foundExtras.every(Boolean);
       }
     });
 
@@ -269,6 +283,7 @@
           {timerVal} {timerMax} {timerStarted}
           {answerMode} {choices}
           {foundArtist} {foundTitle} {foundFeats}
+          {extras} {foundExtras}
           {allFound}
           {chosenIndex}
           {revealCorrectIndex}

@@ -38,7 +38,9 @@ async function loadTracksForPlaylist(playlistId) {
   try {
     const { data: rows } = await supabase
       .from("custom_playlist_tracks")
-      .select("artist, title, cover_url, preview_url")
+      .select(
+        "artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
+      )
       .eq("playlist_id", playlistId)
       .order("position");
     if (rows?.length) {
@@ -48,6 +50,13 @@ async function loadTracksForPlaylist(playlistId) {
           title: t.title,
           cover: t.cover_url,
           preview_url: t.preview_url,
+          custom_artist: t.custom_artist || null,
+          custom_title: t.custom_title || null,
+          custom_feats: t.custom_feats || null,
+          extraAnswers: (t.track_answers || []).map((a) => ({
+            label: a.answer_types?.name || "",
+            value: a.value,
+          })),
         }),
       );
     }
@@ -211,6 +220,7 @@ function makePlayer(username, socketId) {
     foundArtist: false,
     foundTitle: false,
     foundFeats: [],
+    foundExtras: [],
     _fullFoundCounted: false,
     _choiceIndex: null,
     _choiceTimeTaken: null,
@@ -233,6 +243,7 @@ function resetRoundFlags(salon) {
     p.foundArtist = false;
     p.foundTitle = false;
     p.foundFeats = [];
+    p.foundExtras = [];
     p._fullFoundCounted = false;
     p._choiceIndex = null;
     p._choiceTimeTaken = null;
@@ -244,7 +255,10 @@ function playerFullyFound(player, track) {
   const allFeats = (track.cleanFeatArtists || []).every(
     (_, i) => player.foundFeats[i],
   );
-  return player.foundArtist && player.foundTitle && allFeats;
+  const allExtras = (track.extraAnswers || []).every(
+    (_, i) => player.foundExtras[i],
+  );
+  return player.foundArtist && player.foundTitle && allFeats && allExtras;
 }
 
 function checkEveryoneDone(code, io) {
@@ -376,7 +390,6 @@ function endRound(code, reason, io) {
     firstFinder: game.firstFinder,
     featArtists: (track.featArtists || []).map(displayString),
     scores,
-    // For QCM: send correct index so clients can reveal which was right
     correctChoiceIndex:
       salon.settings.answerMode === "multiple"
         ? game.correctChoiceIndex
@@ -458,6 +471,7 @@ async function startNextRound(code, io) {
       total: salon.settings.maxRounds,
       choices,
       featCount: track.featArtists?.length || 0,
+      extras: (track.extraAnswers || []).map((e) => ({ label: e.label })),
     };
 
     // Send to host (includes answer info — revealed ONLY at round end on host screen)
@@ -606,18 +620,21 @@ export function registerSalon(io) {
             foundArtist: existing.foundArtist,
             foundTitle: existing.foundTitle,
             foundFeatCount: existing.foundFeats.filter(Boolean).length,
+            foundExtrasCount: existing.foundExtras.filter(Boolean).length,
             allFound: existing._fullFoundCounted,
             timerVal: salon.game.timerValue,
             timerMax: salon.settings.roundDuration,
             timerActive: salon.game.timerActive,
           };
-          if (
-            salon.game.phase === "round" &&
-            salon.settings.answerMode === "multiple"
-          ) {
-            reconnectData.choices = salon.game.choices;
-            reconnectData.featCount =
-              salon.game.currentTrack?.featArtists?.length || 0;
+          if (salon.game.phase === "round") {
+            reconnectData.extras = (
+              salon.game.currentTrack?.extraAnswers || []
+            ).map((e) => ({ label: e.label }));
+            if (salon.settings.answerMode === "multiple") {
+              reconnectData.choices = salon.game.choices;
+              reconnectData.featCount =
+                salon.game.currentTrack?.featArtists?.length || 0;
+            }
           }
 
           socket.emit("salon_joined", reconnectData);
@@ -726,7 +743,6 @@ export function registerSalon(io) {
       const bonus = calcSpeedBonus(timeTaken);
       let hit = false;
 
-      // Artist
       if (!player.foundArtist) {
         if (checkMatch(input, track.cleanArtist)) {
           player.foundArtist = true;
@@ -749,7 +765,6 @@ export function registerSalon(io) {
         }
       }
 
-      // Feats
       if (!hit) {
         for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
           if (player.foundFeats[fi]) continue;
@@ -777,7 +792,6 @@ export function registerSalon(io) {
         }
       }
 
-      // Title
       if (!hit) {
         if (!player.foundTitle) {
           if (checkMatch(input, track.cleanTitle)) {
@@ -798,6 +812,35 @@ export function registerSalon(io) {
               msg: "Tu chauffes sur le titre !",
             });
             hit = true;
+          }
+        }
+      }
+
+      if (!hit) {
+        for (let ei = 0; ei < (track.extraAnswers || []).length; ei++) {
+          if (player.foundExtras[ei]) continue;
+          const extra = track.extraAnswers[ei];
+          if (checkMatch(input, extra.clean)) {
+            player.foundExtras[ei] = true;
+            player.score += 1 + bonus;
+            socket.emit("salon_feedback", {
+              type: "success_extra",
+              extraIndex: ei,
+              correct: true,
+              points: 1 + bonus,
+              msg: `${extra.label} ! (+${1 + bonus} pts)`,
+            });
+            hit = true;
+            break;
+          } else if (checkClose(input, extra.clean)) {
+            socket.emit("salon_feedback", {
+              type: "close",
+              correct: false,
+              points: 0,
+              msg: `Tu chauffes sur ${extra.label} !`,
+            });
+            hit = true;
+            break;
           }
         }
       }
@@ -891,6 +934,7 @@ export function registerSalon(io) {
         p.foundArtist = false;
         p.foundTitle = false;
         p.foundFeats = [];
+        p.foundExtras = [];
         p._fullFoundCounted = false;
       }
 

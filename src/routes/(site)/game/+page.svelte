@@ -19,6 +19,7 @@
   let slotArtist  = $state({ val: '???', state: null });
   let slotTitle   = $state({ val: '???', state: null });
   let featSlots   = $state([]);
+  let extraSlots  = $state([]);
   let coverSrc    = $state('');
   let showCover   = $state(false);
   let feedback    = $state({ msg: '', cls: '' });
@@ -236,13 +237,14 @@
     socket.on('init_history', h => { history = Array.isArray(h) ? [...h].reverse() : []; });
     socket.on('game_starting', () => { gameoverShow = false; showStart = false; stopCountdownUI(); revealStep = 0; _revealTimers.forEach(clearTimeout); _revealTimers = []; });
     socket.on('start_round', data => {
-      const featCount = data.featCount || 0;
-      featSlots = Array.from({ length: featCount }, () => ({ val: '???', state: null }));
       roundInfo = `Manche ${data.round} / ${data.total}`;
       coverSrc = ''; showCover = false;
+      summaryShow = false; gameoverShow = false; feedback = { msg: '', cls: '' };
+      const featCount = data.featCount || 0;
+      featSlots  = Array.from({ length: featCount }, () => ({ val: '???', state: null }));
+      extraSlots = (data.extraLabels || []).map(label => ({ val: '???', state: null, label }));
       slotArtist = { val: '???', state: null };
       slotTitle  = { val: '???', state: null };
-      summaryShow = false; gameoverShow = false; feedback = { msg: '', cls: '' };
       timerPct = 100; timerColor = 'var(--accent)';
       guessDisabled = false; guessVal = '';
       showStart = false; startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
@@ -263,6 +265,7 @@
       if (data.type === 'success_artist') slotArtist = { val: data.val, state: 'found' };
       if (data.type === 'success_feat') { const fi = data.featIndex ?? 0; featSlots = featSlots.map((s, i) => i === fi ? { val: data.val, state: 'found' } : s); }
       if (data.type === 'success_title') slotTitle = { val: data.val, state: 'found' };
+      if (data.type === 'success_extra') { const ei = data.extraIndex ?? 0; extraSlots = extraSlots.map((s, i) => i === ei ? { ...s, val: data.val, state: 'found' } : s); }
       const cls = data.type === 'miss' ? 'cold' : data.type === 'close' ? 'hot' : 'good';
       showFeedback(data.msg, cls);
     });
@@ -276,6 +279,7 @@
       slotArtist = { val: mainArtist, state: data.foundArtist ? 'found' : 'missed' };
       featSlots  = feats.map((fa, i) => ({ val: fa, state: (data.foundFeats || [])[i] ? 'found' : 'missed' }));
       slotTitle  = { val: title || '\u2014', state: data.foundTitle ? 'found' : 'missed' };
+      extraSlots = (data.extraAnswers || []).map((e, i) => ({ label: e.label, val: e.value, state: (data.foundExtras || [])[i] ? 'found' : 'missed' }));
       if (data.cover) { coverSrc = data.cover; showCover = true; }
       summaryShow = true;
       summaryReason = data.reason;
@@ -439,6 +443,12 @@
             <div class="g-slot g-slot-feat {fs.state || ''}">
               <span class="g-slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
               <div class="g-slot-val">{fs.val}</div>
+            </div>
+          {/each}
+          {#each extraSlots as es}
+            <div class="g-slot {es.state || ''}">
+              <span class="g-slot-label">{es.label}</span>
+              <div class="g-slot-val">{es.val}</div>
             </div>
           {/each}
           <div class="g-slot {slotTitle.state || ''}">

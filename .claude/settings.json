@@ -39,11 +39,18 @@
       "Bash(gh pr create --title 'feat\\(salon\\): multi-playlists, sliders+input, obligation playlist rooms' --body ':*)",
       "Bash(where gh:*)",
       "Bash(winget list:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npx supabase:*)",
+      "Bash(supabase functions:*)",
+      "mcp__claude_ai_Supabase__list_edge_functions",
+      "mcp__claude_ai_Supabase__get_edge_function",
+      "mcp__claude_ai_Supabase__deploy_edge_function",
+      "Bash(gh pr create --title 'feat\\(admin\\): réponse email aux reporters' --body ':*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Teamr\\.claude\\projects\\c--Users-Teamr-Desktop-ZIK\\memory",
-      "c:\\Users\\Teamr\\.claude"
+      "c:\\Users\\Teamr\\.claude",
+      "c:\\Users\\Teamr\\Desktop\\ZIK\\supabase"
     ]
   }
 }

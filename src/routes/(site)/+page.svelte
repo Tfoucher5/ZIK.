@@ -5,6 +5,7 @@
   let totalOnline = $state(0);
   let displayOnline = $state(0);
   let displayRooms = $state(0);
+  let displayUsers = $state(0);
   let roomCodeVal = $state("");
   let roomCodeErr = $state("");
   let roomCodeLoading = $state(false);
@@ -40,7 +41,7 @@
   });
 
   $effect(() => {
-    const target = rooms.length;
+    const target = rooms.length + pubRooms.length;
     if (target === 0) {
       displayRooms = 0;
       return;
@@ -55,6 +56,18 @@
     })(start);
     return () => cancelAnimationFrame(raf);
   });
+
+  function animateUsers(target) {
+    if (target === 0) { displayUsers = 0; return; }
+    let raf;
+    const start = performance.now();
+    const from = displayUsers;
+    (function tick(now) {
+      const p = Math.min((now - start) / 1000, 1);
+      displayUsers = Math.round(from + (target - from) * (1 - (1 - p) ** 3));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    })(start);
+  }
 
   /* ── Scroll reveal (Svelte action) ── */
   function reveal(node, delay = 0) {
@@ -224,10 +237,19 @@
     }
   ]);
 
+  async function loadGlobalStats() {
+    try {
+      const res = await fetch("/api/stats/global");
+      const data = await res.json();
+      animateUsers(data.users ?? 0);
+    } catch { /* non-bloquant */ }
+  }
+
   onMount(() => {
     loadRooms();
     loadPubRooms();
     loadLeaderboards();
+    loadGlobalStats();
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
         loadRooms();
@@ -280,7 +302,7 @@
     <div class="hero-text">
       <span class="eyebrow">
         <span class="eyebrow-dot"></span>
-        100% gratuit &middot; Sans inscription &middot; Multijoueur
+        Sans inscription &middot; Multijoueur
       </span>
       <h1>Reconnais le son.<br /><em>Domine le classement.</em></h1>
       <p class="hero-sub">
@@ -445,12 +467,12 @@
     <div class="stat-sep"></div>
     <div class="stat-block">
       <div class="stat-val">{displayRooms > 0 ? displayRooms : "—"}</div>
-      <div class="stat-label">rooms officielles</div>
+      <div class="stat-label">rooms publiques</div>
     </div>
     <div class="stat-sep"></div>
     <div class="stat-block">
-      <div class="stat-val">100%</div>
-      <div class="stat-label">gratuit &middot; sans pub</div>
+      <div class="stat-val">{displayUsers > 0 ? displayUsers : "—"}</div>
+      <div class="stat-label">utilisateurs inscrits</div>
     </div>
   </div>
 </div>
