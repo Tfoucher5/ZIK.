@@ -27,10 +27,13 @@
   let choices      = $state(null);
 
   // Per-element found state
-  let foundArtist  = $state(false);
-  let foundTitle   = $state(false);
-  let foundFeats   = $state([]);
-  let allFound     = $state(false);
+  let foundArtist    = $state(false);
+  let foundTitle     = $state(false);
+  let foundFeats     = $state([]);
+  let foundAnswers   = $state(null);  // mode custom
+  let answerSlots    = $state([]);    // mode custom : [{label, found}]
+  let useCustomSlots = $state(false);
+  let allFound       = $state(false);
 
   let timerStarted       = $state(false); // true once the host signals music is playing
   let chosenIndex        = $state(null);  // QCM: index clicked by this player
@@ -128,9 +131,6 @@
       choices            = data.choices || null;
       roundEnd           = null;
       guess              = '';
-      foundArtist        = false;
-      foundTitle         = false;
-      foundFeats         = Array(data.featCount || 0).fill(false);
       allFound           = false;
       chosenIndex        = null;
       revealCorrectIndex = null;
@@ -138,6 +138,21 @@
       timerVal           = 0;
       clearTimeout(revealTimer);
       revealTimer        = null;
+      if (data.answerSlots) {
+        useCustomSlots = true;
+        answerSlots    = data.answerSlots.map(s => ({ label: s.label, found: false }));
+        foundAnswers   = new Array(data.answerSlots.length).fill(false);
+        foundArtist    = false;
+        foundTitle     = false;
+        foundFeats     = [];
+      } else {
+        useCustomSlots = false;
+        answerSlots    = [];
+        foundAnswers   = null;
+        foundArtist    = false;
+        foundTitle     = false;
+        foundFeats     = Array(data.featCount || 0).fill(false);
+      }
     });
 
     socket.on('salon_timer_started', ({ max }) => {
@@ -155,15 +170,21 @@
       showFeedback(data);
       if (data.correct) {
         myScore += data.points;
-        if (data.type === 'success_artist') foundArtist = true;
-        else if (data.type === 'success_title') {
-          foundTitle = true;
-          if (answerMode === 'multiple') foundArtist = true;
-        } else if (data.type === 'success_feat') {
-          const idx = foundFeats.findIndex(f => !f);
-          if (idx !== -1) foundFeats = foundFeats.map((f, i) => i === idx ? true : f);
+        if (data.type === 'success_custom') {
+          foundAnswers = foundAnswers?.map((f, i) => i === data.answerIndex ? true : f) ?? foundAnswers;
+          answerSlots  = answerSlots.map((s, i) => i === data.answerIndex ? { ...s, found: true } : s);
+          allFound = foundAnswers?.every(Boolean) ?? false;
+        } else {
+          if (data.type === 'success_artist') foundArtist = true;
+          else if (data.type === 'success_title') {
+            foundTitle = true;
+            if (answerMode === 'multiple') foundArtist = true;
+          } else if (data.type === 'success_feat') {
+            const idx = foundFeats.findIndex(f => !f);
+            if (idx !== -1) foundFeats = foundFeats.map((f, i) => i === idx ? true : f);
+          }
+          allFound = foundArtist && foundTitle && foundFeats.every(Boolean);
         }
-        allFound = foundArtist && foundTitle && foundFeats.every(Boolean);
       }
     });
 
@@ -269,6 +290,7 @@
           {timerVal} {timerMax} {timerStarted}
           {answerMode} {choices}
           {foundArtist} {foundTitle} {foundFeats}
+          {useCustomSlots} {answerSlots}
           {allFound}
           {chosenIndex}
           {revealCorrectIndex}

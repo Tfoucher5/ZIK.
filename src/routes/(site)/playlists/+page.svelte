@@ -57,6 +57,56 @@
   let adminIsOfficial = $state(false);
   let adminLinkedRoom = $state('');
 
+  // Éditeur de réponses custom par track
+  let answersModalOpen  = $state(false);
+  let answersTrack      = $state(null);  // { id, artist, title }
+  let answersData       = $state([]);    // [{ id?, answer_type_id, value }]
+  let answersTypes      = $state([]);    // [{ id, name }]
+  let answersSaving     = $state(false);
+
+  async function openAnswersEditor(track) {
+    answersTrack = track;
+    answersData  = [];
+    answersTypes = [];
+    answersModalOpen = true;
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    const res = await fetch(`/api/playlists/tracks/${track.id}/answers`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const json = await res.json();
+    answersTypes = json.types || [];
+    answersData  = (json.answers || []).map(a => ({
+      answer_type_id: a.answer_type_id,
+      value: a.value,
+    }));
+  }
+
+  function addAnswerRow() {
+    answersData = [...answersData, { answer_type_id: answersTypes[0]?.id ?? 1, value: '' }];
+  }
+
+  function removeAnswerRow(i) {
+    answersData = answersData.filter((_, idx) => idx !== i);
+  }
+
+  async function saveAnswers() {
+    answersSaving = true;
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    const res = await fetch(`/api/playlists/tracks/${answersTrack.id}/answers`, {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ answers: answersData }),
+    });
+    answersSaving = false;
+    if (res.ok) {
+      toast('Réponses enregistrées', 'success');
+      answersModalOpen = false;
+    } else {
+      const j = await res.json();
+      toast(j.error || 'Erreur', 'error');
+    }
+  }
+
   // Room settings (ephemeral room from playlist)
   let rsOpen     = $state(false);
   let rsRounds   = $state(10);
@@ -717,6 +767,7 @@
               <div class="track-artist">{t.artist}</div>
             </div>
             <span class="track-source">{t.source}</span>
+            <button class="track-answers-btn" title="Réponses custom" onclick={() => openAnswersEditor(t)}>&#x270E;</button>
             <button class="track-remove-btn" onclick={() => removeTrack(t.id)}>&#x2715;</button>
           </div>
         {/each}
@@ -787,6 +838,51 @@
         <button class="btn-ghost sm" onclick={copyLink}>Copier le lien</button>
         <button class="btn-accent" onclick={joinRoomNow}>Rejoindre maintenant &rarr;</button>
       </div>
+    </div>
+  </div>
+</div>
+{/if}
+
+<!-- Modal éditeur de réponses custom -->
+{#if answersModalOpen && answersTrack}
+<!-- svelte-ignore a11y_interactive_supports_focus -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="overlay" role="dialog" aria-modal="true" onclick={e => { if (e.target === e.currentTarget) answersModalOpen = false; }}>
+  <div class="modal modal-lg">
+    <button class="close-btn" onclick={() => answersModalOpen = false}>&#x2715;</button>
+    <h2>Réponses custom</h2>
+    <p class="mdesc">
+      <strong>{answersTrack.artist} — {answersTrack.title}</strong><br>
+      Définis les réponses que les joueurs devront trouver. Si vide, le jeu utilisera artiste + titre par défaut.
+    </p>
+
+    <div class="answers-list">
+      {#each answersData as row, i}
+        <div class="answer-row">
+          <select bind:value={row.answer_type_id} class="answer-type-select">
+            {#each answersTypes as t}
+              <option value={t.id}>{t.name}</option>
+            {/each}
+          </select>
+          <input
+            type="text"
+            bind:value={row.value}
+            placeholder="Valeur attendue…"
+            class="answer-value-input"
+            maxlength="100"
+          >
+          <button class="track-remove-btn" onclick={() => removeAnswerRow(i)}>&#x2715;</button>
+        </div>
+      {/each}
+    </div>
+
+    <button class="btn-ghost sm" onclick={addAnswerRow}>+ Ajouter une réponse</button>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick={() => answersModalOpen = false}>Annuler</button>
+      <button class="btn-accent" onclick={saveAnswers} disabled={answersSaving}>
+        {answersSaving ? 'Enregistrement…' : 'Enregistrer'}
+      </button>
     </div>
   </div>
 </div>

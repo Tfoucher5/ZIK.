@@ -77,6 +77,7 @@ function resetRoundFlags(room) {
     room.players[n].foundArtist = false;
     room.players[n].foundTitle = false;
     room.players[n].foundFeats = [];
+    room.players[n].foundAnswers = null;
     room.players[n]._fullFoundCounted = false;
   });
 }
@@ -96,6 +97,9 @@ function checkEveryoneFound(roomId, io) {
   const track = room.game.currentTrack;
   const activePlayers = Object.values(room.players);
   const allDone = (p) => {
+    if (track?.customAnswers?.length) {
+      return p.foundAnswers?.every(Boolean) ?? false;
+    }
     const allFeats = (track?.cleanFeatArtists || []).every(
       (_, i) => p.foundFeats[i],
     );
@@ -116,13 +120,21 @@ function endRound(roomId, reason, io) {
   clearInterval(game.interval);
   game.isActive = false;
 
+  const track = game.currentTrack;
+  const hasCustom = track.customAnswers?.length;
+
   const summary = {
-    answer: `${displayString(game.currentTrack.mainArtist || game.currentTrack.artist)} - ${displayString(game.currentTrack.title)}`,
-    cover: game.currentTrack.cover,
+    answer: hasCustom
+      ? track.customAnswers.map((ca) => ca.value).join(" — ")
+      : `${displayString(track.mainArtist || track.artist)} - ${displayString(track.title)}`,
+    cover: track.cover,
     reason,
     firstFinder: game.firstFullFinder,
     totalFound: game.totalFullFound,
-    featArtists: (game.currentTrack.featArtists || []).map(displayString),
+    featArtists: hasCustom ? [] : (track.featArtists || []).map(displayString),
+    answerSlots: hasCustom
+      ? track.customAnswers.map((ca) => ({ label: ca.type, value: ca.value }))
+      : null,
   };
   game.history.push(summary);
 
@@ -135,6 +147,7 @@ function endRound(roomId, reason, io) {
         foundArtist: p.foundArtist,
         foundTitle: p.foundTitle,
         foundFeats: p.foundFeats || [],
+        foundAnswers: p.foundAnswers ?? null,
       });
     }
   });
@@ -182,6 +195,14 @@ async function startNextRound(roomId, io) {
   resetRoundFlags(room);
   game.currentTrack = game.sessionPlaylist.pop();
 
+  if (game.currentTrack.customAnswers?.length) {
+    Object.keys(room.players).forEach((n) => {
+      room.players[n].foundAnswers = new Array(
+        game.currentTrack.customAnswers.length,
+      ).fill(false);
+    });
+  }
+
   try {
     const r = await yts(
       `${game.currentTrack.mainArtist || game.currentTrack.artist} ${game.currentTrack.title} topic`,
@@ -204,8 +225,9 @@ async function startNextRound(roomId, io) {
       startSeconds: safeStart,
       round: game.currentRound,
       total: game.maxRounds,
-      featCount: game.currentTrack.featArtists.length,
+      featCount: game.currentTrack.customAnswers ? 0 : game.currentTrack.featArtists.length,
       previewUrl: null,
+      answerSlots: game.currentTrack.customAnswers?.map((ca) => ({ label: ca.type })) ?? null,
     };
 
     io.to(`room:${roomId}`).emit("start_round", game.lastRoundData);
@@ -441,6 +463,7 @@ export function register(io) {
           foundArtist: false,
           foundTitle: false,
           foundFeats: [],
+          foundAnswers: null,
           _fullFoundCounted: false,
         };
       } else {
@@ -594,67 +617,93 @@ export function register(io) {
 
       let hit = false;
 
-      if (!user.foundArtist) {
-        if (checkMatch(input, track.cleanArtist)) {
-          user.foundArtist = true;
-          user.score += 1 + speedBonus;
-          socket.emit("feedback", {
-            type: "success_artist",
-            msg: `Artiste ! (+${1 + speedBonus} pts)`,
-            val: displayString(track.mainArtist || track.artist),
-            cover,
-          });
-          hit = true;
-        } else if (!hit && checkClose(input, track.cleanArtist)) {
-          socket.emit("feedback", {
-            type: "close",
-            msg: "Tu chauffes sur l'artiste !",
-          });
-          hit = true;
+      if (track.customAnswers?.length) {
+        // ── Mode réponses custom ─────────────────────────────────────────────
+        for (let i = 0; i < track.customAnswers.length; i++) {
+          if (user.foundAnswers[i]) continue;
+          const ca = track.customAnswers[i];
+          if (checkMatch(input, ca.cleanValue)) {
+            user.foundAnswers[i] = true;
+            user.score += 1 + speedBonus;
+            socket.emit("feedback", {
+              type: "success_custom",
+              answerIndex: i,
+              label: ca.type,
+              msg: `${ca.type} ! (+${1 + speedBonus} pts)`,
+              val: ca.value,
+              cover,
+            });
+            hit = true;
+            break;
+          } else if (!hit && checkClose(input, ca.cleanValue)) {
+            socket.emit("feedback", { type: "close", msg: "Tu chauffes !" });
+            hit = true;
+          }
         }
-      }
-
-      for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
-        if (user.foundFeats[fi]) continue;
-        const cleanFeat = track.cleanFeatArtists[fi];
-        if (checkMatch(input, cleanFeat)) {
-          user.foundFeats[fi] = true;
-          user.score += 1 + speedBonus;
-          socket.emit("feedback", {
-            type: "success_feat",
-            featIndex: fi,
-            msg: `Feat ! (+${1 + speedBonus} pts)`,
-            val: displayString(track.featArtists[fi]),
-            cover,
-          });
-          hit = true;
-          break;
-        } else if (!hit && checkClose(input, cleanFeat)) {
-          socket.emit("feedback", {
-            type: "close",
-            msg: "Tu chauffes sur le feat !",
-          });
-          hit = true;
+      } else {
+        // ── Mode classique artiste / titre / feat ────────────────────────────
+        if (!user.foundArtist) {
+          if (checkMatch(input, track.cleanArtist)) {
+            user.foundArtist = true;
+            user.score += 1 + speedBonus;
+            socket.emit("feedback", {
+              type: "success_artist",
+              msg: `Artiste ! (+${1 + speedBonus} pts)`,
+              val: displayString(track.mainArtist || track.artist),
+              cover,
+            });
+            hit = true;
+          } else if (!hit && checkClose(input, track.cleanArtist)) {
+            socket.emit("feedback", {
+              type: "close",
+              msg: "Tu chauffes sur l'artiste !",
+            });
+            hit = true;
+          }
         }
-      }
 
-      if (!user.foundTitle) {
-        if (checkMatch(input, track.cleanTitle)) {
-          user.foundTitle = true;
-          user.score += 1 + speedBonus;
-          socket.emit("feedback", {
-            type: "success_title",
-            msg: `Titre ! (+${1 + speedBonus} pts)`,
-            val: displayString(track.title),
-            cover,
-          });
-          hit = true;
-        } else if (!hit && checkClose(input, track.cleanTitle)) {
-          socket.emit("feedback", {
-            type: "close",
-            msg: "Tu chauffes sur le titre !",
-          });
-          hit = true;
+        for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
+          if (user.foundFeats[fi]) continue;
+          const cleanFeat = track.cleanFeatArtists[fi];
+          if (checkMatch(input, cleanFeat)) {
+            user.foundFeats[fi] = true;
+            user.score += 1 + speedBonus;
+            socket.emit("feedback", {
+              type: "success_feat",
+              featIndex: fi,
+              msg: `Feat ! (+${1 + speedBonus} pts)`,
+              val: displayString(track.featArtists[fi]),
+              cover,
+            });
+            hit = true;
+            break;
+          } else if (!hit && checkClose(input, cleanFeat)) {
+            socket.emit("feedback", {
+              type: "close",
+              msg: "Tu chauffes sur le feat !",
+            });
+            hit = true;
+          }
+        }
+
+        if (!user.foundTitle) {
+          if (checkMatch(input, track.cleanTitle)) {
+            user.foundTitle = true;
+            user.score += 1 + speedBonus;
+            socket.emit("feedback", {
+              type: "success_title",
+              msg: `Titre ! (+${1 + speedBonus} pts)`,
+              val: displayString(track.title),
+              cover,
+            });
+            hit = true;
+          } else if (!hit && checkClose(input, track.cleanTitle)) {
+            socket.emit("feedback", {
+              type: "close",
+              msg: "Tu chauffes sur le titre !",
+            });
+            hit = true;
+          }
         }
       }
 
@@ -666,10 +715,11 @@ export function register(io) {
         Object.values(room.players),
       );
 
-      const allFeatsFound = track.cleanFeatArtists.every(
-        (_, i) => user.foundFeats[i],
-      );
-      const allMainFound = user.foundArtist && user.foundTitle && allFeatsFound;
+      const allMainFound = track.customAnswers?.length
+        ? user.foundAnswers?.every(Boolean)
+        : user.foundArtist &&
+          user.foundTitle &&
+          track.cleanFeatArtists.every((_, i) => user.foundFeats[i]);
       if (allMainFound && !user._fullFoundCounted) {
         user._fullFoundCounted = true;
         if (!room.game.firstFullFinder) room.game.firstFullFinder = user.name;

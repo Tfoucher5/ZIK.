@@ -16,9 +16,11 @@
   let timerColor  = $state('var(--accent)');
   let players     = $state([]);
   let history     = $state([]);
-  let slotArtist  = $state({ val: '???', state: null });
-  let slotTitle   = $state({ val: '???', state: null });
-  let featSlots   = $state([]);
+  let slotArtist    = $state({ val: '???', state: null });
+  let slotTitle     = $state({ val: '???', state: null });
+  let featSlots     = $state([]);
+  let answerSlots   = $state([]); // mode réponses custom
+  let useCustomSlots = $state(false);
   let coverSrc    = $state('');
   let showCover   = $state(false);
   let feedback    = $state({ msg: '', cls: '' });
@@ -236,13 +238,23 @@
     socket.on('init_history', h => { history = Array.isArray(h) ? [...h].reverse() : []; });
     socket.on('game_starting', () => { gameoverShow = false; showStart = false; stopCountdownUI(); revealStep = 0; _revealTimers.forEach(clearTimeout); _revealTimers = []; });
     socket.on('start_round', data => {
-      const featCount = data.featCount || 0;
-      featSlots = Array.from({ length: featCount }, () => ({ val: '???', state: null }));
       roundInfo = `Manche ${data.round} / ${data.total}`;
       coverSrc = ''; showCover = false;
-      slotArtist = { val: '???', state: null };
-      slotTitle  = { val: '???', state: null };
       summaryShow = false; gameoverShow = false; feedback = { msg: '', cls: '' };
+      if (data.answerSlots) {
+        useCustomSlots = true;
+        answerSlots = data.answerSlots.map(s => ({ label: s.label, val: '???', state: null }));
+        featSlots = [];
+        slotArtist = { val: '???', state: null };
+        slotTitle  = { val: '???', state: null };
+      } else {
+        useCustomSlots = false;
+        answerSlots = [];
+        const featCount = data.featCount || 0;
+        featSlots = Array.from({ length: featCount }, () => ({ val: '???', state: null }));
+        slotArtist = { val: '???', state: null };
+        slotTitle  = { val: '???', state: null };
+      }
       timerPct = 100; timerColor = 'var(--accent)';
       guessDisabled = false; guessVal = '';
       showStart = false; startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
@@ -260,6 +272,9 @@
       timerColor = timerPct < 30 ? 'var(--danger)' : timerPct < 60 ? '#f59e0b' : 'var(--accent)';
     });
     socket.on('feedback', data => {
+      if (data.type === 'success_custom') {
+        answerSlots = answerSlots.map((s, i) => i === data.answerIndex ? { ...s, val: data.val, state: 'found' } : s);
+      }
       if (data.type === 'success_artist') slotArtist = { val: data.val, state: 'found' };
       if (data.type === 'success_feat') { const fi = data.featIndex ?? 0; featSlots = featSlots.map((s, i) => i === fi ? { val: data.val, state: 'found' } : s); }
       if (data.type === 'success_title') slotTitle = { val: data.val, state: 'found' };
@@ -268,14 +283,28 @@
     });
     socket.on('reveal_cover', ({ cover }) => { if (cover) { coverSrc = cover; showCover = true; } });
     socket.on('round_end', data => {
-      const dashIdx    = data.answer.indexOf(' - ');
-      const fullArtist = dashIdx > -1 ? data.answer.slice(0, dashIdx) : data.answer;
-      const title      = dashIdx > -1 ? data.answer.slice(dashIdx + 3) : '\u2014';
-      const feats      = data.featArtists || [];
-      const mainArtist = feats.length ? parseFeat(fullArtist).main : fullArtist;
-      slotArtist = { val: mainArtist, state: data.foundArtist ? 'found' : 'missed' };
-      featSlots  = feats.map((fa, i) => ({ val: fa, state: (data.foundFeats || [])[i] ? 'found' : 'missed' }));
-      slotTitle  = { val: title || '\u2014', state: data.foundTitle ? 'found' : 'missed' };
+      if (data.answerSlots) {
+        useCustomSlots = true;
+        answerSlots = data.answerSlots.map((s, i) => ({
+          label: s.label,
+          val: s.value,
+          state: (data.foundAnswers?.[i]) ? 'found' : 'missed',
+        }));
+        featSlots = [];
+        slotArtist = { val: '???', state: null };
+        slotTitle  = { val: '???', state: null };
+      } else {
+        useCustomSlots = false;
+        answerSlots = [];
+        const dashIdx    = data.answer.indexOf(' - ');
+        const fullArtist = dashIdx > -1 ? data.answer.slice(0, dashIdx) : data.answer;
+        const title      = dashIdx > -1 ? data.answer.slice(dashIdx + 3) : '\u2014';
+        const feats      = data.featArtists || [];
+        const mainArtist = feats.length ? parseFeat(fullArtist).main : fullArtist;
+        slotArtist = { val: mainArtist, state: data.foundArtist ? 'found' : 'missed' };
+        featSlots  = feats.map((fa, i) => ({ val: fa, state: (data.foundFeats || [])[i] ? 'found' : 'missed' }));
+        slotTitle  = { val: title || '\u2014', state: data.foundTitle ? 'found' : 'missed' };
+      }
       if (data.cover) { coverSrc = data.cover; showCover = true; }
       summaryShow = true;
       summaryReason = data.reason;
@@ -431,20 +460,29 @@
 
         <!-- Slots artiste / titre -->
         <div class="g-slots">
-          <div class="g-slot {slotArtist.state || ''}">
-            <span class="g-slot-label">Artiste</span>
-            <div class="g-slot-val">{slotArtist.val}</div>
-          </div>
-          {#each featSlots as fs, i}
-            <div class="g-slot g-slot-feat {fs.state || ''}">
-              <span class="g-slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
-              <div class="g-slot-val">{fs.val}</div>
+          {#if useCustomSlots}
+            {#each answerSlots as slot}
+              <div class="g-slot {slot.state || ''}">
+                <span class="g-slot-label">{slot.label}</span>
+                <div class="g-slot-val">{slot.val}</div>
+              </div>
+            {/each}
+          {:else}
+            <div class="g-slot {slotArtist.state || ''}">
+              <span class="g-slot-label">Artiste</span>
+              <div class="g-slot-val">{slotArtist.val}</div>
             </div>
-          {/each}
-          <div class="g-slot {slotTitle.state || ''}">
-            <span class="g-slot-label">Titre</span>
-            <div class="g-slot-val">{slotTitle.val}</div>
-          </div>
+            {#each featSlots as fs, i}
+              <div class="g-slot g-slot-feat {fs.state || ''}">
+                <span class="g-slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
+                <div class="g-slot-val">{fs.val}</div>
+              </div>
+            {/each}
+            <div class="g-slot {slotTitle.state || ''}">
+              <span class="g-slot-label">Titre</span>
+              <div class="g-slot-val">{slotTitle.val}</div>
+            </div>
+          {/if}
         </div>
 
         <!-- Feedback toast -->

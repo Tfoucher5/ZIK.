@@ -4,7 +4,17 @@
       "Bash(ls -la \"c:\\\\Users\\\\Teamr\\\\Desktop\\\\ZIK\\\\public\\\\css\"\" 2>/dev/null || echo \"Path not found \")",
       "mcp__claude_ai_Notion__notion-search",
       "mcp__claude_ai_Notion__notion-fetch",
-      "Bash(cat \"src/routes/\\(site\\)/salon/+layout@.svelte\")"
+      "Bash(cat \"src/routes/\\(site\\)/salon/+layout@.svelte\")",
+      "Bash(find /c/ZIK/src -type f \\\\\\( -name \"*.svelte\" -o -name \"*.ts\" -o -name \"*.js\" \\\\\\) -exec grep -l \"socket\" {} \\\\;)",
+      "WebFetch(domain:www.blinest.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:blinest.com)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(npx --yes svelte-check --tsconfig ./jsconfig.json)",
+      "Bash(node --check src/lib/server/services/playlist.js src/lib/server/socket/game.js src/lib/server/socket/salon.js \"src/routes/\\(site\\)/api/playlists/tracks/[trackId]/answers/+server.js\")"
     ]
   }
 }
