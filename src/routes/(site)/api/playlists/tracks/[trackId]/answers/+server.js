@@ -56,7 +56,8 @@ export async function PUT({ params, request }) {
   const track = await getOwnedTrack(uSupa, params.trackId, user.id);
   if (!track) return json({ error: "Non autorisé" }, { status: 403 });
 
-  const { custom_artist, custom_title, custom_feats, extra_answers } = await request.json();
+  const { custom_artist, custom_title, custom_feats, extra_answers } =
+    await request.json();
 
   const feats =
     Array.isArray(custom_feats) && custom_feats.length

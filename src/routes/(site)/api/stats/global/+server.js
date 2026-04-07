@@ -19,7 +19,7 @@ export async function GET() {
     _cache = { users: users ?? 0, publicRooms: publicRooms ?? 0 };
     _cacheExp = Date.now() + 60_000; // cache 1 min
     return json(_cache);
-  } catch (e) {
+  } catch {
     return json({ users: 0, publicRooms: 0 }, { status: 500 });
   }
 }

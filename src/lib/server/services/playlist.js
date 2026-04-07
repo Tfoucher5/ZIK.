@@ -78,10 +78,21 @@ export function parseFeaturing(artistStr) {
   return { main: artistStr, feats: [] };
 }
 
-export function buildTrack({ artist, title, cover, preview_url, custom_artist, custom_title, custom_feats, extraAnswers }) {
+export function buildTrack({
+  artist,
+  title,
+  cover,
+  preview_url,
+  custom_artist,
+  custom_title,
+  custom_feats,
+  extraAnswers,
+}) {
   const effectiveArtist = custom_artist || artist;
   const { main, feats: parsedFeats } = parseFeaturing(effectiveArtist || "");
-  const effectiveFeats = Array.isArray(custom_feats) ? custom_feats : parsedFeats;
+  const effectiveFeats = Array.isArray(custom_feats)
+    ? custom_feats
+    : parsedFeats;
   const effectiveTitle = custom_title || title || "";
   const extras = (extraAnswers || []).map((e) => ({
     label: e.label,
@@ -136,7 +147,9 @@ export async function loadPlaylist(roomId) {
     try {
       const { data: trackRows } = await supabase
         .from("custom_playlist_tracks")
-        .select("artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))")
+        .select(
+          "artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
+        )
         .eq("playlist_id", dbRoom.playlist_id)
         .order("position");
       if (trackRows?.length >= 3) {

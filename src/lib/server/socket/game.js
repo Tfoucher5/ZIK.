@@ -97,8 +97,12 @@ function checkEveryoneFound(roomId, io) {
   const track = room.game.currentTrack;
   const activePlayers = Object.values(room.players);
   const allDone = (p) => {
-    const allFeats = (track?.cleanFeatArtists || []).every((_, i) => p.foundFeats[i]);
-    const allExtras = (track?.extraAnswers || []).every((_, i) => p.foundExtras[i]);
+    const allFeats = (track?.cleanFeatArtists || []).every(
+      (_, i) => p.foundFeats[i],
+    );
+    const allExtras = (track?.extraAnswers || []).every(
+      (_, i) => p.foundExtras[i],
+    );
     return p.foundArtist && p.foundTitle && allFeats && allExtras;
   };
   if (
@@ -125,7 +129,10 @@ function endRound(roomId, reason, io) {
     firstFinder: game.firstFullFinder,
     totalFound: game.totalFullFound,
     featArtists: (track.featArtists || []).map(displayString),
-    extraAnswers: (track.extraAnswers || []).map((e) => ({ label: e.label, value: e.value })),
+    extraAnswers: (track.extraAnswers || []).map((e) => ({
+      label: e.label,
+      value: e.value,
+    })),
   };
   game.history.push(summary);
 
@@ -601,95 +608,95 @@ export function register(io) {
       let hit = false;
 
       if (!user.foundArtist) {
-          if (checkMatch(input, track.cleanArtist)) {
-            user.foundArtist = true;
-            user.score += 1 + speedBonus;
-            socket.emit("feedback", {
-              type: "success_artist",
-              msg: `Artiste ! (+${1 + speedBonus} pts)`,
-              val: displayString(track.mainArtist || track.artist),
-              cover,
-            });
-            hit = true;
-          } else if (!hit && checkClose(input, track.cleanArtist)) {
-            socket.emit("feedback", {
-              type: "close",
-              msg: "Tu chauffes sur l'artiste !",
-            });
-            hit = true;
-          }
+        if (checkMatch(input, track.cleanArtist)) {
+          user.foundArtist = true;
+          user.score += 1 + speedBonus;
+          socket.emit("feedback", {
+            type: "success_artist",
+            msg: `Artiste ! (+${1 + speedBonus} pts)`,
+            val: displayString(track.mainArtist || track.artist),
+            cover,
+          });
+          hit = true;
+        } else if (!hit && checkClose(input, track.cleanArtist)) {
+          socket.emit("feedback", {
+            type: "close",
+            msg: "Tu chauffes sur l'artiste !",
+          });
+          hit = true;
         }
+      }
 
-        for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
-          if (user.foundFeats[fi]) continue;
-          const cleanFeat = track.cleanFeatArtists[fi];
-          if (checkMatch(input, cleanFeat)) {
-            user.foundFeats[fi] = true;
+      for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
+        if (user.foundFeats[fi]) continue;
+        const cleanFeat = track.cleanFeatArtists[fi];
+        if (checkMatch(input, cleanFeat)) {
+          user.foundFeats[fi] = true;
+          user.score += 1 + speedBonus;
+          socket.emit("feedback", {
+            type: "success_feat",
+            featIndex: fi,
+            msg: `Feat ! (+${1 + speedBonus} pts)`,
+            val: displayString(track.featArtists[fi]),
+            cover,
+          });
+          hit = true;
+          break;
+        } else if (!hit && checkClose(input, cleanFeat)) {
+          socket.emit("feedback", {
+            type: "close",
+            msg: "Tu chauffes sur le feat !",
+          });
+          hit = true;
+        }
+      }
+
+      if (!user.foundTitle) {
+        if (checkMatch(input, track.cleanTitle)) {
+          user.foundTitle = true;
+          user.score += 1 + speedBonus;
+          socket.emit("feedback", {
+            type: "success_title",
+            msg: `Titre ! (+${1 + speedBonus} pts)`,
+            val: displayString(track.title),
+            cover,
+          });
+          hit = true;
+        } else if (!hit && checkClose(input, track.cleanTitle)) {
+          socket.emit("feedback", {
+            type: "close",
+            msg: "Tu chauffes sur le titre !",
+          });
+          hit = true;
+        }
+      }
+
+      if (!hit) {
+        for (let ei = 0; ei < (track.extraAnswers || []).length; ei++) {
+          if (user.foundExtras[ei]) continue;
+          const extra = track.extraAnswers[ei];
+          if (checkMatch(input, extra.clean)) {
+            user.foundExtras[ei] = true;
             user.score += 1 + speedBonus;
             socket.emit("feedback", {
-              type: "success_feat",
-              featIndex: fi,
-              msg: `Feat ! (+${1 + speedBonus} pts)`,
-              val: displayString(track.featArtists[fi]),
+              type: "success_extra",
+              extraIndex: ei,
+              msg: `${extra.label} ! (+${1 + speedBonus} pts)`,
+              val: extra.value,
               cover,
             });
             hit = true;
             break;
-          } else if (!hit && checkClose(input, cleanFeat)) {
+          } else if (checkClose(input, extra.clean)) {
             socket.emit("feedback", {
               type: "close",
-              msg: "Tu chauffes sur le feat !",
+              msg: `Tu chauffes sur ${extra.label} !`,
             });
             hit = true;
+            break;
           }
         }
-
-        if (!user.foundTitle) {
-          if (checkMatch(input, track.cleanTitle)) {
-            user.foundTitle = true;
-            user.score += 1 + speedBonus;
-            socket.emit("feedback", {
-              type: "success_title",
-              msg: `Titre ! (+${1 + speedBonus} pts)`,
-              val: displayString(track.title),
-              cover,
-            });
-            hit = true;
-          } else if (!hit && checkClose(input, track.cleanTitle)) {
-            socket.emit("feedback", {
-              type: "close",
-              msg: "Tu chauffes sur le titre !",
-            });
-            hit = true;
-          }
-        }
-
-        if (!hit) {
-          for (let ei = 0; ei < (track.extraAnswers || []).length; ei++) {
-            if (user.foundExtras[ei]) continue;
-            const extra = track.extraAnswers[ei];
-            if (checkMatch(input, extra.clean)) {
-              user.foundExtras[ei] = true;
-              user.score += 1 + speedBonus;
-              socket.emit("feedback", {
-                type: "success_extra",
-                extraIndex: ei,
-                msg: `${extra.label} ! (+${1 + speedBonus} pts)`,
-                val: extra.value,
-                cover,
-              });
-              hit = true;
-              break;
-            } else if (checkClose(input, extra.clean)) {
-              socket.emit("feedback", {
-                type: "close",
-                msg: `Tu chauffes sur ${extra.label} !`,
-              });
-              hit = true;
-              break;
-            }
-          }
-        }
+      }
 
       if (!hit)
         socket.emit("feedback", { type: "miss", msg: "Pas du tout..." });

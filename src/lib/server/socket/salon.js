@@ -38,7 +38,9 @@ async function loadTracksForPlaylist(playlistId) {
   try {
     const { data: rows } = await supabase
       .from("custom_playlist_tracks")
-      .select("artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))")
+      .select(
+        "artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
+      )
       .eq("playlist_id", playlistId)
       .order("position");
     if (rows?.length) {
@@ -231,9 +233,7 @@ function getPlayerList(salon) {
     score: p.score,
     foundThisRound: p._fullFoundCounted,
     answeredThisRound:
-      p.foundArtist ||
-      p.foundTitle ||
-      p.foundFeats.some(Boolean),
+      p.foundArtist || p.foundTitle || p.foundFeats.some(Boolean),
   }));
 }
 
@@ -252,8 +252,12 @@ function resetRoundFlags(salon) {
 
 // Returns true if this player has found everything for the current track
 function playerFullyFound(player, track) {
-  const allFeats = (track.cleanFeatArtists || []).every((_, i) => player.foundFeats[i]);
-  const allExtras = (track.extraAnswers || []).every((_, i) => player.foundExtras[i]);
+  const allFeats = (track.cleanFeatArtists || []).every(
+    (_, i) => player.foundFeats[i],
+  );
+  const allExtras = (track.extraAnswers || []).every(
+    (_, i) => player.foundExtras[i],
+  );
   return player.foundArtist && player.foundTitle && allFeats && allExtras;
 }
 
@@ -623,7 +627,9 @@ export function registerSalon(io) {
             timerActive: salon.game.timerActive,
           };
           if (salon.game.phase === "round") {
-            reconnectData.extras = (salon.game.currentTrack?.extraAnswers || []).map((e) => ({ label: e.label }));
+            reconnectData.extras = (
+              salon.game.currentTrack?.extraAnswers || []
+            ).map((e) => ({ label: e.label }));
             if (salon.settings.answerMode === "multiple") {
               reconnectData.choices = salon.game.choices;
               reconnectData.featCount =
@@ -738,106 +744,106 @@ export function registerSalon(io) {
       let hit = false;
 
       if (!player.foundArtist) {
-          if (checkMatch(input, track.cleanArtist)) {
-            player.foundArtist = true;
+        if (checkMatch(input, track.cleanArtist)) {
+          player.foundArtist = true;
+          player.score += 1 + bonus;
+          socket.emit("salon_feedback", {
+            type: "success_artist",
+            correct: true,
+            points: 1 + bonus,
+            msg: `Artiste ! (+${1 + bonus} pts)`,
+          });
+          hit = true;
+        } else if (checkClose(input, track.cleanArtist)) {
+          socket.emit("salon_feedback", {
+            type: "close",
+            correct: false,
+            points: 0,
+            msg: "Tu chauffes sur l'artiste !",
+          });
+          hit = true;
+        }
+      }
+
+      if (!hit) {
+        for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
+          if (player.foundFeats[fi]) continue;
+          if (checkMatch(input, track.cleanFeatArtists[fi])) {
+            player.foundFeats[fi] = true;
             player.score += 1 + bonus;
             socket.emit("salon_feedback", {
-              type: "success_artist",
+              type: "success_feat",
               correct: true,
               points: 1 + bonus,
-              msg: `Artiste ! (+${1 + bonus} pts)`,
+              msg: `Feat ! (+${1 + bonus} pts)`,
             });
             hit = true;
-          } else if (checkClose(input, track.cleanArtist)) {
+            break;
+          } else if (checkClose(input, track.cleanFeatArtists[fi])) {
             socket.emit("salon_feedback", {
               type: "close",
               correct: false,
               points: 0,
-              msg: "Tu chauffes sur l'artiste !",
+              msg: "Tu chauffes sur le feat !",
+            });
+            hit = true;
+            break;
+          }
+        }
+      }
+
+      if (!hit) {
+        if (!player.foundTitle) {
+          if (checkMatch(input, track.cleanTitle)) {
+            player.foundTitle = true;
+            player.score += 1 + bonus;
+            socket.emit("salon_feedback", {
+              type: "success_title",
+              correct: true,
+              points: 1 + bonus,
+              msg: `Titre ! (+${1 + bonus} pts)`,
+            });
+            hit = true;
+          } else if (checkClose(input, track.cleanTitle)) {
+            socket.emit("salon_feedback", {
+              type: "close",
+              correct: false,
+              points: 0,
+              msg: "Tu chauffes sur le titre !",
             });
             hit = true;
           }
         }
+      }
 
-        if (!hit) {
-          for (let fi = 0; fi < track.cleanFeatArtists.length; fi++) {
-            if (player.foundFeats[fi]) continue;
-            if (checkMatch(input, track.cleanFeatArtists[fi])) {
-              player.foundFeats[fi] = true;
-              player.score += 1 + bonus;
-              socket.emit("salon_feedback", {
-                type: "success_feat",
-                correct: true,
-                points: 1 + bonus,
-                msg: `Feat ! (+${1 + bonus} pts)`,
-              });
-              hit = true;
-              break;
-            } else if (checkClose(input, track.cleanFeatArtists[fi])) {
-              socket.emit("salon_feedback", {
-                type: "close",
-                correct: false,
-                points: 0,
-                msg: "Tu chauffes sur le feat !",
-              });
-              hit = true;
-              break;
-            }
+      if (!hit) {
+        for (let ei = 0; ei < (track.extraAnswers || []).length; ei++) {
+          if (player.foundExtras[ei]) continue;
+          const extra = track.extraAnswers[ei];
+          if (checkMatch(input, extra.clean)) {
+            player.foundExtras[ei] = true;
+            player.score += 1 + bonus;
+            socket.emit("salon_feedback", {
+              type: "success_extra",
+              extraIndex: ei,
+              correct: true,
+              points: 1 + bonus,
+              msg: `${extra.label} ! (+${1 + bonus} pts)`,
+            });
+            hit = true;
+            break;
+          } else if (checkClose(input, extra.clean)) {
+            socket.emit("salon_feedback", {
+              type: "close",
+              correct: false,
+              points: 0,
+              msg: `Tu chauffes sur ${extra.label} !`,
+            });
+            hit = true;
+            break;
           }
         }
-
-        if (!hit) {
-          if (!player.foundTitle) {
-            if (checkMatch(input, track.cleanTitle)) {
-              player.foundTitle = true;
-              player.score += 1 + bonus;
-              socket.emit("salon_feedback", {
-                type: "success_title",
-                correct: true,
-                points: 1 + bonus,
-                msg: `Titre ! (+${1 + bonus} pts)`,
-              });
-              hit = true;
-            } else if (checkClose(input, track.cleanTitle)) {
-              socket.emit("salon_feedback", {
-                type: "close",
-                correct: false,
-                points: 0,
-                msg: "Tu chauffes sur le titre !",
-              });
-              hit = true;
-            }
-          }
-        }
-
-        if (!hit) {
-          for (let ei = 0; ei < (track.extraAnswers || []).length; ei++) {
-            if (player.foundExtras[ei]) continue;
-            const extra = track.extraAnswers[ei];
-            if (checkMatch(input, extra.clean)) {
-              player.foundExtras[ei] = true;
-              player.score += 1 + bonus;
-              socket.emit("salon_feedback", {
-                type: "success_extra",
-                extraIndex: ei,
-                correct: true,
-                points: 1 + bonus,
-                msg: `${extra.label} ! (+${1 + bonus} pts)`,
-              });
-              hit = true;
-              break;
-            } else if (checkClose(input, extra.clean)) {
-              socket.emit("salon_feedback", {
-                type: "close",
-                correct: false,
-                points: 0,
-                msg: `Tu chauffes sur ${extra.label} !`,
-              });
-              hit = true;
-              break;
-            }
-          }
-        }
+      }
 
       if (!hit) {
         socket.emit("salon_feedback", {
