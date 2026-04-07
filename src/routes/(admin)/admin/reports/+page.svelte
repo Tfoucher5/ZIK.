@@ -8,6 +8,7 @@
 
   let expandedId = $state(null);
   let noteValues = $state({});
+  let replyValues = $state({});
 
   const TYPE_LABELS  = { bug: '🐛 Bug', user: '🚨 Joueur', contact: '✉️ Contact' };
   const STATUS_COLORS = { pending: '#f59e0b', resolved: '#4ade80', dismissed: '#6b7280' };
@@ -57,8 +58,8 @@
           <span class="rp-type">{TYPE_LABELS[r.type] || r.type}</span>
           <span class="rp-dot" style="background:{STATUS_COLORS[r.status]}"></span>
           <span class="rp-from">
-            {#if r.reporter_name || r.reporter_email}
-              {r.reporter_name || ''}{r.reporter_name && r.reporter_email ? ' — ' : ''}{r.reporter_email || ''}
+            {#if r.resolved_username || r.reporter_email}
+              {r.resolved_username || ''}{r.resolved_username && r.reporter_email ? ' — ' : ''}{r.reporter_email || ''}
             {:else}
               Anonyme
             {/if}
@@ -66,7 +67,9 @@
           {#if r.reported_username}
             <span class="rp-target">→ {r.reported_username}</span>
           {/if}
-          {#if r.room_id}
+          {#if r.resolved_room}
+            <span class="rp-room">{r.resolved_room.emoji} {r.resolved_room.name}</span>
+          {:else if r.room_id}
             <span class="rp-room">room: {r.room_id}</span>
           {/if}
           <span class="rp-date">{fmt(r.created_at)}</span>
@@ -87,6 +90,7 @@
 
             <form method="POST" action="?/updateStatus" use:enhance class="rp-actions">
               <input type="hidden" name="id" value={r.id}>
+
               <textarea
                 name="admin_note"
                 class="rp-note"
@@ -94,6 +98,29 @@
                 rows="2"
                 bind:value={noteValues[r.id]}
               >{r.admin_note || ''}</textarea>
+
+              {#if r.reporter_email || r.resolved_username}
+                <div class="rp-reply-wrap">
+                  <label class="rp-label" for="reply-{r.id}">
+                    💬 Réponse à envoyer
+                    {#if r.reporter_email}<span class="rp-label-sub">→ {r.reporter_email}</span>{/if}
+                    {#if !r.reporter_email}<span class="rp-label-sub rp-label-warn">⚠ pas d'email — stocké uniquement</span>{/if}
+                  </label>
+                  <textarea
+                    id="reply-{r.id}"
+                    name="admin_reply"
+                    class="rp-note rp-note-reply"
+                    placeholder="Écris ta réponse ici…"
+                    rows="3"
+                    bind:value={replyValues[r.id]}
+                  >{r.admin_reply || ''}</textarea>
+                </div>
+              {/if}
+
+              {#if r.admin_reply}
+                <p class="rp-note-saved">💾 Réponse enregistrée : <em>{r.admin_reply}</em></p>
+              {/if}
+
               <div class="rp-btns">
                 <button name="status" value="resolved" class="rp-btn rp-btn-resolve">✓ Résolu</button>
                 <button name="status" value="dismissed" class="rp-btn rp-btn-dismiss">✕ Ignorer</button>
@@ -234,4 +261,12 @@
 .rp-btn-resolve  { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
 .rp-btn-dismiss  { background: rgba(107,114,128,0.15); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
 .rp-btn-reopen   { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.rp-reply-wrap { display: flex; flex-direction: column; gap: 6px; }
+.rp-label { font-size: 0.78rem; font-weight: 600; color: #94a3b8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rp-label-sub { font-weight: 400; color: #6366f1; }
+.rp-label-warn { color: #f59e0b; }
+.rp-note-reply { border-color: rgba(99,102,241,0.3); }
+.rp-note-reply:focus { border-color: #6366f1; }
+.rp-note-saved { font-size: 0.75rem; color: #4ade80; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15); border-radius: 6px; padding: 6px 10px; line-height: 1.5; }
+.rp-note-saved em { font-style: normal; color: #94a3b8; }
 </style>

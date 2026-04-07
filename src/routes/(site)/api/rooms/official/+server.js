@@ -37,16 +37,18 @@ export async function GET() {
       }));
       _cache.set(base);
     }
-    const result = base.map((r) => ({
-      ...r,
-      online: Object.values(roomGames)
-        .filter((g) => g.roomId === r.id)
-        .reduce(
-          (acc, g) =>
-            acc + Object.values(g.players).filter((p) => !p._dcTimer).length,
-          0,
-        ),
-    }));
+    const result = base
+      .map((r) => ({
+        ...r,
+        online: Object.values(roomGames)
+          .filter((g) => g.roomId === r.id)
+          .reduce(
+            (acc, g) =>
+              acc + Object.values(g.players).filter((p) => !p._dcTimer).length,
+            0,
+          ),
+      }))
+      .sort((a, b) => b.online - a.online);
     return json(result);
   } catch (e) {
     return json({ error: e.message }, { status: 500 });

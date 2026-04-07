@@ -123,7 +123,49 @@ export async function loadPlaylist(roomId) {
   if (playlistCache[roomId]?.length > 0) return playlistCache[roomId];
 
   const dbRoom = dbRooms[roomId];
-  if (dbRoom?.playlist_id) {
+  if (!dbRoom) {
+    console.warn(`Room "${roomId}": aucun fallback disponible`);
+    return [];
+  }
+
+  // Essayer d'abord room_playlists (multi-playlist)
+  try {
+    const { data: links } = await supabase
+      .from("room_playlists")
+      .select("playlist_id, position")
+      .eq("room_id", dbRoom.id)
+      .order("position");
+
+    if (links?.length > 0) {
+      const playlistIds = links.map((l) => l.playlist_id);
+      const { data: trackRows } = await supabase
+        .from("custom_playlist_tracks")
+        .select("artist, title, cover_url, preview_url")
+        .in("playlist_id", playlistIds)
+        .order("position");
+
+      if (trackRows?.length >= 3) {
+        const tracks = trackRows.map((t) =>
+          buildTrack({
+            artist: t.artist,
+            title: t.title,
+            cover: t.cover_url,
+            preview_url: t.preview_url,
+          }),
+        );
+        playlistCache[roomId] = tracks;
+        console.log(
+          `Room DB "${roomId}": ${tracks.length} titres chargés (${playlistIds.length} playlist(s))`,
+        );
+        return tracks;
+      }
+    }
+  } catch {
+    /* fallback vers playlist_id legacy */
+  }
+
+  // Fallback : playlist_id unique (legacy)
+  if (dbRoom.playlist_id) {
     try {
       const { data: trackRows } = await supabase
         .from("custom_playlist_tracks")
@@ -140,16 +182,18 @@ export async function loadPlaylist(roomId) {
           }),
         );
         playlistCache[roomId] = tracks;
-        console.log(`Room DB "${roomId}": ${tracks.length} titres charges`);
+        console.log(
+          `Room DB "${roomId}": ${tracks.length} titres chargés (legacy)`,
+        );
         return tracks;
       }
     } catch {
-      /* fallback below */
+      /* rien */
     }
     return [];
   }
 
-  console.warn(`Room "${roomId}": aucun fallback disponible`);
+  console.warn(`Room "${roomId}": aucune playlist configurée`);
   return [];
 }
 
@@ -159,9 +203,8 @@ export async function preloadAllPlaylists() {
     const { data: dbRoomsList } = await supabase
       .from("rooms")
       .select(
-        "code, name, emoji, max_rounds, round_duration, break_duration, playlist_id",
-      )
-      .not("playlist_id", "is", null);
+        "id, code, name, emoji, max_rounds, round_duration, break_duration, playlist_id",
+      );
     if (!dbRoomsList?.length) {
       console.log("Aucune room DB avec playlist configuree.");
       return;

@@ -97,7 +97,15 @@
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      profile = { ...profile, username, avatar_url: avatar_url || null };
+      const updatedProfile = { ...profile, username, avatar_url: avatar_url || null };
+      profile = updatedProfile;
+      // Mettre à jour le cache sessionStorage pour que le layout reflète les changements immédiatement
+      if (user?.id) {
+        try {
+          sessionStorage.setItem('zik_profile_' + user.id, JSON.stringify({ p: updatedProfile, ts: Date.now() }));
+        } catch { /* sessionStorage indisponible */ }
+        sessionStorage.setItem('zik_uname', username);
+      }
       editOpen = false;
       toast('Profil mis \u00e0 jour !', 'success');
     } catch (e) {

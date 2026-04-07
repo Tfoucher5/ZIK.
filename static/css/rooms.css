@@ -293,3 +293,46 @@
 .rooms-search::placeholder {
   color: var(--dim);
 }
+
+/* ── Badge online ────────────────────────────────────────────────────────── */
+.room-card-online {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.07);
+}
+
+/* ── Playlist picker (modal) ─────────────────────────────────────────────── */
+.pl-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.pl-picker-row:hover {
+  background: rgb(var(--c-glass) / 0.08);
+}
+.pl-picker-row.selected {
+  background: rgba(var(--c-accent-rgb, 124, 58, 237) / 0.12);
+}
+.pl-picker-check {
+  width: 16px;
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pl-picker-group {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+.pl-picker-count {
+  font-size: 0.72rem;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+.pl-picker-row.selected .pl-picker-count {
+  color: var(--accent);
+}

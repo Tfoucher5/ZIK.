@@ -1,5 +1,6 @@
 import { json } from "@sveltejs/kit";
 import { supabase } from "$lib/server/config.js";
+import { roomGames } from "$lib/server/state.js";
 import {
   requireAuth,
   verifyToken,
@@ -26,7 +27,7 @@ export async function GET({ request }) {
   let query = supabase
     .from("rooms")
     .select(
-      "id, code, name, emoji, description, is_public, is_official, auto_start, max_rounds, round_duration, break_duration, last_active_at, owner_id, playlist_id, profiles!owner_id(username, avatar_url)",
+      "id, code, name, emoji, description, is_public, is_official, auto_start, max_rounds, round_duration, break_duration, last_active_at, owner_id, playlist_id, profiles!owner_id(username, avatar_url), custom_playlists!playlist_id(track_count), room_playlists(playlist_id, position, custom_playlists(id, name, emoji, track_count))",
     )
     .order("last_active_at", { ascending: false })
     .limit(50);
@@ -35,7 +36,65 @@ export async function GET({ request }) {
 
   const { data, error } = await query;
   if (error) return json({ error: error.message }, { status: 400 });
-  return json(data);
+
+  const result = (data || []).map((r) => {
+    // Nombre de joueurs en live
+    const online = Object.values(roomGames)
+      .filter((g) => g.roomId === r.code)
+      .reduce(
+        (acc, g) =>
+          acc + Object.values(g.players).filter((p) => !p._dcTimer).length,
+        0,
+      );
+
+    // Playlists liées (new system) ou fallback sur playlist_id
+    const playlists =
+      r.room_playlists?.length > 0
+        ? r.room_playlists
+            .sort((a, b) => a.position - b.position)
+            .map((rp) => rp.custom_playlists)
+            .filter(Boolean)
+        : r.custom_playlists
+          ? [r.custom_playlists]
+          : [];
+
+    const track_count = playlists.reduce(
+      (sum, pl) => sum + (pl?.track_count || 0),
+      0,
+    );
+
+    const playlist_ids =
+      r.room_playlists?.length > 0
+        ? r.room_playlists
+            .sort((a, b) => a.position - b.position)
+            .map((rp) => rp.playlist_id)
+        : r.playlist_id
+          ? [r.playlist_id]
+          : [];
+
+    return {
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      emoji: r.emoji,
+      description: r.description,
+      is_public: r.is_public,
+      is_official: r.is_official,
+      auto_start: r.auto_start,
+      max_rounds: r.max_rounds,
+      round_duration: r.round_duration,
+      break_duration: r.break_duration,
+      last_active_at: r.last_active_at,
+      owner_id: r.owner_id,
+      profiles: r.profiles,
+      playlists,
+      playlist_ids,
+      track_count,
+      online,
+    };
+  });
+
+  return json(result);
 }
 
 export async function POST({ request }) {
@@ -48,7 +107,7 @@ export async function POST({ request }) {
     name,
     emoji,
     description,
-    playlist_id,
+    playlist_ids,
     is_public,
     max_rounds,
     round_duration,
@@ -56,6 +115,8 @@ export async function POST({ request }) {
     auto_start,
   } = body || {};
   if (!name?.trim()) return json({ error: "name requis" }, { status: 400 });
+  if (!playlist_ids?.length)
+    return json({ error: "Au moins une playlist requise" }, { status: 400 });
 
   const { data, error } = await userClient(token)
     .from("rooms")
@@ -64,7 +125,7 @@ export async function POST({ request }) {
       emoji: emoji || "🎵",
       description: String(description || "").slice(0, 200),
       owner_id: user.id,
-      playlist_id: playlist_id || null,
+      playlist_id: playlist_ids[0] || null,
       is_public: is_public !== false,
       auto_start: auto_start === true,
       max_rounds: Math.min(Math.max(parseInt(max_rounds) || 10, 3), 50),
@@ -78,5 +139,14 @@ export async function POST({ request }) {
     .single();
 
   if (error) return json({ error: error.message }, { status: 400 });
+
+  // Insérer les liaisons room <-> playlists
+  const links = playlist_ids.map((pid, i) => ({
+    room_id: data.id,
+    playlist_id: pid,
+    position: i,
+  }));
+  await supabase.from("room_playlists").insert(links);
+
   return json(data);
 }
