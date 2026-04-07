@@ -18,8 +18,12 @@ export async function load({ url }) {
   const rows = reports || [];
 
   // Résoudre les noms de reporters et de rooms en parallèle
-  const reporterIds = [...new Set(rows.filter((r) => r.reporter_id).map((r) => r.reporter_id))];
-  const roomCodes = [...new Set(rows.filter((r) => r.room_id).map((r) => r.room_id))];
+  const reporterIds = [
+    ...new Set(rows.filter((r) => r.reporter_id).map((r) => r.reporter_id)),
+  ];
+  const roomCodes = [
+    ...new Set(rows.filter((r) => r.room_id).map((r) => r.room_id)),
+  ];
 
   const [profilesRes, roomsRes] = await Promise.all([
     reporterIds.length
@@ -39,7 +43,8 @@ export async function load({ url }) {
 
   const enriched = rows.map((r) => ({
     ...r,
-    resolved_username: profileMap[r.reporter_id]?.username || r.reporter_name || null,
+    resolved_username:
+      profileMap[r.reporter_id]?.username || r.reporter_name || null,
     resolved_room: roomMap[r.room_id] || null,
   }));
 

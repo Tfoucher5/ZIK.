@@ -51,7 +51,8 @@ export async function POST({ request }) {
 
   let resolvedEmail = reporter_email?.trim() || null;
   if (!resolvedEmail && reporter_id) {
-    const { data: authUser } = await supabase.auth.admin.getUserById(reporter_id);
+    const { data: authUser } =
+      await supabase.auth.admin.getUserById(reporter_id);
     resolvedEmail = authUser?.user?.email || null;
   }
 
