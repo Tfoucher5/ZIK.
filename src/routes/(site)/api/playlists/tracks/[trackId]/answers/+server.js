@@ -1,19 +1,22 @@
 import { json } from "@sveltejs/kit";
 import { verifyToken, userClient } from "$lib/server/middleware/auth.js";
+import { parseFeaturing } from "$lib/server/services/playlist.js";
 import { playlistCache, dbRooms } from "$lib/server/state.js";
 
-async function ownsTrack(uSupa, trackId, userId) {
+async function getOwnedTrack(uSupa, trackId, userId) {
   const { data } = await uSupa
     .from("custom_playlist_tracks")
-    .select("playlist_id, custom_playlists(owner_id, linked_room_id)")
+    .select(
+      "playlist_id, artist, title, custom_artist, custom_title, custom_feats, custom_playlists(owner_id)",
+    )
     .eq("id", trackId)
     .single();
-  if (data?.custom_playlists?.owner_id !== userId) return { ok: false };
-  return { ok: true, linked_room_id: data.custom_playlists.linked_room_id };
+  if (data?.custom_playlists?.owner_id !== userId) return null;
+  return data;
 }
 
 // GET /api/playlists/tracks/[trackId]/answers
-// Retourne les réponses custom d'une track + la liste des types disponibles
+// Retourne les valeurs actuelles (custom si définies, défaut sinon) + les défauts pour pré-remplir
 export async function GET({ params, request }) {
   const token = request.headers.get("authorization")?.slice(7);
   if (!token) return json({ error: "Non authentifié" }, { status: 401 });
@@ -21,25 +24,28 @@ export async function GET({ params, request }) {
   if (!user) return json({ error: "Session invalide" }, { status: 401 });
 
   const uSupa = userClient(token);
-  const { trackId } = params;
+  const track = await getOwnedTrack(uSupa, params.trackId, user.id);
+  if (!track) return json({ error: "Non autorisé" }, { status: 403 });
 
-  const ownership = await ownsTrack(uSupa, trackId, user.id);
-  if (!ownership.ok) return json({ error: "Non autorisé" }, { status: 403 });
-
-  const [{ data: answers }, { data: types }] = await Promise.all([
-    uSupa
-      .from("track_answers")
-      .select("id, answer_type_id, value, answer_types(name)")
-      .eq("track_id", trackId),
-    uSupa.from("answer_types").select("id, name").order("id"),
-  ]);
-
-  return json({ answers: answers || [], types: types || [] });
+  const parsed = parseFeaturing(track.artist || "");
+  const { data: extraRows } = await uSupa
+    .from("track_answers")
+    .select("answer_type_id, value")
+    .eq("track_id", params.trackId);
+  return json({
+    custom_artist: track.custom_artist || null,
+    custom_title: track.custom_title || null,
+    custom_feats: track.custom_feats || null,
+    default_artist: parsed.main,
+    default_feats: parsed.feats,
+    default_title: track.title,
+    extra_answers: extraRows || [],
+  });
 }
 
 // PUT /api/playlists/tracks/[trackId]/answers
-// Remplace toutes les réponses de la track par le tableau fourni
-// Body: { answers: [{ answer_type_id, value }] }
+// Enregistre les overrides artiste / titre / feats
+// Body: { custom_artist, custom_title, custom_feats }
 export async function PUT({ params, request }) {
   const token = request.headers.get("authorization")?.slice(7);
   if (!token) return json({ error: "Non authentifié" }, { status: 401 });
@@ -47,41 +53,44 @@ export async function PUT({ params, request }) {
   if (!user) return json({ error: "Session invalide" }, { status: 401 });
 
   const uSupa = userClient(token);
-  const { trackId } = params;
+  const track = await getOwnedTrack(uSupa, params.trackId, user.id);
+  if (!track) return json({ error: "Non autorisé" }, { status: 403 });
 
-  const ownership = await ownsTrack(uSupa, trackId, user.id);
-  if (!ownership.ok) return json({ error: "Non autorisé" }, { status: 403 });
+  const { custom_artist, custom_title, custom_feats, extra_answers } = await request.json();
 
-  const { answers } = await request.json();
-  if (!Array.isArray(answers))
-    return json({ error: "Format invalide" }, { status: 400 });
+  const feats =
+    Array.isArray(custom_feats) && custom_feats.length
+      ? custom_feats.map((f) => String(f).trim()).filter(Boolean)
+      : null;
 
-  const valid = answers.filter(
-    (a) => a.answer_type_id && typeof a.value === "string" && a.value.trim(),
-  );
+  const { error } = await uSupa
+    .from("custom_playlist_tracks")
+    .update({
+      custom_artist: custom_artist?.trim() || null,
+      custom_title: custom_title?.trim() || null,
+      custom_feats: feats,
+    })
+    .eq("id", params.trackId);
 
-  await uSupa.from("track_answers").delete().eq("track_id", trackId);
+  if (error) return json({ error: error.message }, { status: 400 });
 
-  if (valid.length) {
-    const { error } = await uSupa.from("track_answers").insert(
-      valid.map((a) => ({
-        track_id: trackId,
-        answer_type_id: a.answer_type_id,
-        value: a.value.trim(),
-      })),
-    );
-    if (error) return json({ error: error.message }, { status: 400 });
+  // Remplacer les réponses supplémentaires (Film, Série, etc.)
+  await uSupa.from("track_answers").delete().eq("track_id", params.trackId);
+  if (Array.isArray(extra_answers) && extra_answers.length) {
+    const rows = extra_answers
+      .filter((a) => a.type_id && a.value?.trim())
+      .map((a) => ({
+        track_id: params.trackId,
+        answer_type_id: Number(a.type_id),
+        value: String(a.value).trim(),
+      }));
+    if (rows.length) await uSupa.from("track_answers").insert(rows);
   }
 
-  // Invalider le cache de toutes les rooms qui utilisent cette playlist
-  const { data: trackRow } = await uSupa
-    .from("custom_playlist_tracks")
-    .select("playlist_id")
-    .eq("id", trackId)
-    .single();
-  if (trackRow?.playlist_id) {
+  // Invalider le cache des rooms qui utilisent cette playlist
+  if (track.playlist_id) {
     for (const [roomId, room] of Object.entries(dbRooms)) {
-      if (room.playlist_id === trackRow.playlist_id) {
+      if (room.playlist_id === track.playlist_id) {
         delete playlistCache[roomId];
       }
     }

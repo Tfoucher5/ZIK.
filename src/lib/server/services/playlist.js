@@ -78,19 +78,27 @@ export function parseFeaturing(artistStr) {
   return { main: artistStr, feats: [] };
 }
 
-export function buildTrack({ artist, title, cover, preview_url, customAnswers }) {
-  const { main, feats } = parseFeaturing(artist || "");
+export function buildTrack({ artist, title, cover, preview_url, custom_artist, custom_title, custom_feats, extraAnswers }) {
+  const effectiveArtist = custom_artist || artist;
+  const { main, feats: parsedFeats } = parseFeaturing(effectiveArtist || "");
+  const effectiveFeats = Array.isArray(custom_feats) ? custom_feats : parsedFeats;
+  const effectiveTitle = custom_title || title || "";
+  const extras = (extraAnswers || []).map((e) => ({
+    label: e.label,
+    value: e.value,
+    clean: cleanString(e.value),
+  }));
   return {
-    artist,
+    artist: effectiveArtist,
     mainArtist: main,
-    featArtists: feats,
-    title: title || "",
+    featArtists: effectiveFeats,
+    title: effectiveTitle,
     cleanArtist: cleanString(main),
-    cleanFeatArtists: feats.map(cleanString),
-    cleanTitle: cleanString(title),
+    cleanFeatArtists: effectiveFeats.map(cleanString),
+    cleanTitle: cleanString(effectiveTitle),
     cover: cover || "",
     preview_url: preview_url || null,
-    customAnswers: customAnswers?.length ? customAnswers : null,
+    extraAnswers: extras,
   };
 }
 
@@ -128,33 +136,23 @@ export async function loadPlaylist(roomId) {
     try {
       const { data: trackRows } = await supabase
         .from("custom_playlist_tracks")
-        .select("id, artist, title, cover_url, preview_url")
+        .select("artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))")
         .eq("playlist_id", dbRoom.playlist_id)
         .order("position");
       if (trackRows?.length >= 3) {
-        const trackIds = trackRows.map((t) => t.id);
-        const { data: answerRows } = await supabase
-          .from("track_answers")
-          .select("track_id, value, answer_types(name)")
-          .in("track_id", trackIds);
-
-        const answersByTrack = {};
-        for (const row of answerRows || []) {
-          if (!answersByTrack[row.track_id]) answersByTrack[row.track_id] = [];
-          answersByTrack[row.track_id].push({
-            type: row.answer_types.name,
-            value: row.value,
-            cleanValue: cleanString(row.value),
-          });
-        }
-
         const tracks = trackRows.map((t) =>
           buildTrack({
             artist: t.artist,
             title: t.title,
             cover: t.cover_url,
             preview_url: t.preview_url,
-            customAnswers: answersByTrack[t.id] || null,
+            custom_artist: t.custom_artist || null,
+            custom_title: t.custom_title || null,
+            custom_feats: t.custom_feats || null,
+            extraAnswers: (t.track_answers || []).map((a) => ({
+              label: a.answer_types?.name || "",
+              value: a.value,
+            })),
           }),
         );
         playlistCache[roomId] = tracks;

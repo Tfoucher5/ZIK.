@@ -57,36 +57,47 @@
   let adminIsOfficial = $state(false);
   let adminLinkedRoom = $state('');
 
-  // Éditeur de réponses custom par track
-  let answersModalOpen  = $state(false);
-  let answersTrack      = $state(null);  // { id, artist, title }
-  let answersData       = $state([]);    // [{ id?, answer_type_id, value }]
-  let answersTypes      = $state([]);    // [{ id, name }]
-  let answersSaving     = $state(false);
+  // Éditeur de réponses par track
+  let answersModalOpen = $state(false);
+  let answersTrack     = $state(null);
+  let customArtist     = $state('');
+  let customTitle      = $state('');
+  let customFeats      = $state([]);
+  let extraAnswers     = $state([]); // [{ typeId, value }]
+  let answersSaving    = $state(false);
+
+  const EXTRA_ANSWER_TYPES = [
+    { id: 3, name: 'Film' },
+    { id: 4, name: 'Série' },
+    { id: 5, name: 'Personnage' },
+    { id: 6, name: 'Jeu vidéo' },
+    { id: 7, name: 'Animé' },
+  ];
 
   async function openAnswersEditor(track) {
     answersTrack = track;
-    answersData  = [];
-    answersTypes = [];
+    customArtist = '';
+    customTitle  = '';
+    customFeats  = [];
+    extraAnswers = [];
     answersModalOpen = true;
     const token = (await sb.auth.getSession()).data.session?.access_token;
     const res = await fetch(`/api/playlists/tracks/${track.id}/answers`, {
       headers: { authorization: `Bearer ${token}` },
     });
-    const json = await res.json();
-    answersTypes = json.types || [];
-    answersData  = (json.answers || []).map(a => ({
-      answer_type_id: a.answer_type_id,
-      value: a.value,
-    }));
+    const data = await res.json();
+    customArtist = data.custom_artist ?? data.default_artist ?? '';
+    customTitle  = data.custom_title  ?? data.default_title  ?? '';
+    customFeats  = data.custom_feats  ?? data.default_feats  ?? [];
+    extraAnswers = (data.extra_answers || []).map(a => ({ typeId: a.answer_type_id, value: a.value }));
   }
 
-  function addAnswerRow() {
-    answersData = [...answersData, { answer_type_id: answersTypes[0]?.id ?? 1, value: '' }];
+  function addCustomFeat() {
+    customFeats = [...customFeats, ''];
   }
 
-  function removeAnswerRow(i) {
-    answersData = answersData.filter((_, idx) => idx !== i);
+  function removeCustomFeat(i) {
+    customFeats = customFeats.filter((_, idx) => idx !== i);
   }
 
   async function saveAnswers() {
@@ -95,7 +106,12 @@
     const res = await fetch(`/api/playlists/tracks/${answersTrack.id}/answers`, {
       method: 'PUT',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ answers: answersData }),
+      body: JSON.stringify({
+        custom_artist: customArtist,
+        custom_title:  customTitle,
+        custom_feats:  customFeats.filter(f => f.trim()),
+        extra_answers: extraAnswers.filter(a => a.typeId && a.value?.trim()).map(a => ({ type_id: a.typeId, value: a.value.trim() })),
+      }),
     });
     answersSaving = false;
     if (res.ok) {
@@ -850,33 +866,48 @@
 <div class="overlay" role="dialog" aria-modal="true" onclick={e => { if (e.target === e.currentTarget) answersModalOpen = false; }}>
   <div class="modal modal-lg">
     <button class="close-btn" onclick={() => answersModalOpen = false}>&#x2715;</button>
-    <h2>Réponses custom</h2>
+    <h2>Modifier les réponses</h2>
     <p class="mdesc">
       <strong>{answersTrack.artist} — {answersTrack.title}</strong><br>
-      Définis les réponses que les joueurs devront trouver. Si vide, le jeu utilisera artiste + titre par défaut.
+      Corrige l'artiste, les feats ou le titre attendus pour cette track.
     </p>
 
-    <div class="answers-list">
-      {#each answersData as row, i}
+    <div class="answer-field">
+      <label class="answer-label">Artiste principal</label>
+      <input type="text" bind:value={customArtist} class="answer-value-input" placeholder="Artiste principal…" maxlength="100">
+    </div>
+
+    <div class="answer-field">
+      <label class="answer-label">Featuring</label>
+      {#each customFeats as _, i}
         <div class="answer-row">
-          <select bind:value={row.answer_type_id} class="answer-type-select">
-            {#each answersTypes as t}
+          <input type="text" bind:value={customFeats[i]} class="answer-value-input" placeholder="Nom du feat…" maxlength="100">
+          <button class="track-remove-btn" onclick={() => removeCustomFeat(i)}>&#x2715;</button>
+        </div>
+      {/each}
+      <button class="btn-ghost sm" onclick={addCustomFeat}>+ Ajouter un feat</button>
+    </div>
+
+    <div class="answer-field">
+      <label class="answer-label">Titre</label>
+      <input type="text" bind:value={customTitle} class="answer-value-input" placeholder="Titre…" maxlength="100">
+    </div>
+
+    <div class="answer-field">
+      <label class="answer-label">Réponses supplémentaires (Film, Série…)</label>
+      {#each extraAnswers as _, i}
+        <div class="answer-row">
+          <select bind:value={extraAnswers[i].typeId} class="answer-type-select">
+            {#each EXTRA_ANSWER_TYPES as t}
               <option value={t.id}>{t.name}</option>
             {/each}
           </select>
-          <input
-            type="text"
-            bind:value={row.value}
-            placeholder="Valeur attendue…"
-            class="answer-value-input"
-            maxlength="100"
-          >
-          <button class="track-remove-btn" onclick={() => removeAnswerRow(i)}>&#x2715;</button>
+          <input type="text" bind:value={extraAnswers[i].value} class="answer-value-input" placeholder="Ex : Le Roi Lion" maxlength="150">
+          <button class="track-remove-btn" onclick={() => { extraAnswers = extraAnswers.filter((_, idx) => idx !== i); }}>&#x2715;</button>
         </div>
       {/each}
+      <button class="btn-ghost sm" onclick={() => { extraAnswers = [...extraAnswers, { typeId: 3, value: '' }]; }}>+ Ajouter Film / Série…</button>
     </div>
-
-    <button class="btn-ghost sm" onclick={addAnswerRow}>+ Ajouter une réponse</button>
 
     <div class="modal-actions">
       <button class="btn-ghost" onclick={() => answersModalOpen = false}>Annuler</button>

@@ -27,13 +27,12 @@
   let choices      = $state(null);
 
   // Per-element found state
-  let foundArtist    = $state(false);
-  let foundTitle     = $state(false);
-  let foundFeats     = $state([]);
-  let foundAnswers   = $state(null);  // mode custom
-  let answerSlots    = $state([]);    // mode custom : [{label, found}]
-  let useCustomSlots = $state(false);
-  let allFound       = $state(false);
+  let foundArtist = $state(false);
+  let foundTitle  = $state(false);
+  let foundFeats  = $state([]);
+  let foundExtras = $state([]);
+  let extras      = $state([]); // labels des réponses supplémentaires du round
+  let allFound    = $state(false);
 
   let timerStarted       = $state(false); // true once the host signals music is playing
   let chosenIndex        = $state(null);  // QCM: index clicked by this player
@@ -107,6 +106,11 @@
           foundFeats = Array(data.featCount).fill(false);
           for (let i = 0; i < (data.foundFeatCount || 0); i++) foundFeats[i] = true;
         }
+        if (data.extras) {
+          extras = data.extras.map(e => e.label);
+          foundExtras = Array(extras.length).fill(false);
+          for (let i = 0; i < (data.foundExtrasCount || 0); i++) foundExtras[i] = true;
+        }
         timerVal     = data.timerVal ?? timerVal;
         timerMax     = data.timerMax ?? timerMax;
         timerStarted = data.timerActive ?? (data.timerVal > 0);
@@ -118,6 +122,8 @@
         foundArtist = false;
         foundTitle  = false;
         foundFeats  = [];
+        foundExtras = [];
+        extras      = [];
         allFound    = false;
       }
     });
@@ -138,21 +144,11 @@
       timerVal           = 0;
       clearTimeout(revealTimer);
       revealTimer        = null;
-      if (data.answerSlots) {
-        useCustomSlots = true;
-        answerSlots    = data.answerSlots.map(s => ({ label: s.label, found: false }));
-        foundAnswers   = new Array(data.answerSlots.length).fill(false);
-        foundArtist    = false;
-        foundTitle     = false;
-        foundFeats     = [];
-      } else {
-        useCustomSlots = false;
-        answerSlots    = [];
-        foundAnswers   = null;
-        foundArtist    = false;
-        foundTitle     = false;
-        foundFeats     = Array(data.featCount || 0).fill(false);
-      }
+      foundArtist = false;
+      foundTitle  = false;
+      foundFeats  = Array(data.featCount || 0).fill(false);
+      extras      = (data.extras || []).map(e => e.label);
+      foundExtras = Array(extras.length).fill(false);
     });
 
     socket.on('salon_timer_started', ({ max }) => {
@@ -170,21 +166,18 @@
       showFeedback(data);
       if (data.correct) {
         myScore += data.points;
-        if (data.type === 'success_custom') {
-          foundAnswers = foundAnswers?.map((f, i) => i === data.answerIndex ? true : f) ?? foundAnswers;
-          answerSlots  = answerSlots.map((s, i) => i === data.answerIndex ? { ...s, found: true } : s);
-          allFound = foundAnswers?.every(Boolean) ?? false;
-        } else {
-          if (data.type === 'success_artist') foundArtist = true;
-          else if (data.type === 'success_title') {
-            foundTitle = true;
-            if (answerMode === 'multiple') foundArtist = true;
-          } else if (data.type === 'success_feat') {
-            const idx = foundFeats.findIndex(f => !f);
-            if (idx !== -1) foundFeats = foundFeats.map((f, i) => i === idx ? true : f);
-          }
-          allFound = foundArtist && foundTitle && foundFeats.every(Boolean);
+        if (data.type === 'success_artist') foundArtist = true;
+        else if (data.type === 'success_title') {
+          foundTitle = true;
+          if (answerMode === 'multiple') foundArtist = true;
+        } else if (data.type === 'success_feat') {
+          const idx = foundFeats.findIndex(f => !f);
+          if (idx !== -1) foundFeats = foundFeats.map((f, i) => i === idx ? true : f);
+        } else if (data.type === 'success_extra') {
+          const ei = data.extraIndex;
+          if (ei !== undefined) foundExtras = foundExtras.map((f, i) => i === ei ? true : f);
         }
+        allFound = foundArtist && foundTitle && foundFeats.every(Boolean) && foundExtras.every(Boolean);
       }
     });
 
@@ -290,7 +283,7 @@
           {timerVal} {timerMax} {timerStarted}
           {answerMode} {choices}
           {foundArtist} {foundTitle} {foundFeats}
-          {useCustomSlots} {answerSlots}
+          {extras} {foundExtras}
           {allFound}
           {chosenIndex}
           {revealCorrectIndex}

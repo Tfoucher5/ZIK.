@@ -7,8 +7,8 @@
     foundArtist = false,
     foundTitle = false,
     foundFeats = [],
-    useCustomSlots = false,
-    answerSlots = [],
+    extras = [],
+    foundExtras = [],
     allFound = false,
     chosenIndex = null,
     revealCorrectIndex = null,
@@ -66,17 +66,14 @@
 
 {:else if answerMode === 'free'}
   <div class="salon-progress-row">
-    {#if useCustomSlots}
-      {#each answerSlots as slot}
-        <span class="salon-progress-chip {slot.found ? 'found' : ''}">{slot.label}</span>
-      {/each}
-    {:else}
-      <span class="salon-progress-chip {foundArtist ? 'found' : ''}">🎤 Artiste</span>
-      {#each foundFeats as ff, i (i)}
-        <span class="salon-progress-chip {ff ? 'found' : ''}">🎸 Feat {i + 1}</span>
-      {/each}
-      <span class="salon-progress-chip {foundTitle ? 'found' : ''}">🎵 Titre</span>
-    {/if}
+    <span class="salon-progress-chip {foundArtist ? 'found' : ''}">🎤 Artiste</span>
+    {#each foundFeats as ff, i (i)}
+      <span class="salon-progress-chip {ff ? 'found' : ''}">🎸 Feat {i + 1}</span>
+    {/each}
+    <span class="salon-progress-chip {foundTitle ? 'found' : ''}">🎵 Titre</span>
+    {#each extras as label, i (i)}
+      <span class="salon-progress-chip {foundExtras[i] ? 'found' : ''}">🎬 {label}</span>
+    {/each}
   </div>
 
   {#if allFound}

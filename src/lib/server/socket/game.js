@@ -77,7 +77,7 @@ function resetRoundFlags(room) {
     room.players[n].foundArtist = false;
     room.players[n].foundTitle = false;
     room.players[n].foundFeats = [];
-    room.players[n].foundAnswers = null;
+    room.players[n].foundExtras = [];
     room.players[n]._fullFoundCounted = false;
   });
 }
@@ -97,13 +97,9 @@ function checkEveryoneFound(roomId, io) {
   const track = room.game.currentTrack;
   const activePlayers = Object.values(room.players);
   const allDone = (p) => {
-    if (track?.customAnswers?.length) {
-      return p.foundAnswers?.every(Boolean) ?? false;
-    }
-    const allFeats = (track?.cleanFeatArtists || []).every(
-      (_, i) => p.foundFeats[i],
-    );
-    return p.foundArtist && p.foundTitle && allFeats;
+    const allFeats = (track?.cleanFeatArtists || []).every((_, i) => p.foundFeats[i]);
+    const allExtras = (track?.extraAnswers || []).every((_, i) => p.foundExtras[i]);
+    return p.foundArtist && p.foundTitle && allFeats && allExtras;
   };
   if (
     activePlayers.length > 0 &&
@@ -121,20 +117,15 @@ function endRound(roomId, reason, io) {
   game.isActive = false;
 
   const track = game.currentTrack;
-  const hasCustom = track.customAnswers?.length;
 
   const summary = {
-    answer: hasCustom
-      ? track.customAnswers.map((ca) => ca.value).join(" — ")
-      : `${displayString(track.mainArtist || track.artist)} - ${displayString(track.title)}`,
+    answer: `${displayString(track.mainArtist || track.artist)} - ${displayString(track.title)}`,
     cover: track.cover,
     reason,
     firstFinder: game.firstFullFinder,
     totalFound: game.totalFullFound,
-    featArtists: hasCustom ? [] : (track.featArtists || []).map(displayString),
-    answerSlots: hasCustom
-      ? track.customAnswers.map((ca) => ({ label: ca.type, value: ca.value }))
-      : null,
+    featArtists: (track.featArtists || []).map(displayString),
+    extraAnswers: (track.extraAnswers || []).map((e) => ({ label: e.label, value: e.value })),
   };
   game.history.push(summary);
 
@@ -147,7 +138,7 @@ function endRound(roomId, reason, io) {
         foundArtist: p.foundArtist,
         foundTitle: p.foundTitle,
         foundFeats: p.foundFeats || [],
-        foundAnswers: p.foundAnswers ?? null,
+        foundExtras: p.foundExtras || [],
       });
     }
   });
@@ -195,14 +186,6 @@ async function startNextRound(roomId, io) {
   resetRoundFlags(room);
   game.currentTrack = game.sessionPlaylist.pop();
 
-  if (game.currentTrack.customAnswers?.length) {
-    Object.keys(room.players).forEach((n) => {
-      room.players[n].foundAnswers = new Array(
-        game.currentTrack.customAnswers.length,
-      ).fill(false);
-    });
-  }
-
   try {
     const r = await yts(
       `${game.currentTrack.mainArtist || game.currentTrack.artist} ${game.currentTrack.title} topic`,
@@ -225,9 +208,9 @@ async function startNextRound(roomId, io) {
       startSeconds: safeStart,
       round: game.currentRound,
       total: game.maxRounds,
-      featCount: game.currentTrack.customAnswers ? 0 : game.currentTrack.featArtists.length,
+      featCount: game.currentTrack.featArtists.length,
+      extraLabels: (game.currentTrack.extraAnswers || []).map((e) => e.label),
       previewUrl: null,
-      answerSlots: game.currentTrack.customAnswers?.map((ca) => ({ label: ca.type })) ?? null,
     };
 
     io.to(`room:${roomId}`).emit("start_round", game.lastRoundData);
@@ -463,7 +446,7 @@ export function register(io) {
           foundArtist: false,
           foundTitle: false,
           foundFeats: [],
-          foundAnswers: null,
+          foundExtras: [],
           _fullFoundCounted: false,
         };
       } else {
@@ -617,32 +600,7 @@ export function register(io) {
 
       let hit = false;
 
-      if (track.customAnswers?.length) {
-        // ── Mode réponses custom ─────────────────────────────────────────────
-        for (let i = 0; i < track.customAnswers.length; i++) {
-          if (user.foundAnswers[i]) continue;
-          const ca = track.customAnswers[i];
-          if (checkMatch(input, ca.cleanValue)) {
-            user.foundAnswers[i] = true;
-            user.score += 1 + speedBonus;
-            socket.emit("feedback", {
-              type: "success_custom",
-              answerIndex: i,
-              label: ca.type,
-              msg: `${ca.type} ! (+${1 + speedBonus} pts)`,
-              val: ca.value,
-              cover,
-            });
-            hit = true;
-            break;
-          } else if (!hit && checkClose(input, ca.cleanValue)) {
-            socket.emit("feedback", { type: "close", msg: "Tu chauffes !" });
-            hit = true;
-          }
-        }
-      } else {
-        // ── Mode classique artiste / titre / feat ────────────────────────────
-        if (!user.foundArtist) {
+      if (!user.foundArtist) {
           if (checkMatch(input, track.cleanArtist)) {
             user.foundArtist = true;
             user.score += 1 + speedBonus;
@@ -705,7 +663,33 @@ export function register(io) {
             hit = true;
           }
         }
-      }
+
+        if (!hit) {
+          for (let ei = 0; ei < (track.extraAnswers || []).length; ei++) {
+            if (user.foundExtras[ei]) continue;
+            const extra = track.extraAnswers[ei];
+            if (checkMatch(input, extra.clean)) {
+              user.foundExtras[ei] = true;
+              user.score += 1 + speedBonus;
+              socket.emit("feedback", {
+                type: "success_extra",
+                extraIndex: ei,
+                msg: `${extra.label} ! (+${1 + speedBonus} pts)`,
+                val: extra.value,
+                cover,
+              });
+              hit = true;
+              break;
+            } else if (checkClose(input, extra.clean)) {
+              socket.emit("feedback", {
+                type: "close",
+                msg: `Tu chauffes sur ${extra.label} !`,
+              });
+              hit = true;
+              break;
+            }
+          }
+        }
 
       if (!hit)
         socket.emit("feedback", { type: "miss", msg: "Pas du tout..." });
@@ -715,11 +699,11 @@ export function register(io) {
         Object.values(room.players),
       );
 
-      const allMainFound = track.customAnswers?.length
-        ? user.foundAnswers?.every(Boolean)
-        : user.foundArtist &&
-          user.foundTitle &&
-          track.cleanFeatArtists.every((_, i) => user.foundFeats[i]);
+      const allMainFound =
+        user.foundArtist &&
+        user.foundTitle &&
+        track.cleanFeatArtists.every((_, i) => user.foundFeats[i]) &&
+        (track.extraAnswers || []).every((_, i) => user.foundExtras[i]);
       if (allMainFound && !user._fullFoundCounted) {
         user._fullFoundCounted = true;
         if (!room.game.firstFullFinder) room.game.firstFullFinder = user.name;

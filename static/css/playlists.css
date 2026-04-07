@@ -603,6 +603,19 @@
   gap: 8px;
   margin: 14px 0;
 }
+.answer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+.answer-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--mid);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .answer-row {
   display: flex;
   gap: 8px;
