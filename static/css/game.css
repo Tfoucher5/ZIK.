@@ -835,6 +835,7 @@ a {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  position: relative;
 }
 .g-input-wrap {
   position: relative;
@@ -1529,14 +1530,22 @@ a {
 }
 
 .g-sync-waiting {
-  text-align: center;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 6px 14px;
   font-size: 0.8rem;
-  color: var(--muted, #888);
-  padding: 4px 0 6px;
+  color: #e2e8f0;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  pointer-events: none;
 }
 .g-sync-count {
   background: rgba(255,255,255,0.08);
