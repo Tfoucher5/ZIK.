@@ -264,6 +264,42 @@ async function saveGameResults(roomId, finalScores) {
     await supabase.from("game_players").insert(players);
 
     const eloEligible = !!dbRooms[roomId]?.is_public && finalScores.length >= 3;
+    const rankedPlayers = finalScores.map((p, i) => ({ ...p, rank: i + 1 }));
+    const eloChanges = {};
+
+    if (eloEligible) {
+      const registeredIds = rankedPlayers
+        .filter((p) => p.userId && !p.isGuest)
+        .map((p) => p.userId);
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, elo, games_played")
+        .in("id", registeredIds);
+
+      const profileMap = {};
+      profiles?.forEach((p) => { profileMap[p.id] = p; });
+
+      for (const player of rankedPlayers) {
+        if (!player.userId || player.isGuest) continue;
+        const profile = profileMap[player.userId];
+        if (!profile) continue;
+
+        const k = profile.games_played < 30 ? 32 : profile.games_played < 100 ? 20 : 10;
+        let change = 0;
+
+        for (const opp of rankedPlayers) {
+          if (opp.userId === player.userId) continue;
+          const oppProfile = opp.userId && !opp.isGuest ? profileMap[opp.userId] : null;
+          const oppElo = oppProfile?.elo ?? 1000;
+          const expected = 1 / (1 + Math.pow(10, (oppElo - profile.elo) / 400));
+          const actual = player.rank < opp.rank ? 1 : 0;
+          change += k * (actual - expected);
+        }
+
+        eloChanges[player.userId] = Math.round(change);
+      }
+    }
 
     for (let i = 0; i < finalScores.length; i++) {
       const p = finalScores[i];
@@ -273,7 +309,7 @@ async function saveGameResults(roomId, finalScores) {
           p_score: p.score,
           p_rank: i + 1,
           p_total_players: finalScores.length,
-          p_elo_eligible: eloEligible,
+          p_elo_change: eloChanges[p.userId] ?? 0,
         });
       }
     }
