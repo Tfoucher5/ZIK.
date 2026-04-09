@@ -17,7 +17,13 @@
       "Bash(node --check src/lib/server/services/playlist.js src/lib/server/socket/game.js src/lib/server/socket/salon.js \"src/routes/\\(site\\)/api/playlists/tracks/[trackId]/answers/+server.js\")",
       "mcp__claude_ai_Supabase__list_migrations",
       "Bash(gh pr create --title 'feat: réponses custom par track \\(Film, Série...\\) + stats homepage' --body ':*)",
-      "Bash(echo \"ESLint exit: $?\")"
+      "Bash(echo \"ESLint exit: $?\")",
+      "Bash(gh pr:*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh --version)",
+      "Bash(gh auth:*)",
+      "mcp__claude_ai_Supabase__get_logs"
     ]
   }
 }
