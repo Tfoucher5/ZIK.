@@ -77,6 +77,7 @@
   let syncReady    = $state(0);
   let syncTotal    = $state(0);
   let _waitingForSync = false;
+  let _syncPaused    = false;
 
   // Chat
   let chatOpen     = $state(false);
@@ -289,9 +290,8 @@
       _waitingForSync = false;
       syncWaiting = false;
       guessDisabled = false;
-      if (ytPlayer?.seekTo && _lastVideo?.startSeconds != null) {
-        ytPlayer.seekTo(_lastVideo.startSeconds, true);
-      }
+      _syncPaused = false;
+      if (ytPlayer?.playVideo) ytPlayer.playVideo();
       setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
     });
     socket.on('ready_update', ({ ready, total }) => {
@@ -374,9 +374,11 @@
               ytPlayer.unMute();
               if (_waitingForSync && socket) {
                 socket.emit('player_ready');
+                _syncPaused = true;
+                ytPlayer.pauseVideo();
               }
             }
-            if (_roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
+            if (!_syncPaused && _roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
               const elapsed = (Date.now() - _lastVideo.startedAt) / 1000;
               loadVideo(_lastVideo.videoId, _lastVideo.startSeconds + elapsed);
             }
