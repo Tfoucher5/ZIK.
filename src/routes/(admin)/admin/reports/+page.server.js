@@ -112,4 +112,49 @@ export const actions = {
 
     return { success: true };
   },
+
+  sendReply: async ({ request }) => {
+    const data = await request.formData();
+    const id = data.get("id");
+    const reply = data.get("admin_reply")?.trim();
+
+    if (!id || !reply) return { success: false, error: "Champs manquants" };
+
+    const supabase = getAdminClient();
+
+    const { data: report } = await supabase
+      .from("reports")
+      .select("reporter_email, reporter_name, type, subject")
+      .eq("id", id)
+      .single();
+
+    if (!report?.reporter_email) return { success: false, error: "Pas d'email" };
+
+    // Sauvegarder la réponse en BDD sans changer le statut
+    await supabase
+      .from("reports")
+      .update({ admin_reply: reply })
+      .eq("id", id);
+
+    // Envoyer le mail
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-reply`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reporter_email: report.reporter_email,
+        reporter_name: report.reporter_name,
+        admin_reply: reply,
+        report_type: report.type,
+        report_subject: report.subject,
+      }),
+    }).catch((err) => { console.error("send-reply failed:", err); return null; });
+
+    const ok = res?.ok ?? false;
+    return { success: ok, sent: ok };
+  },
 };

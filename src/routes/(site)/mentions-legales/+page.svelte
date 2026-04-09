@@ -10,7 +10,7 @@
 <main class="legal-page">
   <button onclick={() => history.back()} class="settings-back" style="background:none;border:none;cursor:pointer;padding:0;display:inline-block;margin-bottom:24px;font-size:.82rem;color:var(--mid);font-weight:500;transition:color .15s">&larr; Retour</button>
   <h1>Mentions L&eacute;gales</h1>
-  <p class="legal-date">Derni&egrave;re mise &agrave; jour&nbsp;: mars 2026</p>
+  <p class="legal-date">Derni&egrave;re mise &agrave; jour&nbsp;: avril 2026</p>
 
   <section>
     <h2>1. &Eacute;diteur du site</h2>
@@ -18,7 +18,7 @@
     <ul>
       <li><strong>Nom&nbsp;:</strong> Th&eacute;o Foucher</li>
       <li><strong>Statut&nbsp;:</strong> Particulier (projet personnel, non commercial)</li>
-      <li><strong>Contact&nbsp;:</strong> via <a href="https://github.com/Tfoucher5/ZIK/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a></li>
+      <li><strong>Contact&nbsp;:</strong> <a href="mailto:theo@zik-music.fr">theo@zik-music.fr</a></li>
     </ul>
   </section>
 
@@ -64,6 +64,6 @@
 
   <section>
     <h2>8. Contact</h2>
-    <p>Pour toute question relative aux pr&eacute;sentes mentions l&eacute;gales&nbsp;: <a href="https://github.com/Tfoucher5/ZIK/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>.</p>
+    <p>Pour toute question relative aux pr&eacute;sentes mentions l&eacute;gales&nbsp;: <a href="mailto:theo@zik-music.fr">theo@zik-music.fr</a> ou via <a href="https://github.com/Tfoucher5/ZIK/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>.</p>
   </section>
 </main>

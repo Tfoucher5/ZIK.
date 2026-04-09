@@ -67,7 +67,8 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "ZIK <noreply@zik-music.fr>",
+        from: "ZIK <theo@zik-music.fr>",
+        reply_to: "theo@zik-music.fr",
         to: [reporter_email],
         subject: `[ZIK] Réponse à ton ${label}`,
         html,
