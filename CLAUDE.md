@@ -12,6 +12,7 @@ Stack: **SvelteKit 5** (Svelte 5 runes), Vite, Socket.io, Supabase, Node.js
 - Pas de refactoring non demandé, pas de features supplémentaires
 - Préférer modifier un fichier existant plutôt qu'en créer un nouveau
 - Ne pas ajouter de gestion d'erreur pour des cas impossibles
+- Toujours tester lint avant de push et de faire une Puull Request (PR)
 
 ## Stack & conventions
 
