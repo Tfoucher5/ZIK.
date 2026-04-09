@@ -59,7 +59,7 @@
       { "@type": "Question", "name": "Qu'est-ce que le Mode Salon de ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Le Mode Salon est un blind test à la Kahoot conçu pour les soirées, événements et salles de classe. L'hôte projette un écran de contrôle sur TV, et chaque joueur participe sur son smartphone via un QR code ou un code court. Disponible en mode texte libre ou QCM avec 4 boutons colorés." } },
       { "@type": "Question", "name": "Comment importer une playlist Deezer sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Rendez-vous sur la page Playlists, cliquez sur Nouvelle playlist, puis collez le lien de votre playlist Deezer (format : https://www.deezer.com/fr/playlist/...). Les titres sont importés automatiquement. Vous pouvez ensuite créer une room de blind test basée sur cette playlist et la partager." } },
       { "@type": "Question", "name": "La saisie au blind test ZIK est-elle sensible aux accents et aux fautes de frappe ?", "acceptedAnswer": { "@type": "Answer", "text": "Non ! Le moteur de détection ignore les accents, les majuscules et tolère les petites fautes de frappe grâce à un algorithme de similarité. beyonce sera accepté pour Beyoncé, Pokr Face pour Poker Face." } },
-      { "@type": "Question", "name": "Comment fonctionne le classement ELO sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Le classement ELO s'inspire du système utilisé aux échecs. Chaque partie dans une room officielle ajuste votre ELO. Il existe aussi un classement hebdomadaire qui repart à zéro chaque lundi. Consultez les deux classements depuis la page d'accueil." } },
+      { "@type": "Question", "name": "Comment fonctionne le classement ELO sur ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "L'ELO évolue uniquement dans les rooms publiques avec au moins 3 joueurs. 1ère place : +25 ELO. Top 50 % : +10 ELO. Bottom 50 % : −10 ELO. Il existe aussi un classement hebdomadaire qui repart à zéro chaque lundi." } },
       { "@type": "Question", "name": "Comment supprimer mon compte ZIK ?", "acceptedAnswer": { "@type": "Answer", "text": "Vous pouvez supprimer votre compte directement depuis vos Paramètres (section Zone dangereuse). La suppression est immédiate et irréversible : profil, playlists, scores et toutes vos données sont effacés instantanément." } }
     ]
   });
@@ -668,17 +668,16 @@
 
       <h3>ELO all-time</h3>
       <p>
-        Le classement ELO est le classement de référence de ZIK. Inspiré du système ELO des échecs, il mesure votre niveau réel en tenant compte de la qualité de vos adversaires : <strong>battre un joueur mieux classé que vous rapporte plus de points ELO</strong> que de battre un joueur moins bien classé.
+        Le classement ELO est le classement de référence de ZIK. Il mesure votre niveau en fonction de votre position finale à chaque partie.
       </p>
       <p>Concrètement :</p>
       <ul class="doc-list">
-        <li>Si vous finissez premier dans une room avec des joueurs expérimentés → gain ELO important</li>
-        <li>Si vous finissez premier contre des débutants → gain ELO modéré</li>
-        <li>Si vous finissez dernier contre des experts → perte ELO faible (vous étiez défavorisé)</li>
-        <li>Si vous finissez dernier contre des débutants → perte ELO importante</li>
+        <li><strong>1ère place</strong> → +25 ELO</li>
+        <li><strong>Top 50 % du classement</strong> → +10 ELO</li>
+        <li><strong>Bottom 50 % du classement</strong> → −10 ELO</li>
       </ul>
       <p>
-        Votre ELO évolue après chaque partie. Il n'est jamais remis à zéro — c'est votre réputation musicale permanente sur ZIK.
+        Votre ELO n'évolue que lors de parties dans une <strong>room publique avec au minimum 3 joueurs</strong>. Les parties solo, à 2 joueurs, ou dans une room privée n'impactent pas l'ELO.
       </p>
 
       <h3>Classement hebdomadaire</h3>
@@ -689,7 +688,7 @@
       <div class="doc-tip">
         <span class="doc-tip-icon">💡</span>
         <div>
-          <strong>Progression ELO :</strong> Pour progresser efficacement, jouez dans des rooms fréquentées. Plus les adversaires sont nombreux et forts, plus votre ELO peut progresser rapidement. Évitez de jouer seul — les parties solo n'impactent pas l'ELO.
+          <strong>Progression ELO :</strong> Pour que l'ELO soit pris en compte, il faut jouer dans une room publique avec au moins 3 joueurs. Plus vous êtes nombreux, plus la compétition est significative.
         </div>
       </div>
 
@@ -763,7 +762,7 @@
           <summary>Mon ELO a baissé alors que j'ai bien joué — pourquoi ?</summary>
           <div class="faq-body">
             <p>
-              L'ELO est relatif à vos adversaires. Si vous avez terminé en bas du classement lors d'une partie avec des joueurs de niveau inférieur au vôtre, votre ELO baisse — c'était attendu de vous. À l'inverse, si vous perdez face à des joueurs beaucoup plus forts, la perte ELO sera minimale. C'est la logique du système ELO : battre les meilleurs vous valorise davantage.
+              Si vous avez terminé dans la moitié basse du classement, vous perdez 10 ELO. Si vous avez terminé dans la moitié haute, vous gagnez 10 ELO. La 1ère place rapporte 25 ELO. Rappel : l'ELO n'évolue que dans les rooms publiques avec 3 joueurs minimum.
             </p>
           </div>
         </details>
