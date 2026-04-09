@@ -263,6 +263,8 @@ async function saveGameResults(roomId, finalScores) {
     }));
     await supabase.from("game_players").insert(players);
 
+    const eloEligible = !!dbRooms[roomId]?.is_public && finalScores.length >= 3;
+
     for (let i = 0; i < finalScores.length; i++) {
       const p = finalScores[i];
       if (p.userId && !p.isGuest) {
@@ -271,6 +273,7 @@ async function saveGameResults(roomId, finalScores) {
           p_score: p.score,
           p_rank: i + 1,
           p_total_players: finalScores.length,
+          p_elo_eligible: eloEligible,
         });
       }
     }
@@ -442,7 +445,7 @@ export function register(io) {
         const { data: freshRoom } = await supabase
           .from("rooms")
           .select(
-            "id, code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id",
+            "id, code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id, is_public",
           )
           .eq("code", roomId)
           .single();
