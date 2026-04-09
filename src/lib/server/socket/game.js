@@ -278,19 +278,23 @@ async function saveGameResults(roomId, finalScores) {
         .in("id", registeredIds);
 
       const profileMap = {};
-      profiles?.forEach((p) => { profileMap[p.id] = p; });
+      profiles?.forEach((p) => {
+        profileMap[p.id] = p;
+      });
 
       for (const player of rankedPlayers) {
         if (!player.userId || player.isGuest) continue;
         const profile = profileMap[player.userId];
         if (!profile) continue;
 
-        const k = profile.games_played < 30 ? 32 : profile.games_played < 100 ? 20 : 10;
+        const k =
+          profile.games_played < 30 ? 32 : profile.games_played < 100 ? 20 : 10;
         let change = 0;
 
         for (const opp of rankedPlayers) {
           if (opp.userId === player.userId) continue;
-          const oppProfile = opp.userId && !opp.isGuest ? profileMap[opp.userId] : null;
+          const oppProfile =
+            opp.userId && !opp.isGuest ? profileMap[opp.userId] : null;
           const oppElo = oppProfile?.elo ?? 1000;
           const expected = 1 / (1 + Math.pow(10, (oppElo - profile.elo) / 400));
           const actual = player.rank < opp.rank ? 1 : 0;
