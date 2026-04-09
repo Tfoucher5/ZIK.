@@ -91,8 +91,9 @@
     clearTimeout(_roomsTimer);
     try {
       const res = await fetch("/api/rooms/official");
-      rooms = await res.json();
-      totalOnline = rooms.reduce((s, r) => s + (r.online || 0), 0);
+      const data = await res.json();
+      rooms = data.rooms ?? data;
+      totalOnline = data.totalOnline ?? rooms.reduce((s, r) => s + (r.online || 0), 0);
     } catch {
       rooms = [];
     }

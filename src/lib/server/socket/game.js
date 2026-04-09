@@ -21,6 +21,27 @@ const AUTO_START_DELAY = 5; // seconds
 // Map: roomId -> { timer, startAt, seconds }
 const autoStartCountdowns = {};
 
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+// Map: roomId -> { messages: [], clearTimer: null }
+const chatHistories = {};
+const CHAT_MAX_MESSAGES = 50;
+const CHAT_CLEAR_DELAY = 30 * 60 * 1000; // 30 min après room vide
+
+function getChatHistory(roomId) {
+  if (!chatHistories[roomId]) chatHistories[roomId] = { messages: [], clearTimer: null };
+  return chatHistories[roomId];
+}
+function scheduleChatClear(roomId) {
+  const h = chatHistories[roomId];
+  if (!h) return;
+  clearTimeout(h.clearTimer);
+  h.clearTimer = setTimeout(() => { delete chatHistories[roomId]; }, CHAT_CLEAR_DELAY);
+}
+function cancelChatClear(roomId) {
+  const h = chatHistories[roomId];
+  if (h) clearTimeout(h.clearTimer);
+}
+
 // ─── Emit helpers ────────────────────────────────────────────────────────────
 
 function sanitizePlayer(p) {
@@ -70,6 +91,10 @@ function getOrCreateRoom(roomId) {
       totalFullFound: 0,
       lastRoundData: null,
       dbGameId: null,
+      isSyncWaiting: false,
+      readyPlayers: new Set(),
+      readyTimer: null,
+      readyRound: 0,
     },
   };
   return roomGames[roomId];
@@ -80,8 +105,10 @@ function cleanupRoom(roomId) {
   if (!room) return;
   clearInterval(room.game.interval);
   clearTimeout(room.game.breakTimer);
+  clearTimeout(room.game.readyTimer);
   room.game.interval = null;
   room.game.breakTimer = null;
+  room.game.readyTimer = null;
   delete roomGames[roomId];
   console.log(`Room "${roomId}" liberee de la memoire`);
 }
@@ -184,6 +211,19 @@ function startTimer(roomId, io) {
   }, 1000);
 }
 
+function triggerRoundStart(roomId, io) {
+  const room = roomGames[roomId];
+  if (!room || room.game.isActive) return;
+  clearTimeout(room.game.readyTimer);
+  room.game.readyTimer = null;
+  room.game.isSyncWaiting = false;
+  room.game.isActive = true;
+  room.game.startTime = Date.now();
+  room.game.timer = room.game.roundDuration;
+  io.to(`room:${roomId}`).emit("round_start_sync");
+  startTimer(roomId, io);
+}
+
 async function startNextRound(roomId, io) {
   const room = getOrCreateRoom(roomId);
   const game = room.game;
@@ -221,9 +261,6 @@ async function startNextRound(roomId, io) {
       ),
     );
 
-    game.isActive = true;
-    game.startTime = Date.now();
-    game.timer = game.roundDuration;
     game.lastRoundData = {
       videoId: video.videoId,
       startSeconds: safeStart,
@@ -234,8 +271,16 @@ async function startNextRound(roomId, io) {
       previewUrl: null,
     };
 
+    game.isSyncWaiting = true;
+    game.readyPlayers = new Set();
+    game.readyRound = game.currentRound;
+
     io.to(`room:${roomId}`).emit("start_round", game.lastRoundData);
-    startTimer(roomId, io);
+
+    // Démarre le round dès que 75% des joueurs sont prêts, ou après 6s max
+    const activePlayers = Object.values(room.players).filter(p => !p._dcTimer).length;
+    game.readyThreshold = Math.max(1, Math.round(activePlayers * 0.75));
+    game.readyTimer = setTimeout(() => triggerRoundStart(roomId, io), 6000);
   } catch (err) {
     console.error(`Skip "${game.currentTrack.title}":`, err.message);
     startNextRound(roomId, io);
@@ -272,10 +317,9 @@ async function saveGameResults(roomId, finalScores) {
         .filter((p) => p.userId && !p.isGuest)
         .map((p) => p.userId);
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, elo, games_played")
-        .in("id", registeredIds);
+      const { data: profiles } = registeredIds.length >= 2
+        ? await supabase.from("profiles").select("id, elo, games_played").in("id", registeredIds)
+        : { data: [] };
 
       const profileMap = {};
       profiles?.forEach((p) => { profileMap[p.id] = p; });
@@ -315,7 +359,7 @@ async function saveGameResults(roomId, finalScores) {
     }
     console.log(`Game ${dbGameId} sauvegardee.`);
   } catch (err) {
-    console.error("Erreur sauvegarde:", err.message);
+    console.error("Erreur sauvegarde:", err.message, err.stack);
   }
 }
 
@@ -386,7 +430,7 @@ async function startAutoCountdown(roomId, io) {
     timer: setTimeout(async () => {
       delete autoStartCountdowns[roomId];
       const room = roomGames[roomId];
-      if (!room || room.game.isActive) return;
+      if (!room || room.game.isActive || room.game.isSyncWaiting) return;
 
       const playlist = await loadPlaylist(roomId);
       if (playlist.length === 0) {
@@ -441,6 +485,7 @@ function leaveRoom(socket, roomId, io) {
 
         if (active.length === 0) {
           cancelAutoCountdown(roomId, null); // cancel silently — no players to notify
+          scheduleChatClear(roomId);
           if (room.game.isActive) {
             clearInterval(room.game.interval);
             clearTimeout(room.game.breakTimer);
@@ -566,9 +611,18 @@ export function register(io) {
       });
       socket.emit("init_history", room.game.history);
 
-      if (room.game.isActive && room.game.lastRoundData) {
+      cancelChatClear(roomId);
+      const existingChat = chatHistories[roomId];
+      if (existingChat?.messages.length) socket.emit("chat_history", existingChat.messages);
+
+      if (room.game.lastRoundData && (room.game.isActive || room.game.isSyncWaiting)) {
         socket.emit("start_round", room.game.lastRoundData);
-      } else if (autoStart && !room.game.isActive) {
+        if (room.game.isActive) {
+          // Round déjà synchro — le nouveau joueur peut jouer immédiatement
+          socket.emit("round_start_sync");
+        }
+        // Si isSyncWaiting, le client émettra player_ready quand YouTube sera prêt
+      } else if (autoStart && !room.game.isActive && !room.game.isSyncWaiting) {
         if (autoStartCountdowns[roomId]) {
           // Countdown already running — tell this player the remaining time
           const elapsed =
@@ -590,7 +644,7 @@ export function register(io) {
       const roomId = socket.currentRoom;
       if (!roomId) return;
       const room = getOrCreateRoom(roomId);
-      if (room.game.isActive) return;
+      if (room.game.isActive || room.game.isSyncWaiting) return;
 
       // Manual-mode DB rooms: only the owner can start
       const dbRoom = dbRooms[roomId];
@@ -776,6 +830,54 @@ export function register(io) {
       }
 
       checkEveryoneFound(roomId, io);
+    });
+
+    socket.on("send_chat", (msg) => {
+      const roomId = socket.currentRoom;
+      if (!roomId) return;
+      const room = roomGames[roomId];
+      if (!room) return;
+      const name = room.socketToName[socket.id];
+      if (!name) return;
+
+      const text = String(msg || "").trim().slice(0, 120);
+      if (!text) return;
+
+      // Rate limit : 1 message / 1.5s par joueur
+      const now = Date.now();
+      if (room.players[name]?._lastChat && now - room.players[name]._lastChat < 1500) return;
+      if (room.players[name]) room.players[name]._lastChat = now;
+
+      const message = { name, text, ts: now };
+      const history = getChatHistory(roomId);
+      history.messages.push(message);
+      if (history.messages.length > CHAT_MAX_MESSAGES) history.messages.shift();
+
+      io.to(`room:${roomId}`).emit("chat_message", message);
+    });
+
+    socket.on("player_ready", () => {
+      const roomId = socket.currentRoom;
+      if (!roomId) return;
+      const room = roomGames[roomId];
+      if (!room || !room.game.isSyncWaiting) return;
+
+      const name = room.socketToName[socket.id];
+      if (!name) return;
+
+      room.game.readyPlayers.add(name);
+
+      const activePlayers = Object.values(room.players).filter(p => !p._dcTimer).length;
+      const threshold = Math.max(1, Math.round(activePlayers * 0.75));
+
+      io.to(`room:${roomId}`).emit("ready_update", {
+        ready: room.game.readyPlayers.size,
+        total: activePlayers,
+      });
+
+      if (room.game.readyPlayers.size >= threshold) {
+        triggerRoundStart(roomId, io);
+      }
     });
 
     socket.on("disconnect", () => {

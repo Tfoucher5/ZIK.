@@ -160,7 +160,7 @@
       <a href="/mentions-legales">Mentions légales</a>
       <a href="/cgu">CGU</a>
       <a href="/confidentialite">Confidentialité</a>
-      <span class="footer-version">v1.4.0</span>
+      <span class="footer-version">v1.5.0</span>
     </div>
   </div>
   <div class="footer-bottom">

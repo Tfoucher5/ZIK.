@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { browser } from '$app/environment';
   import ReportModal from '$lib/components/ReportModal.svelte';
 
@@ -73,6 +73,17 @@
   let _prevScores  = {};
   let feedTimer    = null;
   let countdownInterval = null;
+  let syncWaiting  = $state(false);
+  let syncReady    = $state(0);
+  let syncTotal    = $state(0);
+  let _waitingForSync = false;
+
+  // Chat
+  let chatOpen     = $state(false);
+  let chatMessages = $state([]);
+  let chatInput    = $state('');
+  let chatUnread   = $state(0);
+  let chatEl       = null;
 
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
@@ -187,6 +198,21 @@
     }
   }
 
+  function sendChat() {
+    const text = chatInput.trim();
+    if (!text || !socket) return;
+    socket.emit('send_chat', text);
+    chatInput = '';
+  }
+
+  function toggleChat() {
+    chatOpen = !chatOpen;
+    if (chatOpen) {
+      chatUnread = 0;
+      tick().then(() => { if (chatEl) chatEl.scrollTop = chatEl.scrollHeight; });
+    }
+  }
+
   onMount(async () => {
     const P  = new URLSearchParams(location.search);
     ROOM_ID  = P.get('roomId')   || 'pop';
@@ -246,16 +272,34 @@
       slotArtist = { val: '???', state: null };
       slotTitle  = { val: '???', state: null };
       timerPct = 100; timerColor = 'var(--accent)';
-      guessDisabled = false; guessVal = '';
+      guessDisabled = true; guessVal = '';
       showStart = false; startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
       _roundActive = true;
+      _waitingForSync = true;
+      syncWaiting = true;
+      syncReady = 0; syncTotal = 0;
       _lastVideo = { videoId: data.videoId, startSeconds: data.startSeconds, startedAt: Date.now() };
       if (data.previewUrl) {
         loadPreview(data.previewUrl);
       } else {
         loadVideo(data.videoId, data.startSeconds);
       }
-      setTimeout(() => document.getElementById('guessInput')?.focus(), 200);
+    });
+    socket.on('round_start_sync', () => {
+      _waitingForSync = false;
+      syncWaiting = false;
+      guessDisabled = false;
+      setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
+    });
+    socket.on('ready_update', ({ ready, total }) => {
+      syncReady = ready;
+      syncTotal = total;
+    });
+    socket.on('chat_history', msgs => { chatMessages = msgs; });
+    socket.on('chat_message', msg => {
+      chatMessages = [...chatMessages, msg];
+      if (!chatOpen) chatUnread++;
+      tick().then(() => { if (chatEl) chatEl.scrollTop = chatEl.scrollHeight; });
     });
     socket.on('timer_update', ({ current, max }) => {
       timerPct = (current / max) * 100;
@@ -284,7 +328,7 @@
       summaryShow = true;
       summaryReason = data.reason;
       summaryFinder = data.totalFound > 0 ? `\u{1F3C6} 1er : ${data.firstFinder} \u2014 ${data.totalFound} joueur(s) ont tout trouv\u00e9` : '\u274C Personne n\u2019a trouv\u00e9';
-      _roundActive = false; guessDisabled = true; stopVideo(); timerPct = 0;
+      _roundActive = false; _waitingForSync = false; syncWaiting = false; guessDisabled = true; stopVideo(); timerPct = 0;
       history = [data, ...history];
     });
     socket.on('game_over', scores => {
@@ -322,7 +366,13 @@
             if (pendingLoad) { loadVideo(pendingLoad.id, pendingLoad.start); pendingLoad = null; }
           },
           onStateChange(e) {
-            if (e.data === window.YT.PlayerState.PLAYING) { ytPlayer.setVolume(savedVol()); ytPlayer.unMute(); }
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              ytPlayer.setVolume(savedVol());
+              ytPlayer.unMute();
+              if (_waitingForSync && socket) {
+                socket.emit('player_ready');
+              }
+            }
             if (_roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
               const elapsed = (Date.now() - _lastVideo.startedAt) / 1000;
               loadVideo(_lastVideo.videoId, _lastVideo.startSeconds + elapsed);
@@ -373,6 +423,10 @@
       <div class="g-round-info">{roundInfo}</div>
     </div>
     <div class="g-header-right">
+      <button class="g-chat-toggle" onclick={toggleChat} title="Chat" class:g-chat-active={chatOpen}>
+        &#x1F4AC;
+        {#if chatUnread > 0}<span class="g-chat-badge">{chatUnread > 9 ? '9+' : chatUnread}</span>{/if}
+      </button>
       <button class="g-bug-btn" onclick={openBugReport} title="Signaler un bug">🐛</button>
       <div class="g-vol">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
@@ -501,6 +555,12 @@
 
       <!-- Input bar (dans la colonne centrale) -->
       <div class="g-input-bar">
+        {#if syncWaiting}
+          <div class="g-sync-waiting">
+            &#x23F3; Chargement de la musique&hellip;
+            {#if syncTotal > 1}<span class="g-sync-count">{syncReady}/{syncTotal}</span>{/if}
+          </div>
+        {/if}
         <div class="g-input-wrap">
           <input
             type="text"
@@ -625,6 +685,39 @@
         {/if}
         <a href="/" class="g-go-back">&#x2190; Changer de room</a>
       </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Chat -->
+{#if chatOpen}
+  <div class="g-chat-panel">
+    <div class="g-chat-head">
+      <span>&#x1F4AC; Chat</span>
+      <button class="g-chat-close" onclick={toggleChat}>&#x2715;</button>
+    </div>
+    <div class="g-chat-msgs" bind:this={chatEl}>
+      {#if chatMessages.length === 0}
+        <div class="g-chat-empty">Aucun message pour l&apos;instant&hellip;</div>
+      {/if}
+      {#each chatMessages as m (m.ts + m.name)}
+        <div class="g-chat-msg" class:g-chat-mine={m.name === USERNAME}>
+          <span class="g-chat-author">{m.name}</span>
+          <span class="g-chat-text">{m.text}</span>
+        </div>
+      {/each}
+    </div>
+    <div class="g-chat-input-row">
+      <input
+        class="g-chat-input"
+        type="text"
+        placeholder="Message&hellip;"
+        maxlength="120"
+        bind:value={chatInput}
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        onkeydown={e => { if (e.key === 'Enter') sendChat(); }}
+      >
+      <button class="g-chat-send" onclick={sendChat}>&#x2192;</button>
     </div>
   </div>
 {/if}

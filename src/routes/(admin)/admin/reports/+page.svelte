@@ -9,6 +9,7 @@
   let expandedId = $state(null);
   let noteValues = $state({});
   let replyValues = $state({});
+  let sentIds = $state({});
 
   const TYPE_LABELS  = { bug: '🐛 Bug', user: '🚨 Joueur', contact: '✉️ Contact' };
   const STATUS_COLORS = { pending: '#f59e0b', resolved: '#4ade80', dismissed: '#6b7280' };
@@ -88,7 +89,15 @@
               <pre class="rp-meta">{JSON.stringify(r.metadata, null, 2)}</pre>
             {/if}
 
-            <form method="POST" action="?/updateStatus" use:enhance class="rp-actions">
+            <form method="POST" action="?/updateStatus" use:enhance={({ formElement, action }) => {
+              if (action.search === '?/sendReply') {
+                return async ({ result, update }) => {
+                  if (result.type === 'success') sentIds = { ...sentIds, [r.id]: true };
+                  setTimeout(() => { sentIds = { ...sentIds, [r.id]: false }; }, 3000);
+                  await update({ reset: false });
+                };
+              }
+            }} class="rp-actions">
               <input type="hidden" name="id" value={r.id}>
 
               <textarea
@@ -102,7 +111,7 @@
               {#if r.reporter_email || r.resolved_username}
                 <div class="rp-reply-wrap">
                   <label class="rp-label" for="reply-{r.id}">
-                    💬 Réponse à envoyer
+                    💬 Réponse
                     {#if r.reporter_email}<span class="rp-label-sub">→ {r.reporter_email}</span>{/if}
                     {#if !r.reporter_email}<span class="rp-label-sub rp-label-warn">⚠ pas d'email — stocké uniquement</span>{/if}
                   </label>
@@ -114,6 +123,16 @@
                     rows="3"
                     bind:value={replyValues[r.id]}
                   >{r.admin_reply || ''}</textarea>
+                  {#if r.reporter_email}
+                    <button
+                      type="submit"
+                      formaction="?/sendReply"
+                      class="rp-btn rp-btn-send"
+                      disabled={!replyValues[r.id]?.trim()}
+                    >
+                      {sentIds[r.id] ? '✓ Envoyé !' : '📨 Envoyer sans changer le statut'}
+                    </button>
+                  {/if}
                 </div>
               {/if}
 
@@ -269,4 +288,6 @@
 .rp-note-reply:focus { border-color: #6366f1; }
 .rp-note-saved { font-size: 0.75rem; color: #4ade80; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15); border-radius: 6px; padding: 6px 10px; line-height: 1.5; }
 .rp-note-saved em { font-style: normal; color: #94a3b8; }
+.rp-btn-send { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); align-self: flex-start; }
+.rp-btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

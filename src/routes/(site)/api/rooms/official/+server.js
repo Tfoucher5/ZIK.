@@ -49,7 +49,14 @@ export async function GET() {
           ),
       }))
       .sort((a, b) => b.online - a.online);
-    return json(result);
+
+    const totalOnline = Object.values(roomGames).reduce(
+      (acc, g) =>
+        acc + Object.values(g.players).filter((p) => !p._dcTimer).length,
+      0,
+    );
+
+    return json({ rooms: result, totalOnline });
   } catch (e) {
     return json({ error: e.message }, { status: 500 });
   }
