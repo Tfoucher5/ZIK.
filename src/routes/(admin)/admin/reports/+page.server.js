@@ -128,13 +128,11 @@ export const actions = {
       .eq("id", id)
       .single();
 
-    if (!report?.reporter_email) return { success: false, error: "Pas d'email" };
+    if (!report?.reporter_email)
+      return { success: false, error: "Pas d'email" };
 
     // Sauvegarder la réponse en BDD sans changer le statut
-    await supabase
-      .from("reports")
-      .update({ admin_reply: reply })
-      .eq("id", id);
+    await supabase.from("reports").update({ admin_reply: reply }).eq("id", id);
 
     // Envoyer le mail
     const supabaseUrl = process.env.SUPABASE_URL;
@@ -152,7 +150,10 @@ export const actions = {
         report_type: report.type,
         report_subject: report.subject,
       }),
-    }).catch((err) => { console.error("send-reply failed:", err); return null; });
+    }).catch((err) => {
+      console.error("send-reply failed:", err);
+      return null;
+    });
 
     const ok = res?.ok ?? false;
     return { success: ok, sent: ok };

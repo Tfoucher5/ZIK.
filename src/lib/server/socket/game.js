@@ -28,14 +28,17 @@ const CHAT_MAX_MESSAGES = 50;
 const CHAT_CLEAR_DELAY = 30 * 60 * 1000; // 30 min après room vide
 
 function getChatHistory(roomId) {
-  if (!chatHistories[roomId]) chatHistories[roomId] = { messages: [], clearTimer: null };
+  if (!chatHistories[roomId])
+    chatHistories[roomId] = { messages: [], clearTimer: null };
   return chatHistories[roomId];
 }
 function scheduleChatClear(roomId) {
   const h = chatHistories[roomId];
   if (!h) return;
   clearTimeout(h.clearTimer);
-  h.clearTimer = setTimeout(() => { delete chatHistories[roomId]; }, CHAT_CLEAR_DELAY);
+  h.clearTimer = setTimeout(() => {
+    delete chatHistories[roomId];
+  }, CHAT_CLEAR_DELAY);
 }
 function cancelChatClear(roomId) {
   const h = chatHistories[roomId];
@@ -278,7 +281,9 @@ async function startNextRound(roomId, io) {
     io.to(`room:${roomId}`).emit("start_round", game.lastRoundData);
 
     // Démarre le round dès que 75% des joueurs sont prêts, ou après 6s max
-    const activePlayers = Object.values(room.players).filter(p => !p._dcTimer).length;
+    const activePlayers = Object.values(room.players).filter(
+      (p) => !p._dcTimer,
+    ).length;
     game.readyThreshold = Math.max(1, Math.round(activePlayers * 0.75));
     game.readyTimer = setTimeout(() => triggerRoundStart(roomId, io), 6000);
   } catch (err) {
@@ -317,9 +322,13 @@ async function saveGameResults(roomId, finalScores) {
         .filter((p) => p.userId && !p.isGuest)
         .map((p) => p.userId);
 
-      const { data: profiles } = registeredIds.length >= 2
-        ? await supabase.from("profiles").select("id, elo, games_played").in("id", registeredIds)
-        : { data: [] };
+      const { data: profiles } =
+        registeredIds.length >= 2
+          ? await supabase
+              .from("profiles")
+              .select("id, elo, games_played")
+              .in("id", registeredIds)
+          : { data: [] };
 
       const profileMap = {};
       profiles?.forEach((p) => {
@@ -617,9 +626,13 @@ export function register(io) {
 
       cancelChatClear(roomId);
       const existingChat = chatHistories[roomId];
-      if (existingChat?.messages.length) socket.emit("chat_history", existingChat.messages);
+      if (existingChat?.messages.length)
+        socket.emit("chat_history", existingChat.messages);
 
-      if (room.game.lastRoundData && (room.game.isActive || room.game.isSyncWaiting)) {
+      if (
+        room.game.lastRoundData &&
+        (room.game.isActive || room.game.isSyncWaiting)
+      ) {
         socket.emit("start_round", room.game.lastRoundData);
         if (room.game.isActive) {
           // Round déjà synchro — le nouveau joueur peut jouer immédiatement
@@ -844,12 +857,18 @@ export function register(io) {
       const name = room.socketToName[socket.id];
       if (!name) return;
 
-      const text = String(msg || "").trim().slice(0, 120);
+      const text = String(msg || "")
+        .trim()
+        .slice(0, 120);
       if (!text) return;
 
       // Rate limit : 1 message / 1.5s par joueur
       const now = Date.now();
-      if (room.players[name]?._lastChat && now - room.players[name]._lastChat < 1500) return;
+      if (
+        room.players[name]?._lastChat &&
+        now - room.players[name]._lastChat < 1500
+      )
+        return;
       if (room.players[name]) room.players[name]._lastChat = now;
 
       const message = { name, text, ts: now };
@@ -871,7 +890,9 @@ export function register(io) {
 
       room.game.readyPlayers.add(name);
 
-      const activePlayers = Object.values(room.players).filter(p => !p._dcTimer).length;
+      const activePlayers = Object.values(room.players).filter(
+        (p) => !p._dcTimer,
+      ).length;
       const threshold = Math.max(1, Math.round(activePlayers * 0.75));
 
       io.to(`room:${roomId}`).emit("ready_update", {
