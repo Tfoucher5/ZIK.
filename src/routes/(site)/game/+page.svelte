@@ -289,6 +289,9 @@
       _waitingForSync = false;
       syncWaiting = false;
       guessDisabled = false;
+      if (ytPlayer?.seekTo && _lastVideo?.startSeconds != null) {
+        ytPlayer.seekTo(_lastVideo.startSeconds, true);
+      }
       setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
     });
     socket.on('ready_update', ({ ready, total }) => {
