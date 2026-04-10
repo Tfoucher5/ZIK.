@@ -1,13 +1,6 @@
 <script>
   let { profile, stats } = $props();
 
-  const LEVEL_NAMES = [
-    '', 'Novice', 'Apprenti', 'Amateur', 'Mélomane', 'Passionné',
-    'Connaisseur', 'Expert', 'Virtuose', 'Maestro', 'Légende',
-  ];
-  function getLevelName(lvl) {
-    return LEVEL_NAMES[Math.min(lvl, LEVEL_NAMES.length - 1)] || 'Légende';
-  }
   function xpForNextLevel(lvl) { return lvl * 1000; }
 
   function fmtDate(iso) {
@@ -38,20 +31,25 @@
   }
 
   function buildCurve(games) {
-    if (!games?.length) return { points: '', fill: '', labels: [] };
-    const W = 520, H = 70, padY = 6;
+    if (!games?.length) return { points: '', fill: '', labels: [], minS: 0, midS: 0, maxS: 0, yMin: 0, yMid: 0, yMax: 0, ox: 0, tw: 0, H: 0 };
+    const CW = 476, H = 72, padY = 8, ox = 48;
     const scores = games.map(g => g.score);
     const minS = Math.min(...scores);
     const maxS = Math.max(...scores);
+    const midS = Math.round((minS + maxS) / 2);
     const range = maxS - minS || 1;
     const pts = scores.map((s, i) => {
-      const x = scores.length === 1 ? W / 2 : (i / (scores.length - 1)) * W;
-      const y = H - padY - ((s - minS) / range) * (H - padY * 2);
+      const x = ox + (scores.length === 1 ? CW / 2 : (i / (scores.length - 1)) * CW);
+      const y = padY + (1 - (s - minS) / range) * (H - padY * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
     const polyline = pts.join(' ');
-    const fill = `${polyline} ${W},${H} 0,${H}`;
-    return { points: polyline, fill, labels: games.map(g => fmtDate(g.endedAt)) };
+    const tw = ox + CW;
+    const fill = `${polyline} ${tw},${H} ${ox},${H}`;
+    const yMax = padY;
+    const yMid = padY + (H - padY * 2) / 2;
+    const yMin = H - padY;
+    return { points: polyline, fill, labels: games.map(g => fmtDate(g.endedAt)), minS, midS, maxS, yMin, yMid, yMax, ox, tw, H };
   }
 
   const recent  = $derived(stats?.recentGames ?? []);
@@ -62,9 +60,8 @@
     profile.games_played > 0 ? Math.round(profile.total_score / profile.games_played) : 0
   );
 
-  const xpMax   = $derived(xpForNextLevel(profile.level));
-  const xpPct   = $derived(Math.min(100, Math.round((profile.xp / xpMax) * 100)));
-  const lvlName = $derived(getLevelName(profile.level));
+  const xpMax = $derived(xpForNextLevel(profile.level));
+  const xpPct = $derived(Math.min(100, Math.round((profile.xp / xpMax) * 100)));
 
   const byType = $derived(stats?.scoreByRoomType ?? {
     official: { count: 0, totalScore: 0 },
@@ -139,15 +136,22 @@
     <div class="pf-card pf-col-8">
       <div class="pf-card-title">&Eacute;volution du score &mdash; {recent.length} derni&egrave;res parties</div>
       {#if recent.length >= 2}
-        <svg viewBox="0 0 520 70" style="width:100%;height:70px" aria-hidden="true">
+        <svg viewBox="0 0 524 72" style="width:100%;height:80px" aria-hidden="true">
           <defs>
             <linearGradient id="pf-curve-grad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.2"/>
               <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
             </linearGradient>
           </defs>
-          <line x1="0" y1="23" x2="520" y2="23" stroke="var(--border)" stroke-width="1"/>
-          <line x1="0" y1="46" x2="520" y2="46" stroke="var(--border)" stroke-width="1"/>
+          <!-- Grid lines -->
+          <line x1={curve.ox} y1={curve.yMax} x2={curve.tw} y2={curve.yMax} stroke="var(--border)" stroke-width="1"/>
+          <line x1={curve.ox} y1={curve.yMid} x2={curve.tw} y2={curve.yMid} stroke="var(--border)" stroke-width="1"/>
+          <line x1={curve.ox} y1={curve.yMin} x2={curve.tw} y2={curve.yMin} stroke="var(--border)" stroke-width="1"/>
+          <!-- Y labels -->
+          <text x={curve.ox - 4} y={curve.yMax + 3.5} text-anchor="end" font-size="9" fill="var(--dim)">{curve.maxS}</text>
+          <text x={curve.ox - 4} y={curve.yMid + 3.5} text-anchor="end" font-size="9" fill="var(--dim)">{curve.midS}</text>
+          <text x={curve.ox - 4} y={curve.yMin + 3.5} text-anchor="end" font-size="9" fill="var(--dim)">{curve.minS}</text>
+          <!-- Fill + line -->
           <polyline points={curve.fill} fill="url(#pf-curve-grad)" stroke="none"/>
           <polyline points={curve.points} fill="none" stroke="var(--accent)" stroke-width="2"
             stroke-linejoin="round" stroke-linecap="round"/>
@@ -155,7 +159,7 @@
             <circle {cx} {cy} r="3" fill="var(--accent)"/>
           {/each}
         </svg>
-        <div class="pf-curve-labels">
+        <div class="pf-curve-labels" style="padding-left:{curve.ox}px">
           {#each curve.labels as lbl}
             <span>{lbl}</span>
           {/each}
@@ -241,8 +245,7 @@
       <div class="pf-level-row">
         <div class="pf-level-num">{profile.level ?? 1}</div>
         <div>
-          <div class="pf-level-name">{lvlName}</div>
-          <div class="pf-level-next">Prochain niveau : {Math.max(0, xpMax - (profile.xp ?? 0))} XP restants</div>
+          <div class="pf-level-next">{Math.max(0, xpMax - (profile.xp ?? 0))} XP avant le niveau {(profile.level ?? 1) + 1}</div>
         </div>
       </div>
       <div class="pf-xp-bar"><div class="pf-xp-fill" style="width:{xpPct}%"></div></div>
