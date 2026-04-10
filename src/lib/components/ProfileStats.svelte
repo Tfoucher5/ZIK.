@@ -1,7 +1,10 @@
 <script>
   let { profile, stats } = $props();
 
-  function xpForNextLevel(lvl) { return lvl * 1000; }
+  // Formule serveur : level = FLOOR(1 + POWER(xp / 50, 0.4))
+  // XP cumulatif pour atteindre le niveau n : 50 * (n-1)^2.5
+  function xpForLevel(lvl) { return Math.round(50 * Math.pow(Math.max(0, lvl - 1), 2.5)); }
+  function xpForNextLevel(lvl) { return Math.round(50 * Math.pow(lvl, 2.5)); }
 
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -60,8 +63,9 @@
     profile.games_played > 0 ? Math.round(profile.total_score / profile.games_played) : 0
   );
 
+  const xpMin = $derived(xpForLevel(profile.level));
   const xpMax = $derived(xpForNextLevel(profile.level));
-  const xpPct = $derived(Math.min(100, Math.round((profile.xp / xpMax) * 100)));
+  const xpPct = $derived(Math.min(100, Math.round(((profile.xp - xpMin) / (xpMax - xpMin)) * 100)));
 
   const byType = $derived(stats?.scoreByRoomType ?? {
     official: { count: 0, totalScore: 0 },
@@ -249,7 +253,7 @@
         </div>
       </div>
       <div class="pf-xp-bar"><div class="pf-xp-fill" style="width:{xpPct}%"></div></div>
-      <div class="pf-xp-nums"><span>{profile.xp ?? 0} XP</span><span>{xpMax} XP</span></div>
+      <div class="pf-xp-nums"><span>{profile.xp ?? 0} XP</span><span>{xpMax} XP pour niv. {(profile.level ?? 1) + 1}</span></div>
     </div>
 
     <div class="pf-card pf-col-4">

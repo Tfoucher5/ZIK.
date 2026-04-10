@@ -24,8 +24,11 @@
     return new Date(iso).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   }
 
+  function xpForLevel(lvl) { return Math.round(50 * Math.pow(Math.max(0, lvl - 1), 2.5)); }
+  function xpForNextLevel(lvl) { return Math.round(50 * Math.pow(lvl, 2.5)); }
   function xpPct(xp, level) {
-    return Math.min(100, Math.round((xp / (level * 1000)) * 100));
+    const min = xpForLevel(level), max = xpForNextLevel(level);
+    return Math.min(100, Math.round(((xp - min) / (max - min)) * 100));
   }
 
   onMount(async () => {
@@ -129,7 +132,7 @@
         <div class="profile-xp-row">
           <div class="profile-xp-label">
             <span>Niveau {profile.level ?? 1}</span>
-            <span>{profile.xp ?? 0} / {(profile.level ?? 1) * 1000} XP</span>
+            <span>{profile.xp ?? 0} / {xpForNextLevel(profile.level ?? 1)} XP</span>
           </div>
           <div class="profile-xp-bar">
             <div class="profile-xp-fill" style="width:{xpPct(profile.xp ?? 0, profile.level ?? 1)}%"></div>
