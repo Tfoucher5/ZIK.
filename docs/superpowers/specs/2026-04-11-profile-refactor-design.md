@@ -102,6 +102,21 @@ Nouveau fichier `static/css/profile.css` (remplace l'existant) avec :
 - Le profil privé (`is_private = true`) sur `/user/[username]` reste bloqué — pas de stats visibles pour les autres
 - Sur `/user/[username]` : pas de bouton "Modifier", pas de modal d'édition
 
+## Responsive (mobile-first)
+
+- Mobile (< 700px) : toutes les cartes passent en `col-12` (colonne unique)
+- Tablet (700–900px) : cartes `col-3` → `col-6`, `col-8`/`col-4` → `col-12`
+- Desktop (> 900px) : grille 12 colonnes comme décrit ci-dessus
+- Hero : flex-wrap, avatar + infos empilés sur mobile
+
+## Thèmes & cohérence visuelle
+
+- Utiliser **uniquement** les variables CSS du site : `--accent`, `--accent-rgb`, `--bg`, `--bg2`, `--surface`, `--border`, `--dim`, `--muted`, `--danger`, `--success`
+- Pas de couleurs hardcodées (pas de `#a78bfa` dans le CSS final — utiliser `var(--accent)`)
+- Typo : `"Bricolage Grotesque"` pour les grandes valeurs numériques (déjà utilisé sur le site)
+- Bordures, border-radius, backdrop-blur cohérents avec le reste du site (`home.css`, `salon.css`)
+- Les thèmes (dark/light + couleurs accent) doivent fonctionner automatiquement via les variables
+
 ---
 
 ## Fichiers à modifier
