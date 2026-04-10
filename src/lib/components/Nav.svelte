@@ -37,6 +37,10 @@
             <hr class="nav-dd-sep nav-dd-mobile-only">
             <a href="/profile"  class="nav-dd-item">Mon profil</a>
             <a href="/settings" class="nav-dd-item">Param&egrave;tres</a>
+            {#if user?.profile?.role === 'super_admin'}
+            <hr class="nav-dd-sep">
+            <a href="/admin" class="nav-dd-item nav-dd-admin">Admin</a>
+            {/if}
             <button class="nav-dd-item nav-dd-logout" onclick={onLogout}>D&eacute;connexion</button>
           </div>
         </div>

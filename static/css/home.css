@@ -147,6 +147,13 @@ img {
   border-top: 1px solid var(--border);
   margin: 4px 0;
 }
+.nav-dd-admin {
+  color: var(--accent);
+}
+.nav-dd-admin:hover {
+  background: rgba(124, 58, 237, 0.08);
+  color: var(--accent);
+}
 /* Liens nav visibles uniquement dans le dropdown en mobile */
 .nav-dd-mobile-only {
   display: none;

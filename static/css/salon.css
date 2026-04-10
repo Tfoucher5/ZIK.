@@ -1991,7 +1991,14 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 9000;
+  z-index: 9999;
+}
+
+@media (max-width: 640px) {
+  .salon-feedback {
+    align-items: flex-start;
+    padding-top: 18dvh;
+  }
 }
 .salon-feedback-inner {
   background: rgba(6, 8, 16, 0.7);
