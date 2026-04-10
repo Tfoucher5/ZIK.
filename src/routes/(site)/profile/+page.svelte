@@ -1,16 +1,16 @@
 <script>
   import { onMount, getContext } from 'svelte';
   import { dicebear } from '$lib/utils.js';
+  import ProfileStats from '$lib/components/ProfileStats.svelte';
 
   const _ctx = getContext('zik');
   const sb = _ctx.sb;
   const openAuthModal = _ctx.openAuthModal;
-  const user = $derived(_ctx.user);
+  const user      = $derived(_ctx.user);
   const authReady = $derived(_ctx.authReady);
 
   let profile     = $state(null);
   let stats       = $state(null);
-  let bestScores  = $state([]);
   let loading     = $state(true);
 
   // Edit modal
@@ -34,6 +34,15 @@
   const name   = $derived(profile?.username || user?.email?.split('@')[0] || 'Joueur');
   const avatar = $derived(profile?.avatar_url || dicebear(name));
 
+  function fmtSince(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+
+  function xpPct(xp, level) {
+    return Math.min(100, Math.round((xp / (level * 1000)) * 100));
+  }
+
   onMount(async () => {
     if (!sb) { loading = false; return; }
     const { data: { session } } = await sb.auth.getSession();
@@ -46,19 +55,17 @@
     try {
       const { data } = await sb.from('profiles').select('*').eq('id', u.id).single();
       profile = data;
-      await loadStats(u.id);
+      await loadStats(u.id, data?.elo ?? 0);
     } finally {
       loading = false;
     }
   }
 
-  async function loadStats(userId) {
+  async function loadStats(userId, elo) {
     try {
-      const r = await fetch(`/api/stats/${userId}`);
+      const r = await fetch(`/api/stats/${userId}?elo=${elo}`);
       if (!r.ok) return;
-      const { bestByRoom, roomInfo } = await r.json();
-      const entries = Object.entries(bestByRoom || {}).sort((a, b) => b[1] - a[1]);
-      bestScores = entries.map(([roomId, score]) => ({ room: roomInfo[roomId], score })).filter(e => e.room);
+      stats = await r.json();
     } catch {}
   }
 
@@ -79,14 +86,14 @@
     const username   = editUsername.trim();
     const avatar_url = editAvatarUrl.trim();
     if (!username) { editError = 'Le pseudo est requis.'; return; }
-    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) { editError = 'Pseudo invalide (3-20 caract\u00e8res, lettres/chiffres/_/-).'; return; }
-
+    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
+      editError = 'Pseudo invalide (3-20 caract\u00e8res, lettres/chiffres/_/-).'; return;
+    }
     const old = profile?.username;
     if (username !== old) {
       const { data: exists } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
       if (exists) { editError = 'Ce pseudo est d\u00e9j\u00e0 pris.'; return; }
     }
-
     editLoading = true;
     try {
       const { data: { session } } = await sb.auth.getSession();
@@ -99,7 +106,6 @@
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
       const updatedProfile = { ...profile, username, avatar_url: avatar_url || null };
       profile = updatedProfile;
-      // Mettre à jour le cache sessionStorage pour que le layout reflète les changements immédiatement
       if (user?.id) {
         try {
           sessionStorage.setItem('zik_profile_' + user.id, JSON.stringify({ p: updatedProfile, ts: Date.now() }));
@@ -107,7 +113,7 @@
         sessionStorage.setItem('zik_uname', username);
       }
       editOpen = false;
-      toast('Profil mis \u00e0 jour !', 'success');
+      toast('Profil mis \u00e0 jour\u00a0!', 'success');
     } catch (e) {
       editError = e.message;
     } finally {
@@ -117,7 +123,7 @@
 </script>
 
 <svelte:head>
-  <title>ZIK — Mon profil</title>
+  <title>ZIK &mdash; Mon profil</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="/css/profile.css">
 </svelte:head>
@@ -135,71 +141,64 @@
     </div>
   </div>
 {:else}
-  <!-- Hero -->
   <div class="profile-hero">
     <div class="profile-hero-inner">
       <div class="profile-avatar-wrap">
         <img src={avatar} alt="" class="profile-avatar-big">
-        <button class="profile-avatar-edit" onclick={openEdit} title="Changer l&apos;avatar">&#x270E;</button>
+        <button class="profile-avatar-edit" onclick={openEdit} title="Changer l'avatar">&#x270E;</button>
       </div>
       <div class="profile-hero-info">
         <div class="profile-username">{name}</div>
-        <div class="profile-level">Niveau {profile?.level || 1} &mdash; {profile?.xp || 0} XP</div>
+        <div class="profile-hero-meta">
+          <span class="profile-elo-badge">ELO {profile?.elo ?? '—'}</span>
+          {#if stats?.topPercent}
+            <span class="profile-top-badge">&#x1F3C6; Top {stats.topPercent}%</span>
+          {/if}
+        </div>
+        {#if profile?.created_at}
+          <div class="profile-since">Membre depuis {fmtSince(profile.created_at)}</div>
+        {/if}
+        {#if profile}
+          <div class="profile-xp-row">
+            <div class="profile-xp-label">
+              <span>Niveau {profile.level ?? 1}</span>
+              <span>{profile.xp ?? 0} / {(profile.level ?? 1) * 1000} XP</span>
+            </div>
+            <div class="profile-xp-bar">
+              <div class="profile-xp-fill" style="width:{xpPct(profile.xp ?? 0, profile.level ?? 1)}%"></div>
+            </div>
+          </div>
+        {/if}
       </div>
       <button class="btn-ghost sm" onclick={openEdit}>Modifier le profil</button>
     </div>
   </div>
 
-  <!-- Stats -->
-  <div class="profile-section">
-    <h2>Statistiques</h2>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-val">{profile?.elo ?? '&mdash;'}</div><div class="stat-label">ELO</div></div>
-      <div class="stat-card"><div class="stat-val">{profile?.level ?? '&mdash;'}</div><div class="stat-label">Niveau</div></div>
-      <div class="stat-card"><div class="stat-val">{profile?.games_played ?? '&mdash;'}</div><div class="stat-label">Parties</div></div>
-      <div class="stat-card"><div class="stat-val">{profile?.total_score ?? '&mdash;'}</div><div class="stat-label">Score total</div></div>
-    </div>
-  </div>
-
-  <!-- Best scores -->
-  <div class="profile-section">
-    <h2>Meilleurs scores par room</h2>
-    <div class="best-scores-list">
-      {#if bestScores.length}
-        {#each bestScores as { room, score }}
-          <div class="best-score-row">
-            <span class="best-score-emoji">{room.emoji || '&#x1F3B5;'}</span>
-            <div class="best-score-info"><div class="best-score-room">{room.name}</div></div>
-            <span class="best-score-pts">{score} pts</span>
-          </div>
-        {/each}
-      {:else}
-        <p class="profile-empty">Aucune partie jou&eacute;e sur les rooms officielles.</p>
-      {/if}
-    </div>
-  </div>
+  {#if profile}
+    <ProfileStats {profile} {stats} />
+  {/if}
 {/if}
-
 </div>
 
-<!-- Edit profile modal -->
+<!-- Edit modal -->
 {#if editOpen}
 <!-- svelte-ignore a11y_interactive_supports_focus -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="overlay" role="dialog" aria-modal="true" onclick={e => { if (e.target === e.currentTarget) editOpen = false; }}>
+<div class="overlay" role="dialog" aria-modal="true"
+  onclick={e => { if (e.target === e.currentTarget) editOpen = false; }}>
   <div class="modal">
     <button class="close-btn" onclick={() => editOpen = false}>&#x2715;</button>
     <h2>Modifier le profil</h2>
     <p class="mdesc">Personnalise ton pseudo et ton avatar.</p>
 
     <div class="field">
-      <label for="pseudo">Pseudo <span style="color:var(--dim);font-weight:400;font-size:.78rem">(3-20 caract&egrave;res)</span></label>
+      <label>Pseudo <span style="color:var(--dim);font-weight:400;font-size:.78rem">(3-20 caract&egrave;res)</span></label>
       <input type="text" bind:value={editUsername} maxlength="20" autocomplete="off" oninput={updatePreview}>
     </div>
 
     <div class="field">
-      <label for="avatar">URL de l&apos;avatar <span style="color:var(--dim);font-weight:400;font-size:.78rem">&mdash; optionnel</span></label>
-      <input type="url" bind:value={editAvatarUrl} placeholder="https://... (image carrée recommandée)" oninput={updatePreview}>
+      <label>URL de l&apos;avatar <span style="color:var(--dim);font-weight:400;font-size:.78rem">&mdash; optionnel</span></label>
+      <input type="url" bind:value={editAvatarUrl} placeholder="https://... (image carr&eacute;e recommand&eacute;e)" oninput={updatePreview}>
     </div>
 
     <div class="avatar-preview-wrap">
@@ -217,7 +216,6 @@
 </div>
 {/if}
 
-<!-- Toast -->
 {#if toastMsg}
   <div class="toast {toastType}" style="display:block">{toastMsg}</div>
 {/if}
