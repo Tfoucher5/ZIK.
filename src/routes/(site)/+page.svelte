@@ -320,7 +320,7 @@
      FEATURES
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="section features-section" use:reveal>
-  <div class="section-head will-reveal">
+  <div class="section-head" use:reveal={0}>
     <h2>Pourquoi <span class="text-gradient">ZIK</span> ?</h2>
   </div>
   <div class="features-grid">
