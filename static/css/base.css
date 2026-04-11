@@ -131,7 +131,7 @@ img { display: block; max-width: 100%; }
 .btn-accent:active { transform: translateY(0); }
 .btn-accent:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-accent.sm { padding: 7px 16px; font-size: 0.8rem; }
-.btn-accent.full { width: 100%; justify-content: center; }
+.btn-accent.full { width: 100%; display: flex; justify-content: center; }
 
 .btn-ghost {
   background: rgb(var(--c-glass) / 0.05);
