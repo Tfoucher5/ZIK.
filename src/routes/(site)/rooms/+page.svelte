@@ -1,5 +1,6 @@
 <script>
   import { onMount, getContext } from 'svelte';
+  import HeroSection from '$lib/components/HeroSection.svelte';
 
   const _ctx = getContext('zik');
   const sb = _ctx.sb;
@@ -222,37 +223,28 @@
 </script>
 
 <svelte:head>
-  <title>ZIK — Rooms de Blind Test | Rejoins une Partie</title>
-  <meta name="description" content="Browse les rooms de blind test publiques ou crée la tienne. Rejoins des joueurs en live, configure ta playlist et lance une partie musicale en quelques secondes.">
+  <title>ZIK — Rooms de Blind Test en Ligne | Rejoins une Partie</title>
+  <meta name="description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live, configure ta playlist Spotify/Deezer et joue gratuitement.">
   <link rel="canonical" href="https://www.zik-music.fr/rooms">
   <meta name="robots" content="index, follow">
 
   <!-- Open Graph -->
   <meta property="og:title" content="ZIK — Rooms de Blind Test">
-  <meta property="og:description" content="Browse les rooms de blind test publiques ou crée la tienne. Rejoins des joueurs en live et lance une partie musicale en quelques secondes.">
+  <meta property="og:description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live, configure ta playlist Spotify/Deezer et joue gratuitement.">
   <meta property="og:url" content="https://www.zik-music.fr/rooms">
 
   <!-- Twitter Card -->
   <meta name="twitter:title" content="ZIK — Rooms de Blind Test">
-  <meta name="twitter:description" content="Browse les rooms de blind test publiques ou crée la tienne. Rejoins des joueurs en live.">
-
-  <link rel="stylesheet" href="/css/playlists.css">
-  <link rel="stylesheet" href="/css/rooms.css">
+  <meta name="twitter:description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live.">
 </svelte:head>
 
-<div class="pl-header">
-  <div class="pl-header-inner">
-    <div>
-      <h1>Rooms <em>publiques</em></h1>
-      <p class="pl-sub" style="display:block">Browse les rooms des joueurs ou cr&eacute;e la tienne.</p>
-    </div>
-    {#if user}
-      <button class="btn-accent" onclick={openCreate}>+ Cr&eacute;er une room</button>
-    {/if}
-  </div>
-</div>
+<HeroSection
+  title="Toutes les"
+  titleAccent="rooms."
+  subtitle="Rejoins une partie en cours ou crée la tienne en 30 secondes."
+/>
 
-<div class="pl-main">
+<div class="rooms-main">
   {#if !authReady}
     <div class="pl-loading">Chargement...</div>
   {:else if !user}
@@ -266,6 +258,11 @@
       </div>
     </div>
   {:else}
+    <div class="rooms-toolbar">
+      {#if user}
+        <button class="btn-accent sm" onclick={openCreate}>+ Créer une room</button>
+      {/if}
+    </div>
     <div class="rooms-tabs">
       <button class="rtab" class:active={tab === 'public'} onclick={() => switchTab('public')}>Rooms publiques</button>
       <button class="rtab" class:active={tab === 'mine'}   onclick={() => switchTab('mine')}>Mes rooms</button>
@@ -273,20 +270,22 @@
 
     {#if tab === 'public'}
       <div class="rooms-search-wrap">
-        <input class="rooms-search" type="search" bind:value={pubSearch} placeholder="Rechercher une room..." />
+        <input class="input-glass rooms-search" type="search" bind:value={pubSearch} placeholder="Rechercher une room..." />
       </div>
       <div class="rooms-filters">
         <button
-          class="rooms-filter-chip {filterAutoStart ? 'active' : ''}"
+          class="filter-chip"
+          class:active={filterAutoStart}
           onclick={() => filterAutoStart = !filterAutoStart}
         >⚡ Lancement auto</button>
         <button
-          class="rooms-filter-chip {filterActive ? 'active' : ''}"
+          class="filter-chip"
+          class:active={filterActive}
           onclick={() => filterActive = !filterActive}
         >🔴 Joueurs actifs</button>
         {#if filterAutoStart || filterActive}
-          <button class="rooms-filter-reset" onclick={() => { filterAutoStart = false; filterActive = false; }}>
-            Réinitialiser
+          <button class="filter-chip filter-chip-reset" onclick={() => { filterAutoStart = false; filterActive = false; }}>
+            ✕ Réinitialiser
           </button>
         {/if}
       </div>
@@ -499,3 +498,306 @@
     <div class="toast toast-{toastType} toast-show">{toastMsg}</div>
   </div>
 {/if}
+
+<style>
+  /* ── Layout ── */
+  .rooms-main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px clamp(16px, 4vw, 48px) 80px;
+  }
+  .rooms-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+
+  /* ── Tabs ── */
+  .rooms-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    width: fit-content;
+  }
+  .rtab {
+    padding: 8px 20px;
+    border-radius: calc(var(--radius-sm) - 4px);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--mid);
+    transition: all 0.15s;
+  }
+  .rtab.active {
+    background: var(--accent);
+    color: #000;
+  }
+
+  /* ── Search ── */
+  .rooms-search-wrap { margin-bottom: 12px; }
+  .rooms-search { width: 100%; max-width: 400px; }
+
+  /* ── Filtres ── */
+  .rooms-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .filter-chip {
+    padding: 7px 16px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: rgb(var(--c-glass) / 0.04);
+    color: var(--mid);
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .filter-chip:hover { background: rgb(var(--c-glass) / 0.08); color: var(--text); }
+  .filter-chip.active {
+    background: rgb(var(--accent-rgb) / 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .filter-chip-reset { color: var(--danger, #f87171); border-color: rgba(248,113,113,0.2); }
+
+  /* ── Grid rooms ── */
+  .rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+
+  /* ── Room card ── */
+  .room-card {
+    background: rgb(var(--c-glass) / 0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    transition: background 0.2s, border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .room-card::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-glass) / 0.08), transparent);
+  }
+  .room-card:hover {
+    background: rgb(var(--c-glass) / 0.07);
+    border-color: var(--border2);
+  }
+  .room-card-official {
+    border-color: rgb(var(--accent2-rgb, 167,139,250) / 0.3);
+  }
+  .room-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .room-card-emoji { font-size: 1.5rem; flex-shrink: 0; }
+  .room-card-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .room-card-owner { font-size: 0.72rem; color: var(--dim); margin-top: 2px; }
+  .room-badge-official {
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: rgb(var(--accent2-rgb, 167,139,250) / 0.12);
+    border: 1px solid rgb(var(--accent2-rgb, 167,139,250) / 0.25);
+    color: var(--accent2);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .room-card-desc { font-size: 0.78rem; color: var(--mid); margin-bottom: 10px; line-height: 1.5; }
+  .room-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .room-card-tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: rgb(var(--c-glass) / 0.06);
+    border: 1px solid var(--border);
+    color: var(--mid);
+  }
+  .room-card-online { color: #4ade80; background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); }
+  .room-card-auto { color: var(--accent); background: rgb(var(--accent-rgb) / 0.08); border-color: rgb(var(--accent-rgb) / 0.2); }
+  .room-card-private { color: var(--dim); }
+  .room-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .room-card-actions { display: flex; gap: 6px; }
+  .btn-delete-room {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid rgba(248,113,113,0.2);
+    background: rgba(248,113,113,0.06);
+    color: #f87171;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .btn-delete-room:hover { background: rgba(248,113,113,0.12); }
+
+  /* ── States ── */
+  .pl-loading { padding: 48px 16px; text-align: center; color: var(--dim); font-size: 0.88rem; }
+  .rooms-empty {
+    padding: 64px 16px;
+    text-align: center;
+    color: var(--dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .rooms-empty span { font-size: 2.5rem; }
+  .rooms-empty p { font-size: 0.88rem; line-height: 1.6; max-width: 300px; }
+
+  /* ── Auth wall ── */
+  .auth-wall {
+    padding: 80px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .auth-wall-icon { font-size: 3rem; }
+  .auth-wall h2 { font-size: 1.2rem; font-weight: 700; font-family: "Bricolage Grotesque", sans-serif; }
+  .auth-wall p { font-size: 0.85rem; color: var(--mid); max-width: 340px; }
+
+  /* ── Modale création/édition ── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 520px;
+    position: relative;
+  }
+  .modal-sm { max-width: 380px; }
+  .modal-title {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field label { font-size: 0.78rem; font-weight: 600; color: var(--mid); }
+  .field input, .field textarea, .field select {
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: rgb(var(--accent-rgb) / 0.4);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.08);
+  }
+  .field select { cursor: pointer; }
+  .field-row { display: flex; gap: 12px; }
+  .field-hint { font-size: 0.7rem; color: var(--dim); margin-top: -8px; margin-bottom: 8px; }
+  .field-error { font-size: 0.75rem; color: #f87171; }
+
+  /* Playlist picker dans modal */
+  .pl-picker { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .pl-picker-search { border: none; border-bottom: 1px solid var(--border); border-radius: 0; }
+  .pl-picker-list { max-height: 200px; overflow-y: auto; }
+  .pl-picker-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .pl-picker-item:hover { background: rgb(var(--c-glass) / 0.05); }
+  .pl-picker-item.selected { background: rgb(var(--accent-rgb) / 0.05); }
+  .pl-picker-item input[type="checkbox"] { accent-color: var(--accent); }
+  .pl-picker-empty { padding: 16px; text-align: center; color: var(--dim); font-size: 0.82rem; }
+  .pl-selected-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pl-chip {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; font-weight: 600;
+    background: rgb(var(--accent-rgb) / 0.08);
+    border: 1px solid rgb(var(--accent-rgb) / 0.2);
+    color: var(--accent);
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .pl-chip-remove { cursor: pointer; color: var(--mid); font-size: 0.8rem; background: none; border: none; padding: 0; font-family: inherit; }
+  .pl-track-count { font-size: 0.72rem; color: var(--dim); margin-top: 6px; }
+
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .modal-error { font-size: 0.78rem; color: #f87171; margin-top: -12px; margin-bottom: 8px; }
+
+  /* ── Delete modal ── */
+  .delete-modal-text { font-size: 0.88rem; color: var(--mid); margin-bottom: 20px; line-height: 1.6; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    white-space: nowrap;
+  }
+  .toast-success { border-color: rgba(74,222,128,0.3); color: #4ade80; }
+  .toast-error { border-color: rgba(248,113,113,0.3); color: #f87171; }
+
+  @media (max-width: 600px) {
+    .rooms-main { padding: 20px 16px 80px; }
+    .rooms-grid { grid-template-columns: 1fr; }
+    .rooms-tabs { width: 100%; }
+    .rtab { flex: 1; text-align: center; }
+    .modal { padding: 20px 16px; }
+    .field-row { flex-direction: column; }
+  }
+</style>
