@@ -13,7 +13,7 @@
   role="button"
   tabindex="0"
   onclick={onclick}
-  onkeydown={(e) => e.key === 'Enter' && onclick?.()}
+  onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onclick?.()}
 >
   <div class="rc-stripe"></div>
   <div class="rc-emoji">{room.emoji || '🎵'}</div>
