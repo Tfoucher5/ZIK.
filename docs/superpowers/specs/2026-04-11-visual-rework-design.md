@@ -164,6 +164,30 @@ La palette existante et le système de 3 thèmes (dark, light, violet) sont cons
 
 ---
 
+## SEO — Mots-clés cibles (5 max)
+
+| Priorité | Mot-clé | Justification |
+|---|---|---|
+| 1 | `blind test multijoueur` | Différenciateur ZIK, faible concurrence directe |
+| 2 | `blind test en ligne` | Volume élevé, intent clair (jouer maintenant) |
+| 3 | `blind test gratuit` | Intent fort, élimine la friction |
+| 4 | `blind test musique` | Haut volume, générique incontournable |
+| 5 | `jeu musical en ligne` | Audience adjacente qui ne connaît pas le terme |
+
+**`blind test` seul n'est pas ciblé** (Wikipédia + gros médias inattaquables).
+
+### Implémentation SEO dans le rework
+
+- `<title>` homepage : `ZIK — Blind Test Multijoueur en Ligne Gratuit`
+- `<meta description>` homepage : intégrer les 5 mots-clés naturellement en ≤155 caractères
+- `<h1>` du hero : doit contenir "blind test" et "multijoueur"
+- `<h2>` des sections : varier entre les mots-clés secondaires
+- Page `/rooms` : title contenant "blind test en ligne"
+- Page `/playlists` : title contenant "jeu musical"
+- Les règles `noindex` existantes restent inchangées (profil, game, salon, settings)
+
+---
+
 ## Ce qu'on ne touche pas
 
 - Logique Socket.io (`src/lib/server/socket/game.js`, `salon.js`)
@@ -172,4 +196,4 @@ La palette existante et le système de 3 thèmes (dark, light, violet) sont cons
 - Supabase client/serveur
 - Système d'auth
 - Système XP/ELO (calculs)
-- SEO meta tags (on conserve les règles existantes)
+- Système XP/ELO (logique de calcul)
