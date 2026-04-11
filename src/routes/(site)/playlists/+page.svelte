@@ -1514,12 +1514,28 @@
 }
 .answer-value-input {
   flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgb(var(--c-glass) / 0.04);
+  border: 1px solid var(--border2);
   color: var(--text);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+.answer-value-input:focus {
+  border-color: rgb(var(--accent-rgb) / 0.4);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.08);
+}
+
+/* ── Modal actions ── */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 /* ── Manual form ─────────────────────────────────────────────────────────────── */
