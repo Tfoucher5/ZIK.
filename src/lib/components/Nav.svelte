@@ -1,5 +1,6 @@
 <script>
   import { dicebear } from '$lib/utils.js';
+  import { page } from '$app/state';
 
   /** @type {{ user: any, onLogin: () => void, onRegister: () => void, onLogout: () => void }} */
   let { user, onLogin, onRegister, onLogout } = $props();
@@ -8,6 +9,15 @@
 
   const name   = $derived(user?.profile?.username || user?.email?.split('@')[0] || 'Joueur');
   const avatar = $derived(user?.profile?.avatar_url || dicebear(name));
+
+  const activeSection = $derived.by(() => {
+    const path = page.url.pathname;
+    if (path === '/' || path === '') return 'home';
+    if (path.startsWith('/rooms')) return 'rooms';
+    if (path.startsWith('/playlists')) return 'playlists';
+    if (path.startsWith('/profile') || path.startsWith('/user')) return 'profile';
+    return '';
+  });
 
   function toggleDropdown(e) {
     e.stopPropagation();
@@ -52,4 +62,23 @@
       </div>
     {/if}
   </div>
+</nav>
+
+<nav id="bottom-nav" aria-label="Navigation principale">
+  <a href="/" class="bottom-nav-item" class:active={activeSection === 'home'}>
+    <span class="bn-icon">🏠</span>
+    Accueil
+  </a>
+  <a href="/rooms" class="bottom-nav-item" class:active={activeSection === 'rooms'}>
+    <span class="bn-icon">🚪</span>
+    Rooms
+  </a>
+  <a href="/playlists" class="bottom-nav-item" class:active={activeSection === 'playlists'}>
+    <span class="bn-icon">🎵</span>
+    Playlists
+  </a>
+  <a href="/profile" class="bottom-nav-item" class:active={activeSection === 'profile'}>
+    <span class="bn-icon">👤</span>
+    Profil
+  </a>
 </nav>
