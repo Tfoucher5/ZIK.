@@ -104,8 +104,8 @@
   <meta property="og:site_name" content="ZIK">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="fr_FR">
-  <meta property="og:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit">
-  <meta property="og:description" content="Le blind test musical multijoueur gratuit en ligne. Trouve les titres avant tout le monde, importe tes playlists Spotify/Deezer, Mode Salon Kahoot-like. Sans installation.">
+  <meta property="og:title" content="ZIK — Blind Test Multijoueur en Ligne Gratuit">
+  <meta property="og:description" content="Blind test multijoueur gratuit en ligne. Spotify & Deezer, classement ELO, Mode Salon. Joue maintenant sans inscription.">
   <meta property="og:url" content="https://www.zik-music.fr/">
   <meta property="og:image" content="https://www.zik-music.fr/og.png">
   <meta property="og:image:width" content="1200">
@@ -114,11 +114,12 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit">
-  <meta name="twitter:description" content="Blind test musical multijoueur gratuit en ligne. Playlists Spotify/Deezer, Mode Salon Kahoot-like, classement ELO. Sans inscription requise.">
+  <meta name="twitter:title" content="ZIK — Blind Test Multijoueur en Ligne Gratuit">
+  <meta name="twitter:description" content="Blind test multijoueur gratuit. Importe tes playlists Spotify/Deezer, grimpe dans le classement ELO. Sans installation.">
   <meta name="twitter:image" content="https://www.zik-music.fr/og.png">
 
-  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/animations.css">
 </svelte:head>
 
 {#if !isGame}
@@ -135,38 +136,17 @@
 {@render children()}
 
 {#if !isGame}
-<footer class="site-footer-full">
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <span class="footer-logo">ZIK<span>.</span></span>
-      <p class="footer-tagline">Blind test multijoueur en ligne.<br>Trouve les titres avant tout le monde.</p>
-      <p class="footer-copy">&copy; 2026 ZIK</p>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Jouer</div>
-      <a href="/rooms">Rooms</a>
-      <a href="/playlists">Playlists</a>
-      <a href="/salon">Mode Salon</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Aide</div>
-      <a href="/docs">Documentation</a>
-      <a href="/docs#faq">FAQ</a>
-      <!-- svelte-ignore a11y_invalid_attribute -->
-      <a href="#" onclick={(e) => { e.preventDefault(); contactOpen = true; }}>Contact</a>
-    </div>
-    <div class="footer-col">
-      <div class="footer-col-title">Légal</div>
-      <a href="/mentions-legales">Mentions légales</a>
-      <a href="/cgu">CGU</a>
-      <a href="/confidentialite">Confidentialité</a>
-      <span class="footer-version">v2.0.0</span>
-    </div>
+<footer class="site-footer">
+  <div class="footer-logo">ZIK<span>.</span></div>
+  <div class="footer-links">
+    <a href="/rooms">Rooms</a>
+    <a href="/playlists">Playlists</a>
+    <a href="/docs">Docs</a>
+    <a href="/mentions-legales">Mentions légales</a>
+    <a href="/cgu">CGU</a>
+    <a href="/confidentialite">Confidentialité</a>
   </div>
-  <div class="footer-bottom">
-    <span>Fait avec ❤️ et beaucoup trop de musique par:</span><br><br>
-    <a href="/portfolio">Theo Foucher</a>
-  </div>
+  <span class="footer-version">v2.0.0 · <a href="/portfolio" style="color:inherit">Theo Foucher</a></span>
 </footer>
 {/if}
 
