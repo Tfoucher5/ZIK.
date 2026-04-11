@@ -230,7 +230,7 @@
   color: var(--text);
 }
 .rooms-filter-chip.active {
-  background: rgb(var(--c-accent) / 0.12);
+  background: rgb(var(--accent-rgb) / 0.1);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -257,8 +257,8 @@
   font-size: 0.65rem;
   font-weight: 700;
   color: var(--accent2);
-  background: rgb(var(--c-accent2, 168 85 247) / 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  background: rgb(var(--accent2-rgb) / 0.1);
+  border: 1px solid rgb(var(--accent2-rgb) / 0.28);
   border-radius: 6px;
   padding: 1px 6px;
   margin-left: 6px;
@@ -266,7 +266,7 @@
   letter-spacing: 0.02em;
 }
 .room-card-official {
-  border-color: rgba(168, 85, 247, 0.25);
+  border-color: rgb(var(--accent2-rgb) / 0.22);
 }
 .room-card-auto {
   color: #fbbf24;
@@ -315,7 +315,7 @@
   background: rgb(var(--c-glass) / 0.08);
 }
 .pl-picker-row.selected {
-  background: rgba(var(--c-accent-rgb, 124, 58, 237) / 0.12);
+  background: rgb(var(--accent-rgb) / 0.1);
 }
 .pl-picker-check {
   width: 16px;

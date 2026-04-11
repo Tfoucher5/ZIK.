@@ -294,9 +294,9 @@
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="hero">
   <div class="hero-bg">
-    <div class="orb o1"></div>
-    <div class="orb o2"></div>
-    <div class="orb o3"></div>
+    <div class="hero-glow hero-glow-1"></div>
+    <div class="hero-glow hero-glow-2"></div>
+    <div class="hero-grid"></div>
   </div>
   <div class="hero-content">
     <!-- Texte -->
@@ -311,7 +311,6 @@
         grimpe en ELO. La partie commence&nbsp;maintenant.
       </p>
 
-      <!-- AJOUT TEMPORAIRE DU MESSAGE INFORMATIONS  -->
       <div class="hero-feats">
         <div class="hero-feat"><span>&#x1F3AE;</span> Multijoueur live</div>
         <div class="hero-feat"><span>&#x1F3B5;</span> Spotify &amp; Deezer</div>
@@ -551,7 +550,7 @@
         }}
       />
       <button
-        class="btn-join sm"
+        class="btn-accent sm"
         onclick={joinByCode}
         disabled={roomCodeLoading}
       >

@@ -23,7 +23,10 @@
       "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
       "Bash(gh --version)",
       "Bash(gh auth:*)",
-      "mcp__claude_ai_Supabase__get_logs"
+      "mcp__claude_ai_Supabase__get_logs",
+      "Bash(bash:*)",
+      "Bash(wc:*)",
+      "Bash(C:/Users/Teamr/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh:*)"
     ]
   }
 }
