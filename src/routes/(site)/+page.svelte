@@ -1,5 +1,10 @@
 <script>
   import { onMount } from "svelte";
+  import { goto } from '$app/navigation';
+  import HeroSection from '$lib/components/HeroSection.svelte';
+  import GlassCard from '$lib/components/GlassCard.svelte';
+  import StatCard from '$lib/components/StatCard.svelte';
+  import RoomCard from '$lib/components/RoomCard.svelte';
 
   let rooms = $state([]);
   let totalOnline = $state(0);
@@ -261,11 +266,8 @@
 </script>
 
 <svelte:head>
-  <title>ZIK — Blind Test Musical Multijoueur en Ligne | Gratuit</title>
-  <meta
-    name="description"
-    content="Le blind test musical multijoueur gratuit : identifie les chansons avant tout le monde, importe tes playlists Spotify ou Deezer, joue en Mode Salon Kahoot-like et grimpe au classement ELO. Sans installation."
-  />
+  <title>ZIK — Blind Test Multijoueur en Ligne Gratuit</title>
+  <meta name="description" content="Joue au blind test multijoueur gratuit en ligne. Importe tes playlists Spotify &amp; Deezer, grimpe dans le classement ELO, joue en Mode Salon. Jeu musical en ligne sans inscription." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.zik-music.fr/" />
   <meta
@@ -286,244 +288,53 @@
     content="Blind test musical multijoueur gratuit en ligne. Playlists Spotify/Deezer, Mode Salon Kahoot-like, classement ELO. Sans inscription requise."
   />
   <script type="application/ld+json">{@html jsonLd}</script>
-  <link rel="stylesheet" href="/css/home.css" />
 </svelte:head>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      HERO
      ═══════════════════════════════════════════════════════════════════════════ -->
-<section class="hero">
-  <div class="hero-bg">
-    <div class="hero-glow hero-glow-1"></div>
-    <div class="hero-glow hero-glow-2"></div>
-    <div class="hero-grid"></div>
-  </div>
-  <div class="hero-content">
-    <!-- Texte -->
-    <div class="hero-text">
-      <span class="eyebrow">
-        <span class="eyebrow-dot"></span>
-        Sans inscription &middot; Multijoueur
-      </span>
-      <h1>Reconnais le son.<br /><em>Domine le classement.</em></h1>
-      <p class="hero-sub">
-        Identifie les titres avant tout le monde, importe ta playlist Deezer,
-        grimpe en ELO. La partie commence&nbsp;maintenant.
-      </p>
-
-      <div class="hero-feats">
-        <div class="hero-feat"><span>&#x1F3AE;</span> Multijoueur live</div>
-        <div class="hero-feat"><span>&#x1F3B5;</span> Spotify &amp; Deezer</div>
-        <div class="hero-feat hero-feat-hide-sm">
-          <span>&#x1F3C6;</span> Classement ELO
-        </div>
-        <div class="hero-feat hero-feat-hide-sm">
-          <span>&#x26A1;</span> Rooms priv&eacute;es
-        </div>
-      </div>
-
-      <div class="hero-steps">
-        <div class="hero-step">
-          <span class="hero-step-num">1</span>
-          <div>
-            <strong>Choisis une room</strong>
-            <small
-              >Officielle, publique ou priv&eacute;e — ou cr&eacute;e la tienne</small
-            >
-          </div>
-        </div>
-        <div class="hero-step">
-          <span class="hero-step-num">2</span>
-          <div>
-            <strong>&Eacute;coute l&rsquo;extrait</strong>
-            <small
-              >30 secondes pour identifier le titre avant tes adversaires</small
-            >
-          </div>
-        </div>
-        <div class="hero-step">
-          <span class="hero-step-num">3</span>
-          <div>
-            <strong>Grimpe dans le classement</strong>
-            <small
-              >Gagne des points ELO &agrave; chaque bonne r&eacute;ponse</small
-            >
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-actions">
-        <button
-          class="btn-accent hero-cta"
-          onclick={() =>
-            document
-              .getElementById("rooms")
-              ?.scrollIntoView({ behavior: "smooth" })}
-        >
-          Jouer maintenant <span class="arrow">&rarr;</span>
-        </button>
-        <a href="/salon" class="btn-ghost hero-cta-sec salon-pill"
-          >&#x1F6CB;&#xFE0F; Mode Salon</a
-        >
-        <a href="/rooms" class="btn-ghost hero-cta-sec hero-cta-explore"
-          >Explorer &rarr;</a
-        >
-      </div>
-    </div>
-
-    <!-- Mockup gameplay -->
-    <div class="hero-visual" aria-hidden="true">
-      <div class="hero-mockup">
-        <!-- Topbar -->
-        <div class="hm-topbar">
-          <span class="hm-live"><span class="dot"></span>EN DIRECT</span>
-          <span class="hm-roomname">&#x1F3B5; Pop Hits 2000s</span>
-          <span class="hm-count">8 &#x1F465;</span>
-        </div>
-
-        <!-- Zone de jeu : pochette + infos manche -->
-        <div class="hm-game">
-          <div class="hm-album">
-            <div class="hm-blob hm-b1"></div>
-            <div class="hm-blob hm-b2"></div>
-            <div class="hm-blob hm-b3"></div>
-            <span class="hm-album-icon">&#x1F3B5;</span>
-          </div>
-          <div class="hm-round">
-            <div class="hm-round-label">
-              Manche <b>4</b><span class="hm-round-total">/10</span>
-            </div>
-            <div class="hm-question-text">Quel est ce titre&nbsp;?</div>
-            <div class="hm-input-fake">
-              <span class="hm-input-val">chanson d</span><span class="hm-cursor"
-              ></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Barre de timer -->
-        <div class="hm-timer-row">
-          <div class="hm-timer-wrap"><div class="hm-timer-bar"></div></div>
-          <span class="hm-timer-num">12s</span>
-        </div>
-
-        <!-- Classement live -->
-        <div class="hm-scores">
-          <div class="hm-row hm-r1">
-            <span class="hm-medal">&#x1F947;</span>
-            <span class="hm-uname">MaxDuke</span>
-            <div class="hm-typing"><span></span><span></span><span></span></div>
-            <span class="hm-pts">1&nbsp;240</span>
-          </div>
-          <div class="hm-row hm-r2">
-            <span class="hm-medal">&#x1F948;</span>
-            <span class="hm-uname">Julia_R</span>
-            <span class="hm-pts">980</span>
-          </div>
-          <div class="hm-row hm-r3">
-            <span class="hm-medal">&#x1F949;</span>
-            <span class="hm-uname">BassHunter</span>
-            <div class="hm-typing hm-typing-slow">
-              <span></span><span></span><span></span>
-            </div>
-            <span class="hm-pts">860</span>
-          </div>
-          <div class="hm-row hm-you">
-            <span class="hm-medal">#4</span>
-            <span class="hm-uname">Toi&nbsp;?</span>
-            <span class="hm-join">Rejoins &rarr;</span>
-          </div>
-        </div>
-
-        <!-- Modes disponibles -->
-        <div class="hm-modes">
-          <span class="hm-mtag">&#x1F3AE; Multijoueur</span>
-          <span class="hm-mtag hm-mtag-salon">&#x1F6CB;&#xFE0F; Salon</span>
-          <span class="hm-mtag">&#x1F512; Priv&eacute;</span>
-        </div>
-
-        <!-- Égaliseur -->
-        <div class="hm-eq">
-          {#each Array(16) as _, i}
-            <div class="hm-bar" style="--i:{i}"></div>
-          {/each}
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+<HeroSection
+  badge={displayOnline > 0 ? `${displayOnline} joueurs en ligne` : 'Blind Test Multijoueur'}
+  title="Le blind test qui"
+  titleAccent="t'obsède."
+  subtitle="Multijoueur, temps réel, classements ELO. Prouve que tes oreilles valent mieux que les leurs."
+>
+  <button class="btn-accent" onclick={() => goto('/rooms')}>Jouer maintenant →</button>
+  <button class="btn-ghost" onclick={() => document.getElementById('rooms')?.scrollIntoView({behavior:'smooth'})}>Explorer les rooms</button>
+</HeroSection>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      STATS STRIP
      ═══════════════════════════════════════════════════════════════════════════ -->
 <div class="stats-strip">
   <div class="stats-inner">
-    <div class="stat-block">
-      <div class="stat-val stat-live">
-        {displayOnline > 0 ? displayOnline : "—"}
-      </div>
-      <div class="stat-label">joueurs en ligne</div>
-    </div>
+    <StatCard value={displayOnline > 0 ? String(displayOnline) : '—'} label="Joueurs live" accent={true} />
     <div class="stat-sep"></div>
-    <div class="stat-block">
-      <div class="stat-val">{displayRooms > 0 ? displayRooms : "—"}</div>
-      <div class="stat-label">rooms publiques</div>
-    </div>
+    <StatCard value={String(displayRooms || '—')} label="Rooms actives" />
     <div class="stat-sep"></div>
-    <div class="stat-block">
-      <div class="stat-val">{displayUsers > 0 ? displayUsers : "—"}</div>
-      <div class="stat-label">utilisateurs inscrits</div>
-    </div>
+    <StatCard value={String(displayUsers || '—')} label="Joueurs inscrits" />
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     MODES DE JEU
+     FEATURES
      ═══════════════════════════════════════════════════════════════════════════ -->
-<section class="section modes-section">
-  <div class="section-head" use:reveal>
-    <h2>Comment jouer</h2>
+<section class="section features-section" use:reveal>
+  <div class="section-head will-reveal">
+    <h2>Pourquoi <span class="text-gradient">ZIK</span> ?</h2>
   </div>
-  <div class="modes-grid">
-    <div class="mode-card" use:reveal={0}>
-      <div class="mode-icon">&#x1F3AE;</div>
-      <h3 class="mode-title">Rooms Multijoueur</h3>
-      <p class="mode-desc">
-        Rejoins une room th&eacute;matique active. Tape le titre avant tout le
-        monde et grimpe dans le classement en temps r&eacute;el.
-      </p>
-      <button
-        class="mode-cta"
-        onclick={() =>
-          document
-            .getElementById("rooms")
-            ?.scrollIntoView({ behavior: "smooth" })}
-      >
-        Voir les rooms &rarr;
-      </button>
+  <div class="features-grid">
+    <div class="will-reveal" use:reveal={100}>
+      <GlassCard icon="🎮" title="Multijoueur live" description="Jusqu'à 20 joueurs en simultané, classement en temps réel sur chaque manche." />
     </div>
-
-    <div class="mode-card mode-card-salon" use:reveal={100}>
-      <span class="mode-new-badge">Nouveau</span>
-      <div class="mode-icon">&#x1F6CB;&#xFE0F;</div>
-      <h3 class="mode-title">Mode Salon</h3>
-      <p class="mode-desc">
-        Lance une session Kahoot-like sur grand &eacute;cran. Tes amis
-        r&eacute;pondent en QCM depuis leur smartphone, en temps r&eacute;el.
-      </p>
-      <a href="/salon" class="mode-cta mode-cta-salon"
-        >Lancer une session &rarr;</a
-      >
+    <div class="will-reveal" use:reveal={200}>
+      <GlassCard icon="🎵" title="Spotify & Deezer" description="Importe tes playlists préférées en quelques clics. Aucune playlist = aucun blind test raté." />
     </div>
-
-    <div class="mode-card" use:reveal={200}>
-      <div class="mode-icon">&#x1F512;</div>
-      <h3 class="mode-title">Room Priv&eacute;e</h3>
-      <p class="mode-desc">
-        Cr&eacute;e ta propre room avec ta playlist Spotify ou Deezer. Partage
-        le code &agrave; tes amis pour jouer ensemble.
-      </p>
-      <a href="/rooms" class="mode-cta">Cr&eacute;er une room &rarr;</a>
+    <div class="will-reveal" use:reveal={300}>
+      <GlassCard icon="📊" title="Système ELO" description="Grimpe dans les classements, surveille ta courbe de progression, compare-toi aux meilleurs." />
+    </div>
+    <div class="will-reveal" use:reveal={400}>
+      <GlassCard icon="📺" title="Mode Salon" description="Joue en soirée sur grand écran TV. Les joueurs utilisent leur téléphone comme manette." />
     </div>
   </div>
 </section>
@@ -572,35 +383,13 @@
   </div>
 
   <div id="rooms-grid" class="rooms-grid">
-    {#each rooms as room, i}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
-      <div
-        class="room-card"
-        style="--rc-color:{room.color};--rc-gradient:{room.gradient}"
-        use:reveal={i * 60}
-        onclick={() => joinRoom(room.id)}
-        role="button"
-        tabindex="0"
-      >
-        <div class="room-stripe"></div>
-        <span class="room-official-badge">&#x2713; Officiel</span>
-        <div class="room-card-inner">
-          <span class="room-emoji">{room.emoji}</span>
-          <div class="room-name">{room.name}</div>
-          <div class="room-desc">{room.description}</div>
-          <div class="room-footer">
-            <span class="room-online"
-              ><span class="dot"></span>{room.online || 0} en ligne</span
-            >
-            <button
-              class="room-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                joinRoom(room.id);
-              }}>JOUER &rarr;</button
-            >
-          </div>
-        </div>
+    {#each rooms.slice(0, 6) as room, i}
+      <div class="will-reveal" use:reveal={i * 60}>
+        <RoomCard
+          {room}
+          accentColor={room.is_official ? 'var(--accent2)' : 'var(--accent)'}
+          onclick={() => joinRoom(room.id)}
+        />
       </div>
     {/each}
   </div>
@@ -936,3 +725,252 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* ── Stats strip ── */
+  .stats-strip {
+    padding: 0 clamp(16px, 5vw, 80px);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgb(var(--c-glass) / 0.025) 0%, transparent 100%);
+    position: relative;
+  }
+  .stats-strip::before {
+    content: "";
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 280px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--accent-rgb) / 0.25), transparent);
+  }
+  .stats-inner {
+    display: flex;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .stat-sep {
+    width: 1px; background: var(--border); flex-shrink: 0; margin: 12px 0;
+  }
+
+  /* ── Sections ── */
+  .section {
+    padding: 72px clamp(16px, 5vw, 80px);
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .section-head {
+    margin-bottom: 36px;
+  }
+  .section-head h2 {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  /* ── Features grid ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── Rooms grid ── */
+  .rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 10px;
+  }
+
+  @media (max-width: 600px) {
+    .section { padding: 48px 16px; }
+    .stats-inner { flex-wrap: wrap; }
+    .features-grid { grid-template-columns: 1fr; }
+    .rooms-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Leaderboards ── */
+  .lb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .lb-panel {
+    background: rgb(var(--c-glass) / 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .lb-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.4rem;
+  }
+  .lb-head b { font-size: 0.9rem; font-weight: 700; display: block; }
+  .lb-head small { font-size: 0.72rem; color: var(--dim); }
+  .lb-body { padding: 8px; }
+  .lb-empty { padding: 16px; text-align: center; color: var(--dim); font-size: 0.82rem; }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .lb-row:hover { background: rgb(var(--c-glass) / 0.05); }
+  .lb-rank { font-size: 0.72rem; color: var(--dim); min-width: 28px; }
+  .lb-name { font-size: 0.85rem; font-weight: 600; flex: 1; }
+  .lb-name-link { color: var(--text); }
+  .lb-name-link:hover { color: var(--accent); }
+  .lb-score { font-size: 0.82rem; font-weight: 700; text-align: right; }
+  .lb-meta { font-size: 0.65rem; color: var(--dim); text-align: right; }
+
+  /* Podium */
+  .lb-podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 20px 16px 0;
+  }
+  .pod-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+  .pod-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border);
+  }
+  .pod-avatar-link { display: block; }
+  .pod-avatar-fallback {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface);
+    font-weight: 700; font-size: 0.9rem;
+    color: var(--text);
+  }
+  .pod-1 .pod-avatar { width: 48px; height: 48px; border-color: var(--accent); }
+  .pod-name { font-size: 0.72rem; font-weight: 600; text-align: center; }
+  .pod-score { font-size: 0.65rem; color: var(--dim); }
+  .pod-bar { font-size: 1.1rem; text-align: center; }
+
+  /* ── Public rooms ── */
+  .pub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .pub-skeleton {
+    height: 100px;
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    animation: pulse-glow 1.5s ease-in-out infinite;
+    animation-delay: calc(var(--i) * 0.1s);
+  }
+  .pub-card {
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .pub-wrap:hover .pub-card { background: rgb(var(--c-glass) / 0.07); border-color: var(--border2); }
+  .pub-hot .pub-card { border-color: rgb(var(--accent-rgb) / 0.2); }
+  .pub-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .pub-emoji { font-size: 1.3rem; }
+  .pub-fire-badge { font-size: 0.65rem; font-weight: 700; color: var(--accent); background: rgb(var(--accent-rgb) / 0.1); padding: 2px 8px; border-radius: 20px; }
+  .pub-name { font-size: 0.88rem; font-weight: 700; margin-bottom: 2px; }
+  .pub-host { font-size: 0.72rem; color: var(--dim); margin-bottom: 4px; }
+  .pub-desc { font-size: 0.72rem; color: var(--mid); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pub-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .pub-online { font-size: 0.7rem; color: var(--dim); display: flex; align-items: center; gap: 5px; }
+  .pub-online-active { color: var(--accent); }
+  .pub-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
+  .pub-dot-active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .pub-btn { font-size: 0.72rem; font-weight: 700; color: var(--accent); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
+  .pub-empty { color: var(--dim); font-size: 0.85rem; }
+
+  /* ── Section join by code ── */
+  .private-room-join {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+  .private-room-label { font-size: 0.82rem; font-weight: 600; color: var(--mid); white-space: nowrap; }
+  .private-room-bar { display: flex; gap: 8px; flex: 1; min-width: 220px; }
+  .private-room-bar input {
+    flex: 1;
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-family: inherit;
+    outline: none;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .private-room-bar input:focus {
+    border-color: rgb(var(--accent-rgb) / 0.4);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.08);
+  }
+  .private-room-err { font-size: 0.75rem; color: var(--danger, #f87171); width: 100%; }
+
+  /* ── Section links ── */
+  .section-explore { font-size: 0.78rem; color: var(--accent); margin-left: 12px; font-weight: 600; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; font-weight: 700; background: rgb(var(--accent-rgb) / 0.08); border: 1px solid rgb(var(--accent-rgb) / 0.2); color: var(--accent); padding: 3px 10px; border-radius: 20px; margin-left: 10px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .dot-hot { background: #f87171; box-shadow: 0 0 6px #f87171; }
+  .pill-hot { color: #f87171; background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); }
+
+  /* ── Guest modal ── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .modal.modal-sm { max-width: 360px; }
+  .modal h2 { font-family: "Bricolage Grotesque", sans-serif; font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+  .mdesc { font-size: 0.82rem; color: var(--mid); margin-bottom: 20px; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .field label { font-size: 0.78rem; font-weight: 600; color: var(--mid); }
+  .field input {
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .field input:focus { border-color: rgb(var(--accent-rgb) / 0.4); box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.08); }
+  .guest-btns { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
