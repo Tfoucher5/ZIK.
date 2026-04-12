@@ -331,6 +331,43 @@
         color: #67e8f9;
     }
 
+    @media (max-width: 640px) {
+        .timeline {
+            padding-left: 1.8rem;
+        }
+
+        .timeline-dot {
+            left: -1.6rem;
+            top: 1.4rem;
+        }
+
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .header-right {
+            align-self: flex-start;
+        }
+
+        .date-badge {
+            font-size: 0.72rem;
+        }
+
+        .card-top {
+            padding: 1.2rem 1.2rem 0.8rem;
+        }
+
+        .card-expanded {
+            padding: 0 1.2rem 1rem;
+        }
+
+        .expand-btn {
+            padding: 0.75rem 1.2rem;
+        }
+    }
+
     /* Expand button */
     .expand-btn {
         display: flex;

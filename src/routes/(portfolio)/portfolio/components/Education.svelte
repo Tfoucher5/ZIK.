@@ -120,7 +120,7 @@
 
     .edu-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
         gap: 1rem;
         max-width: 900px;
     }
@@ -249,6 +249,22 @@
     @media (max-width: 640px) {
         .edu-grid {
             grid-template-columns: 1fr;
+        }
+
+        .edu-header {
+            padding: 1.2rem 1.2rem 0;
+        }
+
+        .edu-desc {
+            margin: 0.8rem 1.2rem 0;
+        }
+
+        .detail-list {
+            padding: 0.5rem 1.2rem 0;
+        }
+
+        .expand-btn {
+            padding: 0.75rem 1.2rem;
         }
     }
 </style>

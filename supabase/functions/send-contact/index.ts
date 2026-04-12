@@ -27,8 +27,8 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Portfolio <contact@zik-music.fr>",
-        to: [CONTACT_TO_EMAIL],
+        from: "Portfolio <onboarding@resend.dev>",
+        to: ["theonicolas.foucher@gmail.com"],
         reply_to: safeEmail,
         subject: `Nouveau message (${source}) de ${safeNom}`,
 

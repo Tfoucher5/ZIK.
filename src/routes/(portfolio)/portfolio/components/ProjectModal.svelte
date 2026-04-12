@@ -408,4 +408,35 @@
         font-size: 0.88rem;
         font-weight: 500;
     }
+
+    @media (max-width: 640px) {
+        .overlay {
+            align-items: flex-end;
+            padding: 0;
+        }
+
+        .modal {
+            max-width: 100%;
+            max-height: 92vh;
+            border-radius: 20px 20px 0 0;
+            animation: slideUpMobile 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUpMobile {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 1.2rem 1.2rem 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+        }
+
+        .modal-body {
+            padding: 1.2rem 1.2rem 2rem;
+        }
+    }
 </style>

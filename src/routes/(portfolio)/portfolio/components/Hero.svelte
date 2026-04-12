@@ -483,8 +483,43 @@
     }
 
     @media (max-width: 640px) {
+        .hero-section {
+            padding: 5rem 1rem 3rem;
+        }
+
+        .hero-desc {
+            font-size: 0.95rem;
+        }
+
+        .cta-row {
+            flex-direction: column;
+        }
+
+        .btn-primary,
+        .btn-ghost {
+            width: 100%;
+            justify-content: center;
+        }
+
         .metrics-row {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+        }
+
+        .glass-card {
+            padding: 1.2rem;
+        }
+
+        .stack-chips span {
+            font-size: 0.72rem;
         }
     }
 
