@@ -64,12 +64,22 @@
     }
   }
 
+  async function fetchWithRetry(url, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const r = await fetch(url);
+        if (r.ok) return r;
+        if (i < retries - 1) await new Promise(res => setTimeout(res, 600 * (i + 1)));
+      } catch {
+        if (i < retries - 1) await new Promise(res => setTimeout(res, 600 * (i + 1)));
+      }
+    }
+    return null;
+  }
+
   async function loadStats(userId, elo) {
-    try {
-      const r = await fetch(`/api/stats/${userId}?elo=${elo}`);
-      if (!r.ok) return;
-      stats = await r.json();
-    } catch {}
+    const r = await fetchWithRetry(`/api/stats/${userId}?elo=${elo}`);
+    if (r?.ok) stats = await r.json();
   }
 
   function openEdit() {

@@ -38,14 +38,28 @@
     await loadPublicProfile();
   });
 
+  async function fetchWithRetry(url, opts = {}, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const r = await fetch(url, opts);
+        if (r.ok) return r;
+        if (r.status === 404) return r; // pas la peine de retry un 404
+        if (i < retries - 1) await new Promise(res => setTimeout(res, 600 * (i + 1)));
+      } catch {
+        if (i < retries - 1) await new Promise(res => setTimeout(res, 600 * (i + 1)));
+      }
+    }
+    return null;
+  }
+
   async function loadPublicProfile() {
     loading = true;
     try {
       const token = (await sb.auth.getSession())?.data?.session?.access_token;
-      const r = await fetch(`/api/profile/${username}`, {
+      const r = await fetchWithRetry(`/api/profile/${username}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (r.status === 404 || !r.ok) { notFound = true; return; }
+      if (!r || r.status === 404 || !r.ok) { notFound = true; return; }
       profile = await r.json();
       if (profile && !profile.is_private) {
         await loadStats(profile.id, profile.elo ?? 0);
@@ -56,11 +70,8 @@
   }
 
   async function loadStats(userId, elo) {
-    try {
-      const r = await fetch(`/api/stats/${userId}?elo=${elo}`);
-      if (!r.ok) return;
-      stats = await r.json();
-    } catch {}
+    const r = await fetchWithRetry(`/api/stats/${userId}?elo=${elo}`);
+    if (r?.ok) stats = await r.json();
   }
 </script>
 
@@ -109,6 +120,9 @@
     </div>
   </div>
 {:else if profile}
+  <div class="profile-back-row">
+    <button class="btn-back" onclick={() => history.back()}>Retour</button>
+  </div>
   <div class="profile-hero">
     <div class="hero-bg">
       <div class="aurora-blob aurora-blob-1" style="opacity:0.5"></div>
@@ -133,13 +147,11 @@
           <div class="profile-since">Membre depuis {fmtSince(profile.created_at)}</div>
         {/if}
         <div class="profile-xp-row">
-          <div class="profile-xp-label">
-            <span>Niveau {profile.level ?? 1}</span>
-            <span>{profile.xp ?? 0} / {xpForNextLevel(profile.level ?? 1)} XP</span>
-          </div>
+          <div class="profile-xp-level">Niveau {profile.level ?? 1}</div>
           <div class="profile-xp-bar">
             <div class="profile-xp-fill" style="width:{xpPct(profile.xp ?? 0, profile.level ?? 1)}%"></div>
           </div>
+          <div class="profile-xp-caption">{profile.xp ?? 0} / {xpForNextLevel(profile.level ?? 1)} XP</div>
         </div>
       </div>
       {#if isOwnProfile}
@@ -253,14 +265,10 @@
   color: var(--dim);
   margin-top: 3px;
 }
-.profile-xp-row { margin-top: 12px; max-width: 300px; }
-.profile-xp-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--dim);
-  margin-bottom: 5px;
-}
+.profile-back-row { padding: 14px clamp(16px, 5vw, 60px) 0; }
+.profile-xp-row { margin-top: 12px; max-width: 300px; display: flex; flex-direction: column; gap: 5px; }
+.profile-xp-level { font-size: 0.75rem; font-weight: 700; color: var(--text); }
+.profile-xp-caption { font-size: 0.68rem; color: var(--dim); }
 .profile-xp-bar {
   background: rgb(var(--c-glass) / 0.08);
   border-radius: 99px;

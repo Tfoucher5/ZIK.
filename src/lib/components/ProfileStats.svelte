@@ -112,7 +112,7 @@
 
     <div class="pf-card pf-col-3">
       <div class="pf-card-title">Parties jou&eacute;es</div>
-      <div class="pf-stat-val">{profile.games_played ?? '—'}</div>
+      <div class="pf-stat-val">{winRate.total || profile.games_played || '—'}</div>
       <div class="pf-stat-lbl">Total</div>
       {#if stats?.gamesThisMonth != null}
         <div class="pf-stat-sub">{stats.gamesThisMonth} ce mois</div>
