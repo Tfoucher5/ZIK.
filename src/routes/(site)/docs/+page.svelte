@@ -66,7 +66,7 @@
 </script>
 
 <svelte:head>
-  <title>Guide complet — Blind Test ZIK | Règles, Points, Mode Salon</title>
+  <title>ZIK — Documentation | Blind Test Multijoueur</title>
   <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Gratuit en ligne." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.zik-music.fr/docs" />
@@ -93,9 +93,6 @@
               aria-current={activeSection === s.id ? 'location' : undefined}
             >
               {s.label}
-              {#if s.id === 'salon'}
-                <span class="badge-new">Nouveau</span>
-              {/if}
             </a>
           </li>
         {/each}
@@ -105,6 +102,8 @@
 
   <!-- Main content -->
   <main class="doc-content">
+    <button class="btn-back doc-back" onclick={() => history.back()}>Retour</button>
+
     <!-- Breadcrumb -->
     <nav class="breadcrumb" aria-label="Fil d'Ariane">
       <a href="/">Accueil</a>
@@ -405,7 +404,7 @@
 
     <!-- ── SALON ── -->
     <section>
-      <h2 id="salon">Mode Salon <span class="badge-new">Nouveau</span></h2>
+      <h2 id="salon">Mode Salon</h2>
 
       <h3>Qu'est-ce que le Mode Salon ?</h3>
       <p>
@@ -877,6 +876,9 @@
     padding-left: 40px;
     border-left: 1px solid var(--border, rgba(255,255,255,0.08));
   }
+
+  /* ── Bouton retour ── */
+  .doc-back { margin-bottom: 20px; }
 
   /* ── Breadcrumb ── */
   .breadcrumb {

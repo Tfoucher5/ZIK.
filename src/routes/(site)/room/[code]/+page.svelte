@@ -65,10 +65,14 @@
 
   <script type="application/ld+json">{@html jsonLd}</script>
 
-  <link rel="stylesheet" href="/css/home.css">
 </svelte:head>
 
 <main class="room-landing">
+
+  <!-- Retour -->
+  <div class="room-back-wrap">
+    <button class="btn-back" onclick={() => history.back()}>Retour</button>
+  </div>
 
   <!-- Hero -->
   <div class="room-hero">
@@ -151,6 +155,9 @@
   .room-landing {
     min-height: 100vh;
     padding-top: var(--nav-h, 64px);
+  }
+  .room-back-wrap {
+    padding: 16px clamp(16px, 5vw, 80px) 0;
   }
 
   /* ── Hero ── */
