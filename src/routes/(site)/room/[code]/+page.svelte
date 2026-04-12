@@ -65,7 +65,6 @@
 
   <script type="application/ld+json">{@html jsonLd}</script>
 
-  <link rel="stylesheet" href="/css/home.css">
 </svelte:head>
 
 <main class="room-landing">
