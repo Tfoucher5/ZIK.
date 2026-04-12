@@ -76,7 +76,6 @@
     <meta property="og:url" content="https://www.zik-music.fr/user/{username}">
     <meta property="og:type" content="profile">
   {/if}
-  <link rel="stylesheet" href="/css/profile.css">
 </svelte:head>
 
 <div id="profile-page">
@@ -111,6 +110,10 @@
   </div>
 {:else if profile}
   <div class="profile-hero">
+    <div class="hero-bg">
+      <div class="aurora-blob aurora-blob-1" style="opacity:0.5"></div>
+      <div class="aurora-blob aurora-blob-2" style="opacity:0.3"></div>
+    </div>
     <div class="profile-hero-inner">
       <div class="profile-avatar-wrap">
         <img src={avatar} alt="" class="profile-avatar-big">
@@ -148,3 +151,128 @@
   <ProfileStats {profile} {stats} />
 {/if}
 </div>
+
+<style>
+.pl-loading {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.88rem;
+}
+.profile-auth-wall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding-top: var(--nav-h);
+  text-align: center;
+}
+.profile-auth-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#profile-page {
+  padding-top: var(--nav-h);
+  flex: 1;
+}
+
+/* -- Hero -- */
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgb(var(--accent-rgb) / 0.06) 0%, transparent 60%);
+  border-bottom: 1px solid var(--border);
+  padding: 36px clamp(16px, 5vw, 60px) 28px;
+}
+.profile-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.profile-avatar-wrap { position: relative; flex-shrink: 0; }
+.profile-avatar-big {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgb(var(--accent-rgb) / 0.35);
+  background: var(--surface);
+}
+.profile-hero-info { flex: 1; min-width: 0; }
+.profile-username {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.profile-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.profile-elo-badge {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.profile-top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgb(var(--accent-rgb) / 0.1);
+  border: 1px solid rgb(var(--accent-rgb) / 0.25);
+  border-radius: 99px;
+  padding: 2px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.profile-privacy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--dim);
+  margin-top: 6px;
+  background: rgb(var(--c-glass) / 0.06);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 2px 10px;
+}
+.profile-since {
+  font-size: 0.78rem;
+  color: var(--dim);
+  margin-top: 3px;
+}
+.profile-xp-row { margin-top: 12px; max-width: 300px; }
+.profile-xp-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--dim);
+  margin-bottom: 5px;
+}
+.profile-xp-bar {
+  background: rgb(var(--c-glass) / 0.08);
+  border-radius: 99px;
+  height: 6px;
+}
+.profile-xp-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent)));
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+@media (max-width: 700px) {
+  .profile-username { font-size: 1.5rem; }
+}
+</style>
