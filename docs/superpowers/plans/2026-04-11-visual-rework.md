@@ -16,35 +16,35 @@
 
 ## Fichiers — Vue d'ensemble
 
-| Fichier | Action | Responsabilité |
-|---|---|---|
-| `static/css/theme.css` | Inchangé | Variables CSS + 3 thèmes |
-| `static/css/base.css` | **Créer** | Reset, body, nav, footer, boutons globaux, inputs, badges |
-| `static/css/animations.css` | **Créer** | @keyframes, aurora blobs, scroll reveal, shimmer |
-| `static/css/game.css` | Restyling subtil | Styles jeu — logique inchangée |
-| `static/css/salon.css` | Restyling aurora | Styles salon — logique inchangée |
-| `static/css/home.css` | **Supprimer** | Migré vers base.css + scoped styles |
-| `static/css/rooms.css` | **Supprimer** | Migré dans rooms/+page.svelte |
-| `static/css/playlists.css` | **Supprimer** | Migré dans playlists/+page.svelte |
-| `static/css/profile.css` | **Supprimer** | Migré dans profile/+page.svelte |
-| `static/css/settings.css` | **Supprimer** | Migré dans settings/+page.svelte |
-| `static/css/legal.css` | **Supprimer** | Migré dans les pages légales |
-| `src/lib/components/Nav.svelte` | Rework | Glassmorphism + bottom bar mobile |
-| `src/lib/components/HeroSection.svelte` | **Créer** | Aurora blobs + dot grid + titre animé |
-| `src/lib/components/GlassCard.svelte` | **Créer** | Card générique icon+titre+desc |
-| `src/lib/components/StatCard.svelte` | **Créer** | Carte stat chiffre+label |
-| `src/lib/components/RoomCard.svelte` | **Créer** | Carte room avec accent latéral |
-| `src/routes/(site)/+layout.svelte` | Modifier | Charger base.css+animations.css, footer simplifié, SEO OG |
-| `src/routes/(site)/+page.svelte` | Rework | Homepage Aurora Glass + SEO |
-| `src/routes/(site)/rooms/+page.svelte` | Rework | Page rooms Aurora Glass |
-| `src/routes/(site)/playlists/+page.svelte` | Rework | Page playlists Aurora Glass |
-| `src/routes/(site)/profile/+page.svelte` | Rework | Page profil Aurora Glass |
-| `src/routes/(site)/user/[username]/+page.svelte` | Rework | Profil public Aurora Glass |
-| `src/routes/(site)/settings/+page.svelte` | Rework | Settings glass cards |
-| `src/routes/(site)/cgu/+page.svelte` | Modifier | Supprimer home.css, style scoped |
-| `src/routes/(site)/confidentialite/+page.svelte` | Modifier | Supprimer home.css, style scoped |
-| `src/routes/(site)/mentions-legales/+page.svelte` | Modifier | Supprimer home.css, style scoped |
-| `src/app.html` | Inchangé | theme.css déjà chargé ici |
+| Fichier                                           | Action           | Responsabilité                                            |
+| ------------------------------------------------- | ---------------- | --------------------------------------------------------- |
+| `static/css/theme.css`                            | Inchangé         | Variables CSS + 3 thèmes                                  |
+| `static/css/base.css`                             | **Créer**        | Reset, body, nav, footer, boutons globaux, inputs, badges |
+| `static/css/animations.css`                       | **Créer**        | @keyframes, aurora blobs, scroll reveal, shimmer          |
+| `static/css/game.css`                             | Restyling subtil | Styles jeu — logique inchangée                            |
+| `static/css/salon.css`                            | Restyling aurora | Styles salon — logique inchangée                          |
+| `static/css/home.css`                             | **Supprimer**    | Migré vers base.css + scoped styles                       |
+| `static/css/rooms.css`                            | **Supprimer**    | Migré dans rooms/+page.svelte                             |
+| `static/css/playlists.css`                        | **Supprimer**    | Migré dans playlists/+page.svelte                         |
+| `static/css/profile.css`                          | **Supprimer**    | Migré dans profile/+page.svelte                           |
+| `static/css/settings.css`                         | **Supprimer**    | Migré dans settings/+page.svelte                          |
+| `static/css/legal.css`                            | **Supprimer**    | Migré dans les pages légales                              |
+| `src/lib/components/Nav.svelte`                   | Rework           | Glassmorphism + bottom bar mobile                         |
+| `src/lib/components/HeroSection.svelte`           | **Créer**        | Aurora blobs + dot grid + titre animé                     |
+| `src/lib/components/GlassCard.svelte`             | **Créer**        | Card générique icon+titre+desc                            |
+| `src/lib/components/StatCard.svelte`              | **Créer**        | Carte stat chiffre+label                                  |
+| `src/lib/components/RoomCard.svelte`              | **Créer**        | Carte room avec accent latéral                            |
+| `src/routes/(site)/+layout.svelte`                | Modifier         | Charger base.css+animations.css, footer simplifié, SEO OG |
+| `src/routes/(site)/+page.svelte`                  | Rework           | Homepage Aurora Glass + SEO                               |
+| `src/routes/(site)/rooms/+page.svelte`            | Rework           | Page rooms Aurora Glass                                   |
+| `src/routes/(site)/playlists/+page.svelte`        | Rework           | Page playlists Aurora Glass                               |
+| `src/routes/(site)/profile/+page.svelte`          | Rework           | Page profil Aurora Glass                                  |
+| `src/routes/(site)/user/[username]/+page.svelte`  | Rework           | Profil public Aurora Glass                                |
+| `src/routes/(site)/settings/+page.svelte`         | Rework           | Settings glass cards                                      |
+| `src/routes/(site)/cgu/+page.svelte`              | Modifier         | Supprimer home.css, style scoped                          |
+| `src/routes/(site)/confidentialite/+page.svelte`  | Modifier         | Supprimer home.css, style scoped                          |
+| `src/routes/(site)/mentions-legales/+page.svelte` | Modifier         | Supprimer home.css, style scoped                          |
+| `src/app.html`                                    | Inchangé         | theme.css déjà chargé ici                                 |
 
 ---
 
@@ -74,6 +74,7 @@ git commit -m "refactor: standardisation variables CSS (rgba → rgb(var(--c-gla
 ## Task 2 : Créer `static/css/base.css`
 
 **Fichiers :**
+
 - Créer : `static/css/base.css`
 
 Ce fichier remplace la partie globale de `home.css` (reset, nav, footer, boutons, inputs). Il est chargé sur toutes les pages via `+layout.svelte`.
@@ -88,8 +89,17 @@ Ce fichier remplace la partie globale de `home.css` (reset, nav, footer, boutons
 ──────────────────────────────────────────────────────────────────────────── */
 
 /* ── Reset ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
 body {
   background: var(--bg);
   color: var(--text);
@@ -99,13 +109,21 @@ body {
   display: flex;
   flex-direction: column;
 }
-a { text-decoration: none; color: inherit; }
-img { display: block; max-width: 100%; }
+a {
+  text-decoration: none;
+  color: inherit;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
 
 /* ── Navbar ── */
 #navbar {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 200;
   height: var(--nav-h);
   display: flex;
@@ -125,49 +143,99 @@ img { display: block; max-width: 100%; }
   letter-spacing: -1px;
   color: var(--text);
 }
-.nav-logo span { color: var(--accent); }
-.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-logo span {
+  color: var(--accent);
+}
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 /* Nav avatar */
 .nav-avatar-wrap {
-  display: flex; align-items: center; gap: 9px;
-  background: none; border: none; cursor: pointer;
-  color: var(--text); padding: 4px 8px; border-radius: 20px;
-  transition: background 0.15s; font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 20px;
+  transition: background 0.15s;
+  font-family: inherit;
 }
-.nav-avatar-wrap:hover { background: rgb(var(--c-glass) / 0.06); }
+.nav-avatar-wrap:hover {
+  background: rgb(var(--c-glass) / 0.06);
+}
 #nav-avatar {
-  width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
-  border: 1px solid var(--border); background: var(--surface);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
-#nav-username { font-size: 0.88rem; font-weight: 500; }
-.nav-chevron { font-size: 0.65rem; color: var(--dim); }
+#nav-username {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.nav-chevron {
+  font-size: 0.65rem;
+  color: var(--dim);
+}
 
 /* Nav dropdown */
-.nav-profile-wrap { position: relative; }
-.nav-dropdown {
-  display: none; position: absolute; top: calc(100% + 8px); right: 0;
-  min-width: 160px; z-index: 300;
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 12px; padding: 6px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  flex-direction: column; gap: 2px;
+.nav-profile-wrap {
+  position: relative;
 }
-.nav-dropdown.open { display: flex; }
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  z-index: 300;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-dropdown.open {
+  display: flex;
+}
 .nav-dd-item {
-  display: block; padding: 9px 12px; border-radius: 8px;
-  font-size: 0.82rem; color: var(--text); cursor: pointer;
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--text);
+  cursor: pointer;
   transition: background 0.12s;
 }
-.nav-dd-item:hover { background: var(--surface2); }
-.nav-dd-item.danger { color: var(--danger); }
-#nav-auth { display: flex; align-items: center; gap: 8px; }
+.nav-dd-item:hover {
+  background: var(--surface2);
+}
+.nav-dd-item.danger {
+  color: var(--danger);
+}
+#nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* ── Bottom navigation bar (mobile uniquement) ── */
 #bottom-nav {
   display: none;
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 199;
   height: 60px;
   background: var(--nav-bg);
@@ -178,19 +246,37 @@ img { display: block; max-width: 100%; }
   align-items: stretch;
 }
 .bottom-nav-item {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 3px;
-  font-size: 0.6rem; font-weight: 600; letter-spacing: 0.03em;
-  color: var(--mid); cursor: pointer; padding: 6px 4px;
-  transition: color 0.15s; text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--mid);
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.15s;
+  text-decoration: none;
   border-top: 2px solid transparent;
 }
-.bottom-nav-item.active { color: var(--accent); border-top-color: var(--accent); }
-.bottom-nav-item .bn-icon { font-size: 1.1rem; }
+.bottom-nav-item.active {
+  color: var(--accent);
+  border-top-color: var(--accent);
+}
+.bottom-nav-item .bn-icon {
+  font-size: 1.1rem;
+}
 @media (max-width: 768px) {
-  #bottom-nav { display: grid; }
+  #bottom-nav {
+    display: grid;
+  }
   /* Padding bottom sur le contenu pour ne pas être caché par la bottom bar */
-  main, .page-content { padding-bottom: 60px; }
+  main,
+  .page-content {
+    padding-bottom: 60px;
+  }
 }
 
 /* ── Boutons partagés ── */
@@ -205,17 +291,35 @@ img { display: block; max-width: 100%; }
   font-family: inherit;
   cursor: pointer;
   letter-spacing: 0.02em;
-  transition: box-shadow 0.15s, transform 0.1s;
-  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.35), 0 4px 20px rgb(var(--accent-rgb) / 0.3);
+  transition:
+    box-shadow 0.15s,
+    transform 0.1s;
+  box-shadow:
+    0 0 0 1px rgb(var(--accent-rgb) / 0.35),
+    0 4px 20px rgb(var(--accent-rgb) / 0.3);
 }
 .btn-accent:hover {
-  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.5), 0 6px 28px rgb(var(--accent-rgb) / 0.45);
+  box-shadow:
+    0 0 0 1px rgb(var(--accent-rgb) / 0.5),
+    0 6px 28px rgb(var(--accent-rgb) / 0.45);
   transform: translateY(-1px);
 }
-.btn-accent:active { transform: translateY(0); }
-.btn-accent:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn-accent.sm { padding: 7px 16px; font-size: 0.8rem; }
-.btn-accent.full { width: 100%; justify-content: center; }
+.btn-accent:active {
+  transform: translateY(0);
+}
+.btn-accent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-accent.sm {
+  padding: 7px 16px;
+  font-size: 0.8rem;
+}
+.btn-accent.full {
+  width: 100%;
+  justify-content: center;
+}
 
 .btn-ghost {
   background: rgb(var(--c-glass) / 0.05);
@@ -229,22 +333,46 @@ img { display: block; max-width: 100%; }
   font-size: 0.9rem;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
-.btn-ghost:hover { background: rgb(var(--c-glass) / 0.09); color: var(--text); border-color: var(--border2); }
-.btn-ghost.sm { padding: 7px 16px; font-size: 0.8rem; }
-.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost:hover {
+  background: rgb(var(--c-glass) / 0.09);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.btn-ghost.sm {
+  padding: 7px 16px;
+  font-size: 0.8rem;
+}
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .btn-icon {
-  width: 38px; height: 38px; border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
   background: rgb(var(--c-glass) / 0.05);
   border: 1px solid var(--border);
-  color: var(--mid); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.9rem; transition: background 0.15s, color 0.15s;
+  color: var(--mid);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition:
+    background 0.15s,
+    color 0.15s;
   font-family: inherit;
 }
-.btn-icon:hover { background: rgb(var(--c-glass) / 0.09); color: var(--text); }
+.btn-icon:hover {
+  background: rgb(var(--c-glass) / 0.09);
+  color: var(--text);
+}
 
 /* ── Inputs ── */
 .input-glass {
@@ -257,9 +385,14 @@ img { display: block; max-width: 100%; }
   font-family: inherit;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
-.input-glass::placeholder { color: var(--dim); }
+.input-glass::placeholder {
+  color: var(--dim);
+}
 .input-glass:focus {
   background: rgb(var(--c-glass) / 0.06);
   border-color: rgb(var(--accent-rgb) / 0.4);
@@ -268,23 +401,35 @@ img { display: block; max-width: 100%; }
 
 /* ── Badges ── */
 .badge-live {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: rgb(var(--accent-rgb) / 0.08);
   border: 1px solid rgb(var(--accent-rgb) / 0.2);
-  padding: 5px 14px; border-radius: 50px;
-  font-size: 0.7rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--accent);
 }
 .badge-live-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 8px var(--accent);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
 /* ── Footer ── */
 .site-footer {
   border-top: 1px solid var(--border);
-  background: linear-gradient(180deg, rgb(var(--c-glass) / 0.02) 0%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--c-glass) / 0.02) 0%,
+    transparent 100%
+  );
   padding: 28px clamp(16px, 5vw, 80px);
   display: flex;
   align-items: center;
@@ -295,31 +440,72 @@ img { display: block; max-width: 100%; }
 }
 .site-footer::before {
   content: "";
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 200px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--accent-rgb) / 0.25), transparent);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--accent-rgb) / 0.25),
+    transparent
+  );
 }
 .footer-logo {
   font-family: "Bricolage Grotesque", sans-serif;
-  font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.5px;
 }
-.footer-logo span { color: var(--accent); }
-.footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
-.footer-links a { font-size: 0.75rem; color: var(--dim); transition: color 0.15s; }
-.footer-links a:hover { color: var(--text); }
-.footer-version { font-size: 0.68rem; color: var(--dim); opacity: 0.5; }
+.footer-logo span {
+  color: var(--accent);
+}
+.footer-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.footer-links a {
+  font-size: 0.75rem;
+  color: var(--dim);
+  transition: color 0.15s;
+}
+.footer-links a:hover {
+  color: var(--text);
+}
+.footer-version {
+  font-size: 0.68rem;
+  color: var(--dim);
+  opacity: 0.5;
+}
 @media (max-width: 600px) {
-  .site-footer { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .footer-links { gap: 14px; }
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .footer-links {
+    gap: 14px;
+  }
 }
 
 /* ── Utilitaires ── */
 .sr-only {
-  position: absolute; width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
-.page-pad { padding-top: calc(var(--nav-h) + 24px); }
+.page-pad {
+  padding-top: calc(var(--nav-h) + 24px);
+}
 ```
 
 - [ ] **Step 2 : Vérifier que le fichier est créé**
@@ -327,6 +513,7 @@ img { display: block; max-width: 100%; }
 ```bash
 wc -l static/css/base.css
 ```
+
 Attendu : ~200 lignes
 
 ---
@@ -334,6 +521,7 @@ Attendu : ~200 lignes
 ## Task 3 : Créer `static/css/animations.css`
 
 **Fichiers :**
+
 - Créer : `static/css/animations.css`
 
 - [ ] **Step 1 : Créer `static/css/animations.css`**
@@ -346,27 +534,57 @@ Attendu : ~200 lignes
 
 /* ── @keyframes ── */
 @keyframes shimmer {
-  to { background-position: 200% center; }
+  to {
+    background-position: 200% center;
+  }
 }
 @keyframes blob-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(22px, -16px) scale(1.04); }
-  66%       { transform: translate(-14px, 12px) scale(0.97); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(22px, -16px) scale(1.04);
+  }
+  66% {
+    transform: translate(-14px, 12px) scale(0.97);
+  }
 }
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes pulse-glow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(0.82); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.82);
+  }
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Texte gradient animé (shimmer) ── */
@@ -393,39 +611,70 @@ Attendu : ~200 lignes
   animation: blob-float 9s ease-in-out infinite;
 }
 .aurora-blob-1 {
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgb(var(--accent-rgb) / 0.12) 0%, transparent 65%);
-  top: -200px; left: -150px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    rgb(var(--accent-rgb) / 0.12) 0%,
+    transparent 65%
+  );
+  top: -200px;
+  left: -150px;
   animation-delay: 0s;
 }
 .aurora-blob-2 {
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, rgb(var(--accent2-rgb) / 0.09) 0%, transparent 65%);
-  top: 80px; right: -120px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle,
+    rgb(var(--accent2-rgb) / 0.09) 0%,
+    transparent 65%
+  );
+  top: 80px;
+  right: -120px;
   animation-delay: -4s;
 }
 .aurora-blob-3 {
-  width: 380px; height: 380px;
-  background: radial-gradient(circle, rgb(var(--accent-rgb) / 0.06) 0%, transparent 65%);
-  bottom: -100px; left: 35%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(
+    circle,
+    rgb(var(--accent-rgb) / 0.06) 0%,
+    transparent 65%
+  );
+  bottom: -100px;
+  left: 35%;
   animation-delay: -7s;
 }
 /* Désactiver les blobs sur mobile pour les perfs */
 @media (max-width: 480px) {
-  .aurora-blob { display: none; }
+  .aurora-blob {
+    display: none;
+  }
 }
 
 /* ── Dot grid ── */
 .dot-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgb(var(--c-glass) / 0.045) 1px, transparent 1px);
+  background-image: radial-gradient(
+    rgb(var(--c-glass) / 0.045) 1px,
+    transparent 1px
+  );
   background-size: 30px 30px;
   pointer-events: none;
 }
 .dot-grid-fade {
-  mask-image: radial-gradient(ellipse 85% 70% at 50% 30%, black 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 85% 70% at 50% 30%, black 0%, transparent 75%);
+  mask-image: radial-gradient(
+    ellipse 85% 70% at 50% 30%,
+    black 0%,
+    transparent 75%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 70% at 50% 30%,
+    black 0%,
+    transparent 75%
+  );
 }
 
 /* ── Scroll reveal ── */
@@ -443,7 +692,9 @@ Attendu : ~200 lignes
 
 /* ── Badge live dot ── */
 .live-dot {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
   animation: pulse-glow 2s ease-in-out infinite;
@@ -469,18 +720,34 @@ Attendu : ~200 lignes
 .glass::before {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(var(--c-glass) / 0.1), transparent);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--c-glass) / 0.1),
+    transparent
+  );
   border-radius: var(--radius) var(--radius) 0 0;
   pointer-events: none;
 }
 
 /* ── Respect prefers-reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .will-reveal { transition: none; }
-  .aurora-blob { animation: none; }
-  .text-gradient { animation: none; }
-  .live-dot { animation: none; }
+  .will-reveal {
+    transition: none;
+  }
+  .aurora-blob {
+    animation: none;
+  }
+  .text-gradient {
+    animation: none;
+  }
+  .live-dot {
+    animation: none;
+  }
 }
 ```
 
@@ -489,6 +756,7 @@ Attendu : ~200 lignes
 ```bash
 wc -l static/css/animations.css
 ```
+
 Attendu : ~110 lignes
 
 ---
@@ -496,33 +764,51 @@ Attendu : ~110 lignes
 ## Task 4 : Mettre à jour `+layout.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/+layout.svelte`
 
 - [ ] **Step 1 : Remplacer le chargement de `home.css` par les nouveaux fichiers dans `<svelte:head>`**
 
 Localiser (autour de la ligne 121) :
+
 ```html
-<link rel="stylesheet" href="/css/home.css">
+<link rel="stylesheet" href="/css/home.css" />
 ```
+
 Remplacer par :
+
 ```html
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/animations.css">
+<link rel="stylesheet" href="/css/base.css" />
+<link rel="stylesheet" href="/css/animations.css" />
 ```
 
 - [ ] **Step 2 : Mettre à jour les meta OG dans `<svelte:head>` (SEO global)**
 
 Remplacer le contenu des balises OG et Twitter :
+
 ```html
-<meta property="og:title" content="ZIK — Blind Test Multijoueur en Ligne Gratuit">
-<meta property="og:description" content="Blind test multijoueur gratuit en ligne. Spotify & Deezer, classement ELO, Mode Salon. Joue maintenant sans inscription.">
-<meta name="twitter:title" content="ZIK — Blind Test Multijoueur en Ligne Gratuit">
-<meta name="twitter:description" content="Blind test multijoueur gratuit. Importe tes playlists Spotify/Deezer, grimpe dans le classement ELO. Sans installation.">
+<meta
+  property="og:title"
+  content="ZIK — Blind Test Multijoueur en Ligne Gratuit"
+/>
+<meta
+  property="og:description"
+  content="Blind test multijoueur gratuit en ligne. Spotify & Deezer, classement ELO, Mode Salon. Joue maintenant sans inscription."
+/>
+<meta
+  name="twitter:title"
+  content="ZIK — Blind Test Multijoueur en Ligne Gratuit"
+/>
+<meta
+  name="twitter:description"
+  content="Blind test multijoueur gratuit. Importe tes playlists Spotify/Deezer, grimpe dans le classement ELO. Sans installation."
+/>
 ```
 
 - [ ] **Step 3 : Remplacer le footer `site-footer-full` par le nouveau footer simplifié**
 
 Remplacer tout le bloc `<footer class="site-footer-full">…</footer>` par :
+
 ```html
 <footer class="site-footer">
   <div class="footer-logo">ZIK<span>.</span></div>
@@ -534,7 +820,9 @@ Remplacer tout le bloc `<footer class="site-footer-full">…</footer>` par :
     <a href="/cgu">CGU</a>
     <a href="/confidentialite">Confidentialité</a>
   </div>
-  <span class="footer-version">v2.0.0 · <a href="/portfolio" style="color:inherit">Theo Foucher</a></span>
+  <span class="footer-version"
+    >v2.0.0 · <a href="/portfolio" style="color:inherit">Theo Foucher</a></span
+  >
 </footer>
 ```
 
@@ -543,6 +831,7 @@ Remplacer tout le bloc `<footer class="site-footer-full">…</footer>` par :
 ```bash
 npm run dev
 ```
+
 Ouvrir http://localhost:5173, vérifier nav glassmorphism + footer simplifié sur la homepage.
 
 - [ ] **Step 5 : Commit**
@@ -557,6 +846,7 @@ git commit -m "feat: base.css + animations.css + layout footer simplifié + SEO 
 ## Task 5 : Créer `HeroSection.svelte`
 
 **Fichiers :**
+
 - Créer : `src/lib/components/HeroSection.svelte`
 
 Composant réutilisable pour les sections hero avec aurora blobs, dot grid, badge live, titre avec gradient animé, sous-titre, slot pour CTA.
@@ -683,6 +973,7 @@ Composant réutilisable pour les sections hero avec aurora blobs, dot grid, badg
 ```bash
 npm run lint 2>&1 | head -30
 ```
+
 Attendu : aucune erreur sur `HeroSection.svelte`
 
 ---
@@ -690,6 +981,7 @@ Attendu : aucune erreur sur `HeroSection.svelte`
 ## Task 6 : Créer `GlassCard.svelte`, `StatCard.svelte`, `RoomCard.svelte`
 
 **Fichiers :**
+
 - Créer : `src/lib/components/GlassCard.svelte`
 - Créer : `src/lib/components/StatCard.svelte`
 - Créer : `src/lib/components/RoomCard.svelte`
@@ -882,6 +1174,7 @@ Attendu : aucune erreur sur `HeroSection.svelte`
 ```bash
 npm run lint 2>&1 | grep -E "error|Error" | head -20
 ```
+
 Attendu : aucune erreur sur les 3 nouveaux composants.
 
 - [ ] **Step 5 : Commit**
@@ -897,6 +1190,7 @@ git commit -m "feat: composants Aurora Glass — HeroSection, GlassCard, StatCar
 ## Task 7 : Rework `Nav.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/lib/components/Nav.svelte`
 
 Ajouter la bottom navigation bar mobile. Le style glassmorphism est déjà dans `base.css` via `#navbar`. Ici on ajoute le markup de la bottom bar et l'indicateur de page active.
@@ -910,38 +1204,73 @@ cat src/lib/components/Nav.svelte
 - [ ] **Step 2 : Ajouter les props et logique pour la page active**
 
 Dans le `<script>`, après les imports existants, ajouter :
+
 ```js
-import { page } from '$app/state';
+import { page } from "$app/state";
 // Déterminer la section active pour la bottom nav
 let activeSection = $derived(() => {
   const path = page.url.pathname;
-  if (path === '/' || path === '') return 'home';
-  if (path.startsWith('/rooms')) return 'rooms';
-  if (path.startsWith('/playlists')) return 'playlists';
-  if (path.startsWith('/profile') || path.startsWith('/user')) return 'profile';
-  return '';
+  if (path === "/" || path === "") return "home";
+  if (path.startsWith("/rooms")) return "rooms";
+  if (path.startsWith("/playlists")) return "playlists";
+  if (path.startsWith("/profile") || path.startsWith("/user")) return "profile";
+  return "";
 });
 ```
+
 Note : si `page` est déjà importé dans Nav.svelte, ne pas le réimporter.
 
 - [ ] **Step 3 : Ajouter le markup de la bottom nav bar juste avant `</svelte:fragment>` ou en fin de template**
 
 Après le `<nav id="navbar">…</nav>` existant, ajouter :
+
 ```html
 <nav id="bottom-nav" aria-label="Navigation principale">
-  <a href="/" class="bottom-nav-item" class:active={activeSection() === 'home'}>
+  <a
+    href="/"
+    class="bottom-nav-item"
+    class:active="{activeSection()"
+    =""
+    =""
+    ="home"
+    }
+  >
     <span class="bn-icon">🏠</span>
     Accueil
   </a>
-  <a href="/rooms" class="bottom-nav-item" class:active={activeSection() === 'rooms'}>
+  <a
+    href="/rooms"
+    class="bottom-nav-item"
+    class:active="{activeSection()"
+    =""
+    =""
+    ="rooms"
+    }
+  >
     <span class="bn-icon">🚪</span>
     Rooms
   </a>
-  <a href="/playlists" class="bottom-nav-item" class:active={activeSection() === 'playlists'}>
+  <a
+    href="/playlists"
+    class="bottom-nav-item"
+    class:active="{activeSection()"
+    =""
+    =""
+    ="playlists"
+    }
+  >
     <span class="bn-icon">🎵</span>
     Playlists
   </a>
-  <a href="/profile" class="bottom-nav-item" class:active={activeSection() === 'profile'}>
+  <a
+    href="/profile"
+    class="bottom-nav-item"
+    class:active="{activeSection()"
+    =""
+    =""
+    ="profile"
+    }
+  >
     <span class="bn-icon">👤</span>
     Profil
   </a>
@@ -953,6 +1282,7 @@ Après le `<nav id="navbar">…</nav>` existant, ajouter :
 ```bash
 npm run dev
 ```
+
 Ouvrir http://localhost:5173, passer en vue mobile 375px dans DevTools. La bottom bar doit apparaître en bas. Le lien actif doit avoir la couleur accent + bordure top.
 
 - [ ] **Step 5 : Commit**
@@ -967,21 +1297,24 @@ git commit -m "feat: bottom navigation bar mobile dans Nav.svelte"
 ## Task 8 : Rework Homepage (`+page.svelte`)
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/+page.svelte`
 
 - [ ] **Step 1 : Mettre à jour les imports en haut du `<script>`**
 
 Ajouter après les imports existants :
+
 ```js
-import HeroSection from '$lib/components/HeroSection.svelte';
-import GlassCard from '$lib/components/GlassCard.svelte';
-import StatCard from '$lib/components/StatCard.svelte';
-import RoomCard from '$lib/components/RoomCard.svelte';
+import HeroSection from "$lib/components/HeroSection.svelte";
+import GlassCard from "$lib/components/GlassCard.svelte";
+import StatCard from "$lib/components/StatCard.svelte";
+import RoomCard from "$lib/components/RoomCard.svelte";
 ```
 
 - [ ] **Step 2 : Mettre à jour les balises SEO dans `<svelte:head>`**
 
 Remplacer le bloc `<title>` et `<meta name="description">` :
+
 ```html
 <title>ZIK — Blind Test Multijoueur en Ligne Gratuit</title>
 <meta
@@ -989,11 +1322,13 @@ Remplacer le bloc `<title>` et `<meta name="description">` :
   content="Joue au blind test multijoueur gratuit en ligne. Importe tes playlists Spotify & Deezer, grimpe dans le classement ELO, joue en Mode Salon. Jeu musical en ligne sans inscription."
 />
 ```
+
 Supprimer le `<link rel="stylesheet" href="/css/home.css" />` dans `<svelte:head>` (déjà chargé via layout).
 
 - [ ] **Step 3 : Remplacer la section `<section class="hero">` par `HeroSection`**
 
 Remplacer tout le bloc `<section class="hero">…</section>` par :
+
 ```html
 <HeroSection
   badge="{displayOnline > 0 ? `${displayOnline} joueurs en ligne` : 'Blind Test Multijoueur'}"
@@ -1001,15 +1336,22 @@ Remplacer tout le bloc `<section class="hero">…</section>` par :
   titleAccent="t'obsède."
   subtitle="Multijoueur, temps réel, classements ELO. Prouve que tes oreilles valent mieux que les leurs."
 >
-  <button class="btn-accent" onclick={() => goto('/rooms')}>Jouer maintenant →</button>
-  <button class="btn-ghost" onclick={() => document.getElementById('rooms')?.scrollIntoView({behavior:'smooth'})}>Explorer les rooms</button>
+  <button class="btn-accent" onclick="{()" ="">
+    goto('/rooms')}>Jouer maintenant →
+  </button>
+  <button class="btn-ghost" onclick="{()" ="">
+    document.getElementById('rooms')?.scrollIntoView({behavior:'smooth'})}>Explorer
+    les rooms
+  </button>
 </HeroSection>
 ```
+
 Ajouter l'import de `goto` si pas déjà présent : `import { goto } from '$app/navigation';`
 
 - [ ] **Step 4 : Ajouter la stats strip sous le hero**
 
 Après `</HeroSection>`, ajouter :
+
 ```html
 <div class="stats-strip">
   <div class="stats-inner">
@@ -1025,23 +1367,40 @@ Après `</HeroSection>`, ajouter :
 - [ ] **Step 5 : Remplacer la section modes par une grille de GlassCard**
 
 Remplacer `<section class="section modes-section">…</section>` par :
+
 ```html
 <section class="section features-section" use:reveal>
   <div class="section-head will-reveal">
     <h2>Pourquoi <span class="text-gradient">ZIK</span> ?</h2>
   </div>
   <div class="features-grid">
-    <div class="will-reveal" use:reveal={100}>
-      <GlassCard icon="🎮" title="Multijoueur live" description="Jusqu'à 20 joueurs en simultané, classement en temps réel sur chaque manche." />
+    <div class="will-reveal" use:reveal="{100}">
+      <GlassCard
+        icon="🎮"
+        title="Multijoueur live"
+        description="Jusqu'à 20 joueurs en simultané, classement en temps réel sur chaque manche."
+      />
     </div>
-    <div class="will-reveal" use:reveal={200}>
-      <GlassCard icon="🎵" title="Spotify & Deezer" description="Importe tes playlists préférées en quelques clics. Aucune playlist = aucun blind test raté." />
+    <div class="will-reveal" use:reveal="{200}">
+      <GlassCard
+        icon="🎵"
+        title="Spotify & Deezer"
+        description="Importe tes playlists préférées en quelques clics. Aucune playlist = aucun blind test raté."
+      />
     </div>
-    <div class="will-reveal" use:reveal={300}>
-      <GlassCard icon="📊" title="Système ELO" description="Grimpe dans les classements, surveille ta courbe de progression, compare-toi aux meilleurs." />
+    <div class="will-reveal" use:reveal="{300}">
+      <GlassCard
+        icon="📊"
+        title="Système ELO"
+        description="Grimpe dans les classements, surveille ta courbe de progression, compare-toi aux meilleurs."
+      />
     </div>
-    <div class="will-reveal" use:reveal={400}>
-      <GlassCard icon="📺" title="Mode Salon" description="Joue en soirée sur grand écran TV. Les joueurs utilisent leur téléphone comme manette." />
+    <div class="will-reveal" use:reveal="{400}">
+      <GlassCard
+        icon="📺"
+        title="Mode Salon"
+        description="Joue en soirée sur grand écran TV. Les joueurs utilisent leur téléphone comme manette."
+      />
     </div>
   </div>
 </section>
@@ -1050,6 +1409,7 @@ Remplacer `<section class="section modes-section">…</section>` par :
 - [ ] **Step 6 : Remplacer les room cards par `RoomCard.svelte`**
 
 Dans la section `<section class="section" id="rooms">`, remplacer les cartes de rooms existantes par des `<RoomCard>` en boucle :
+
 ```html
 {#each rooms.slice(0, 6) as room}
   <div class="will-reveal">
@@ -1061,11 +1421,13 @@ Dans la section `<section class="section" id="rooms">`, remplacer les cartes de 
   </div>
 {/each}
 ```
+
 Conserver la logique `handleJoin` existante.
 
 - [ ] **Step 7 : Ajouter les styles scoped en bas du fichier**
 
 Ajouter un bloc `<style>` en fin de fichier (après le HTML) :
+
 ```html
 <style>
   /* ── Stats strip ── */
@@ -1073,14 +1435,27 @@ Ajouter un bloc `<style>` en fin de fichier (après le HTML) :
     padding: 0 clamp(16px, 5vw, 80px);
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    background: linear-gradient(180deg, rgb(var(--c-glass) / 0.025) 0%, transparent 100%);
+    background: linear-gradient(
+      180deg,
+      rgb(var(--c-glass) / 0.025) 0%,
+      transparent 100%
+    );
     position: relative;
   }
   .stats-strip::before {
     content: "";
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 280px; height: 1px;
-    background: linear-gradient(90deg, transparent, rgb(var(--accent-rgb) / 0.25), transparent);
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--accent-rgb) / 0.25),
+      transparent
+    );
   }
   .stats-inner {
     display: flex;
@@ -1088,7 +1463,10 @@ Ajouter un bloc `<style>` en fin de fichier (après le HTML) :
     margin: 0 auto;
   }
   .stat-sep {
-    width: 1px; background: var(--border); flex-shrink: 0; margin: 12px 0;
+    width: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin: 12px 0;
   }
 
   /* ── Sections ── */
@@ -1123,10 +1501,18 @@ Ajouter un bloc `<style>` en fin de fichier (après le HTML) :
   }
 
   @media (max-width: 600px) {
-    .section { padding: 48px 16px; }
-    .stats-inner { flex-wrap: wrap; }
-    .features-grid { grid-template-columns: 1fr; }
-    .rooms-grid { grid-template-columns: 1fr; }
+    .section {
+      padding: 48px 16px;
+    }
+    .stats-inner {
+      flex-wrap: wrap;
+    }
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+    .rooms-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 ```
@@ -1136,6 +1522,7 @@ Ajouter un bloc `<style>` en fin de fichier (après le HTML) :
 ```bash
 npm run dev
 ```
+
 Vérifier : hero avec badge live animé, titre gradient, stats strip, section features en glass cards, rooms en RoomCard. Mobile 375px : CTA pleine largeur, bottom nav visible.
 
 - [ ] **Step 9 : Lint**
@@ -1156,6 +1543,7 @@ git commit -m "feat: homepage Aurora Glass — hero, stats strip, features, room
 ## Task 9 : Rework `rooms/+page.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/rooms/+page.svelte`
 
 - [ ] **Step 1 : Lire le fichier actuel**
@@ -1167,21 +1555,26 @@ wc -l src/routes/\(site\)/rooms/+page.svelte
 - [ ] **Step 2 : Mettre à jour le `<svelte:head>`**
 
 Remplacer les deux `<link rel="stylesheet">` par rien (on utilisera des styles scoped). Mettre à jour le `<title>` :
+
 ```html
 <title>ZIK — Rooms de Blind Test en Ligne | Rejoins une Partie</title>
-<meta name="description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live, configure ta playlist Spotify/Deezer et joue gratuitement.">
+<meta
+  name="description"
+  content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live, configure ta playlist Spotify/Deezer et joue gratuitement."
+/>
 ```
 
 - [ ] **Step 3 : Ajouter `HeroSection` et `RoomCard` en import**
 
 ```js
-import HeroSection from '$lib/components/HeroSection.svelte';
-import RoomCard from '$lib/components/RoomCard.svelte';
+import HeroSection from "$lib/components/HeroSection.svelte";
+import RoomCard from "$lib/components/RoomCard.svelte";
 ```
 
 - [ ] **Step 4 : Remplacer le header de la page par `HeroSection` compact**
 
 Remplacer l'éventuel header/titre existant en haut du template par :
+
 ```html
 <HeroSection
   title="Toutes les"
@@ -1193,6 +1586,7 @@ Remplacer l'éventuel header/titre existant en haut du template par :
 - [ ] **Step 5 : Remplacer les cartes de rooms par `RoomCard`**
 
 Dans les boucles `{#each}` des rooms officielles et publiques, remplacer le markup HTML inline de chaque carte par :
+
 ```html
 <RoomCard
   {room}
@@ -1200,6 +1594,7 @@ Dans les boucles `{#each}` des rooms officielles et publiques, remplacer le mark
   onclick={() => joinRoom(room.code)}
 />
 ```
+
 Conserver la logique `joinRoom` existante.
 
 - [ ] **Step 6 : Migrer les styles de `rooms.css` et `playlists.css` (rooms en utilise) en scoped**
@@ -1208,7 +1603,9 @@ Ajouter en fin de fichier un bloc `<style>` avec les styles spécifiques à la p
 
 ```html
 <style>
-  .rooms-page { padding-top: 0; }
+  .rooms-page {
+    padding-top: 0;
+  }
 
   .rooms-main {
     max-width: 1100px;
@@ -1235,7 +1632,10 @@ Ajouter en fin de fichier un bloc `<style>` avec les styles spécifiques à la p
     transition: all 0.15s;
     font-family: inherit;
   }
-  .filter-chip:hover { background: rgb(var(--c-glass) / 0.08); color: var(--text); }
+  .filter-chip:hover {
+    background: rgb(var(--c-glass) / 0.08);
+    color: var(--text);
+  }
   .filter-chip.active {
     background: rgb(var(--accent-rgb) / 0.1);
     border-color: var(--accent);
@@ -1264,9 +1664,16 @@ Ajouter en fin de fichier un bloc `<style>` avec les styles spécifiques à la p
   }
 
   @media (max-width: 600px) {
-    .rooms-main { padding: 20px 16px 80px; }
-    .rooms-grid { grid-template-columns: 1fr; }
-    .private-room-box { flex-direction: column; align-items: stretch; }
+    .rooms-main {
+      padding: 20px 16px 80px;
+    }
+    .rooms-grid {
+      grid-template-columns: 1fr;
+    }
+    .private-room-box {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 </style>
 ```
@@ -1276,6 +1683,7 @@ Ajouter en fin de fichier un bloc `<style>` avec les styles spécifiques à la p
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/rooms`. Vérifier : hero compact, filtres chips, cards rooms avec accent latéral, section code privé. Mobile 375px.
 
 - [ ] **Step 8 : Commit**
@@ -1290,21 +1698,27 @@ git commit -m "feat: page rooms — Aurora Glass, RoomCard, styles scoped"
 ## Task 10 : Rework `playlists/+page.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/playlists/+page.svelte`
 
 - [ ] **Step 1 : Mettre à jour `<svelte:head>`**
 
 Supprimer `<link rel="stylesheet" href="/css/playlists.css">`. Mettre à jour `<title>` :
+
 ```html
 <title>ZIK — Playlists de Jeu Musical en Ligne</title>
-<meta name="description" content="Crée et gère tes playlists de blind test. Importe depuis Spotify ou Deezer, ajoute des titres manuellement, lance une room directement.">
+<meta
+  name="description"
+  content="Crée et gère tes playlists de blind test. Importe depuis Spotify ou Deezer, ajoute des titres manuellement, lance une room directement."
+/>
 ```
 
 - [ ] **Step 2 : Ajouter `HeroSection` en import et en haut du template**
 
 ```js
-import HeroSection from '$lib/components/HeroSection.svelte';
+import HeroSection from "$lib/components/HeroSection.svelte";
 ```
+
 ```html
 <HeroSection
   title="Tes"
@@ -1320,6 +1734,7 @@ Copier les règles CSS de `static/css/playlists.css` dans un bloc `<style>` en f
 - [ ] **Step 4 : Remplacer les inputs `<input>` par la classe `input-glass`**
 
 Chercher `class="..."` sur les inputs du fichier et ajouter `input-glass` à la classe, ex :
+
 ```html
 <input class="input-glass" … />
 ```
@@ -1329,6 +1744,7 @@ Chercher `class="..."` sur les inputs du fichier et ajouter `input-glass` à la 
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/playlists`. Vérifier le hero, la liste, les modales.
 
 - [ ] **Step 6 : Commit**
@@ -1343,12 +1759,14 @@ git commit -m "feat: page playlists — Aurora Glass, styles scoped"
 ## Task 11 : Rework pages profil
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/profile/+page.svelte`
 - Modifier : `src/routes/(site)/user/[username]/+page.svelte`
 
 - [ ] **Step 1 : Mettre à jour `profile/+page.svelte` — `<svelte:head>`**
 
 Supprimer `<link rel="stylesheet" href="/css/profile.css">`. Mettre à jour `<title>` :
+
 ```html
 <title>ZIK — Mon Profil | Blind Test Multijoueur</title>
 ```
@@ -1356,6 +1774,7 @@ Supprimer `<link rel="stylesheet" href="/css/profile.css">`. Mettre à jour `<ti
 - [ ] **Step 2 : Ajouter hero aurora dans `profile/+page.svelte`**
 
 En haut du template (sous `<svelte:head>`), avant les sections de contenu, envelopper l'avatar/hero actuel dans une section avec aurora :
+
 ```html
 <div class="profile-hero">
   <div class="hero-bg">
@@ -1379,6 +1798,7 @@ Même traitement : supprimer le `<link>` profile.css, ajouter aurora hero, migre
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/profile`. Vérifier le hero aurora, les cartes stats, la courbe.
 
 - [ ] **Step 6 : Commit**
@@ -1393,6 +1813,7 @@ git commit -m "feat: pages profil — Aurora Glass hero, styles scoped"
 ## Task 12 : Rework `settings/+page.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/settings/+page.svelte`
 
 - [ ] **Step 1 : Mettre à jour `<svelte:head>`**
@@ -1402,6 +1823,7 @@ Supprimer `<link rel="stylesheet" href="/css/settings.css">`.
 - [ ] **Step 2 : Migrer `settings.css` en `<style>` scoped**
 
 Copier les règles de `static/css/settings.css` dans un bloc `<style>` en fin de fichier. Remplacer les containers par des `.glass` sections :
+
 ```html
 <div class="settings-section glass">
   <!-- contenu existant -->
@@ -1413,6 +1835,7 @@ Copier les règles de `static/css/settings.css` dans un bloc `<style>` en fin de
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/settings`. Vérifier les sections glass, le sélecteur de thème.
 
 - [ ] **Step 4 : Commit**
@@ -1427,6 +1850,7 @@ git commit -m "feat: settings — glass cards, styles scoped"
 ## Task 13 : Pages légales
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/cgu/+page.svelte`
 - Modifier : `src/routes/(site)/confidentialite/+page.svelte`
 - Modifier : `src/routes/(site)/mentions-legales/+page.svelte`
@@ -1434,9 +1858,10 @@ git commit -m "feat: settings — glass cards, styles scoped"
 - [ ] **Step 1 : Dans chaque page légale, supprimer les deux `<link>` CSS**
 
 Supprimer :
+
 ```html
-<link rel="stylesheet" href="/css/home.css">
-<link rel="stylesheet" href="/css/legal.css">
+<link rel="stylesheet" href="/css/home.css" />
+<link rel="stylesheet" href="/css/legal.css" />
 ```
 
 - [ ] **Step 2 : Ajouter un `<style>` scoped minimal dans chaque page**
@@ -1450,12 +1875,26 @@ Supprimer :
   }
   .legal-page h1 {
     font-family: "Bricolage Grotesque", sans-serif;
-    font-size: 1.8rem; font-weight: 800; letter-spacing: -1px;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -1px;
     margin-bottom: 24px;
   }
-  .legal-page h2 { font-size: 1.1rem; font-weight: 700; margin: 28px 0 10px; }
-  .legal-page p, .legal-page li { font-size: 0.88rem; color: var(--mid); line-height: 1.75; }
-  .legal-page ul { padding-left: 20px; margin: 8px 0; }
+  .legal-page h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 28px 0 10px;
+  }
+  .legal-page p,
+  .legal-page li {
+    font-size: 0.88rem;
+    color: var(--mid);
+    line-height: 1.75;
+  }
+  .legal-page ul {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
 </style>
 ```
 
@@ -1473,6 +1912,7 @@ git commit -m "feat: pages légales — styles scoped, suppression liens CSS glo
 ## Task 14 : Restyling `game.css` (mode subtil)
 
 **Fichiers :**
+
 - Modifier : `static/css/game.css`
 
 **Règle absolue :** on ne touche qu'aux propriétés visuelles (couleurs, backgrounds, borders, shadows). Toutes les classes, sélecteurs, z-index, layout, logique sont conservés à l'identique. Pas d'aurora blobs. Pas de dot grid. Pas de scroll reveals.
@@ -1486,6 +1926,7 @@ grep -n "rgba\|#[0-9a-f]\{3,6\}" static/css/game.css | grep -v "var(" | head -20
 - [ ] **Step 2 : Remplacer les backgrounds hardcodés par des variables**
 
 Pour chaque occurrence trouvée :
+
 - `background: rgba(18, 18, 28, 0.96)` → `background: var(--bg2)`
 - `color: #fff` ou `color: white` → `color: var(--text)`
 - `border-color: #...` hardcodé → `border-color: var(--border)`
@@ -1493,6 +1934,7 @@ Pour chaque occurrence trouvée :
 - [ ] **Step 3 : Améliorer le glassmorphism des panels secondaires (chat, menu)**
 
 Localiser `.g-chat-panel` (ou équivalent) et s'assurer :
+
 ```css
 /* Exemple — adapter aux vrais sélecteurs existants */
 backdrop-filter: blur(12px);
@@ -1506,6 +1948,7 @@ border: 1px solid var(--border);
 ```bash
 git diff static/css/game.css | grep "^+" | grep -v "background\|color\|border\|shadow\|opacity" | head -20
 ```
+
 Attendu : peu ou pas de résultats (seules les propriétés visuelles ont changé).
 
 - [ ] **Step 5 : Tester une room en jeu**
@@ -1513,6 +1956,7 @@ Attendu : peu ou pas de résultats (seules les propriétés visuelles ont chang�
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/rooms`, rejoindre une room, vérifier que l'interface de jeu fonctionne normalement. Pas de régressions visuelles majeures.
 
 - [ ] **Step 6 : Commit**
@@ -1527,6 +1971,7 @@ git commit -m "style: game.css — hardcoded colors → CSS variables, subtle gl
 ## Task 15 : Restyling `salon.css` (aurora maximaliste)
 
 **Fichiers :**
+
 - Modifier : `static/css/salon.css`
 
 **Même règle absolue que game.css** : logique de jeu intouchée. On améliore uniquement l'aspect visuel.
@@ -1540,17 +1985,28 @@ grep -n "background\|border\|box-shadow" static/css/salon.css | grep -v "var(" |
 - [ ] **Step 2 : Enrichir le fond de l'écran host**
 
 Localiser le sélecteur principal de la vue host (ex: `.salon-host`, `.host-bg`, ou `.salon-screen`) et ajouter :
+
 ```css
 .salon-host-bg {
-  background: radial-gradient(ellipse 80% 60% at 20% 40%, rgb(var(--accent-rgb) / 0.08) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 50% at 80% 60%, rgb(var(--accent2-rgb) / 0.06) 0%, transparent 55%),
-              var(--bg);
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 20% 40%,
+      rgb(var(--accent-rgb) / 0.08) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 80% 60%,
+      rgb(var(--accent2-rgb) / 0.06) 0%,
+      transparent 55%
+    ),
+    var(--bg);
 }
 ```
 
 - [ ] **Step 3 : Renforcer le glassmorphism des overlays (résultats, fin de round)**
 
 Sur les modales/overlays du salon, s'assurer :
+
 ```css
 backdrop-filter: blur(20px);
 -webkit-backdrop-filter: blur(20px);
@@ -1567,6 +2023,7 @@ Même approche que game.css — chercher/remplacer les couleurs hardcodées.
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/salon`. Vérifier que setup, host et play fonctionnent sans régression.
 
 - [ ] **Step 6 : Commit**
@@ -1581,6 +2038,7 @@ git commit -m "style: salon.css — aurora renforcé sur host, glassmorphism ove
 ## Task 16 : Supprimer les anciens fichiers CSS
 
 **Fichiers :**
+
 - Supprimer : `static/css/home.css`, `rooms.css`, `playlists.css`, `profile.css`, `settings.css`, `legal.css`
 
 - [ ] **Step 1 : Vérifier qu'aucun fichier ne charge encore les anciens CSS**
@@ -1588,6 +2046,7 @@ git commit -m "style: salon.css — aurora renforcé sur host, glassmorphism ove
 ```bash
 grep -rn "home\.css\|rooms\.css\|playlists\.css\|profile\.css\|settings\.css\|legal\.css" src/ --include="*.svelte" --include="*.html"
 ```
+
 Attendu : aucun résultat. Si des occurrences restent, les supprimer avant de continuer.
 
 - [ ] **Step 2 : Supprimer les fichiers**
@@ -1602,6 +2061,7 @@ rm static/css/home.css static/css/rooms.css static/css/playlists.css \
 ```bash
 npm run dev
 ```
+
 Naviguer sur `/`, `/rooms`, `/playlists`, `/profile`, `/settings`, `/cgu`. Aucune erreur 404 sur les CSS, aucune régression visuelle majeure.
 
 - [ ] **Step 4 : Lint final**
@@ -1609,6 +2069,7 @@ Naviguer sur `/`, `/rooms`, `/playlists`, `/profile`, `/settings`, `/cgu`. Aucun
 ```bash
 npm run lint
 ```
+
 Attendu : 0 erreurs.
 
 - [ ] **Step 5 : Commit**
@@ -1625,6 +2086,7 @@ git commit -m "chore: suppression anciens fichiers CSS migrés en scoped styles"
 - [ ] **Step 1 : Mettre à jour `memory/MEMORY.md` et les fichiers mémoire concernés**
 
 Mettre à jour `project_zik_setup.md` pour refléter la nouvelle architecture CSS :
+
 - `static/css/base.css` — styles globaux (nav, footer, boutons)
 - `static/css/animations.css` — Aurora Glass effects
 - `static/css/theme.css` — variables + thèmes (inchangé)
@@ -1633,6 +2095,7 @@ Mettre à jour `project_zik_setup.md` pour refléter la nouvelle architecture CS
 - Styles page-spécifiques → `<style>` scoped dans chaque fichier Svelte
 
 Créer ou mettre à jour une entrée mémoire pour les composants :
+
 - `src/lib/components/HeroSection.svelte` — hero aurora réutilisable
 - `src/lib/components/GlassCard.svelte` — card glass générique
 - `src/lib/components/StatCard.svelte` — carte stat
@@ -1650,6 +2113,7 @@ git commit -m "docs: mise à jour mémoire — architecture CSS v2.0 + nouveaux 
 ## Task 18 : SEO final — Pages secondaires
 
 **Fichiers :**
+
 - Modifier `src/routes/(site)/playlists/+page.svelte` (title déjà fait en Task 10)
 - Vérifier `src/routes/(site)/docs/+page.svelte`
 
@@ -1660,6 +2124,7 @@ grep -rn "<title>" src/routes/\(site\)/ --include="*.svelte"
 ```
 
 S'assurer que :
+
 - Homepage : `ZIK — Blind Test Multijoueur en Ligne Gratuit`
 - Rooms : `ZIK — Rooms de Blind Test en Ligne | Rejoins une Partie`
 - Playlists : `ZIK — Playlists de Jeu Musical en Ligne`
@@ -1671,6 +2136,7 @@ S'assurer que :
 ```bash
 grep -rn "name=\"description\"" src/routes/\(site\)/ --include="*.svelte" | grep -v "noindex"
 ```
+
 Chaque description doit contenir au moins un des 5 mots-clés cibles et faire ≤155 caractères.
 
 - [ ] **Step 3 : Commit**
@@ -1689,6 +2155,7 @@ git commit -m "seo: harmonisation titles + descriptions avec mots-clés cibles"
 ```bash
 npm run build 2>&1 | tail -20
 ```
+
 Attendu : `✓ built in ...` sans erreurs.
 
 - [ ] **Step 2 : Preview du build**
@@ -1696,6 +2163,7 @@ Attendu : `✓ built in ...` sans erreurs.
 ```bash
 npm run preview
 ```
+
 Vérifier sur http://localhost:4173 : homepage, rooms, profil, mobile 375px.
 
 - [ ] **Step 3 : Lint complet**
@@ -1703,6 +2171,7 @@ Vérifier sur http://localhost:4173 : homepage, rooms, profil, mobile 375px.
 ```bash
 npm run lint
 ```
+
 Attendu : 0 erreurs, 0 warnings critiques.
 
 - [ ] **Step 4 : Tag de version**
@@ -1741,6 +2210,7 @@ gh pr create \
 ## Self-Review
 
 **Couverture spec :**
+
 - ✅ Direction Aurora Glass → Tasks 2-3 (base + animations)
 - ✅ Palette inchangée → theme.css non touché
 - ✅ Composants partagés → Task 5-6
@@ -1760,6 +2230,7 @@ gh pr create \
 - ✅ Mémoire Claude mise à jour → Task 17
 
 **Cohérence des noms :**
+
 - `aurora-blob-1/2/3` défini dans animations.css → utilisé dans HeroSection.svelte ✅
 - `text-gradient` défini dans animations.css → utilisé dans GlassCard, Homepage ✅
 - `will-reveal` / `revealed` défini dans animations.css → utilisé dans homepage via `reveal()` action existante ✅
@@ -1768,6 +2239,7 @@ gh pr create \
 - `site-footer` dans base.css → `+layout.svelte` Task 4 ✅
 
 **Points d'attention pour l'exécutant :**
+
 - Task 8 Step 3 : vérifier que `goto` est déjà importé dans `+page.svelte` avant d'ajouter l'import
 - Task 7 Step 2 : vérifier que `page` de `$app/state` n'est pas déjà importé dans Nav.svelte
 - Tasks 10-12 : "copier les règles de l'ancien CSS" — lire le fichier d'abord, ne pas supposer son contenu

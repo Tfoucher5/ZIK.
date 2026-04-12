@@ -28,14 +28,14 @@ Refonte visuelle complète du site ZIK dans un style **Aurora Glass** — modern
 
 La palette existante et le système de 3 thèmes (dark, light, violet) sont conservés intégralement. L'Aurora Glass est une technique appliquée par-dessus, pas un remplacement de couleurs.
 
-| Variable | Valeur (dark) | Usage |
-|---|---|---|
-| `--accent` | `#3ecfff` | Cyan — CTA, badges live, accents |
-| `--accent2` | `#a78bfa` | Violet — aurora, dégradés |
-| `--bg` | `#04050a` | Fond principal |
-| `--bg2` | `#0c1018` | Fond secondaire |
-| `--surface` | `rgba(255,255,255,0.04)` | Cards glass |
-| `--border` | `rgba(255,255,255,0.08)` | Bordures |
+| Variable    | Valeur (dark)            | Usage                            |
+| ----------- | ------------------------ | -------------------------------- |
+| `--accent`  | `#3ecfff`                | Cyan — CTA, badges live, accents |
+| `--accent2` | `#a78bfa`                | Violet — aurora, dégradés        |
+| `--bg`      | `#04050a`                | Fond principal                   |
+| `--bg2`     | `#0c1018`                | Fond secondaire                  |
+| `--surface` | `rgba(255,255,255,0.04)` | Cards glass                      |
+| `--border`  | `rgba(255,255,255,0.08)` | Bordures                         |
 
 ### Typographie — inchangée
 
@@ -44,11 +44,11 @@ La palette existante et le système de 3 thèmes (dark, light, violet) sont cons
 
 ### Animations
 
-| Zone | Niveau | Détail |
-|---|---|---|
-| Homepage, profil, playlists, rooms | **Maximaliste** | Blobs aurora, scroll reveals, shimmer, hover effects marqués |
-| Mode Salon | **Maximaliste** | Effets visuels spectaculaires sur les écrans host/play |
-| Rooms de jeu | **Subtil** | Micro-interactions uniquement, zéro décoration aurora, priorité gameplay |
+| Zone                               | Niveau          | Détail                                                                   |
+| ---------------------------------- | --------------- | ------------------------------------------------------------------------ |
+| Homepage, profil, playlists, rooms | **Maximaliste** | Blobs aurora, scroll reveals, shimmer, hover effects marqués             |
+| Mode Salon                         | **Maximaliste** | Effets visuels spectaculaires sur les écrans host/play                   |
+| Rooms de jeu                       | **Subtil**      | Micro-interactions uniquement, zéro décoration aurora, priorité gameplay |
 
 `prefers-reduced-motion` respecté partout — animations désactivées si l'utilisateur a paramétré son OS en conséquence.
 
@@ -62,34 +62,34 @@ La palette existante et le système de 3 thèmes (dark, light, violet) sont cons
 
 ### Fichiers `static/css/` conservés / créés
 
-| Fichier | Action | Contenu |
-|---|---|---|
-| `theme.css` | **Inchangé** | CSS variables, 3 thèmes |
-| `base.css` | **Nouveau** (remplace `home.css` global) | Reset, body, nav, footer, boutons partagés (`btn-accent`, `btn-ghost`), inputs, badges, layout helpers |
-| `animations.css` | **Nouveau** | `@keyframes` globaux (shimmer, blob-float, slide-up, pulse), `.will-reveal` / `.revealed`, `.aurora-blob` |
-| `game.css` | **Restyling** | Styles jeu — logique inchangée, décoration aurora retirée, style subtil |
-| `salon.css` | **Restyling** | Mode salon — logique inchangée, style aurora maximaliste renforcé |
+| Fichier          | Action                                   | Contenu                                                                                                   |
+| ---------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `theme.css`      | **Inchangé**                             | CSS variables, 3 thèmes                                                                                   |
+| `base.css`       | **Nouveau** (remplace `home.css` global) | Reset, body, nav, footer, boutons partagés (`btn-accent`, `btn-ghost`), inputs, badges, layout helpers    |
+| `animations.css` | **Nouveau**                              | `@keyframes` globaux (shimmer, blob-float, slide-up, pulse), `.will-reveal` / `.revealed`, `.aurora-blob` |
+| `game.css`       | **Restyling**                            | Styles jeu — logique inchangée, décoration aurora retirée, style subtil                                   |
+| `salon.css`      | **Restyling**                            | Mode salon — logique inchangée, style aurora maximaliste renforcé                                         |
 
 ### Fichiers `static/css/` supprimés
 
-| Fichier | Migration |
-|---|---|
-| `home.css` | → `base.css` (global) + `<style>` dans `+page.svelte`, `HeroSection.svelte`, etc. |
-| `rooms.css` | → `<style>` dans `rooms/+page.svelte` |
-| `playlists.css` | → `<style>` dans `playlists/+page.svelte` |
-| `profile.css` | → `<style>` dans `profile/+page.svelte` |
-| `settings.css` | → `<style>` dans `settings/+page.svelte` |
-| `legal.css` | → `<style>` dans les pages légales |
+| Fichier         | Migration                                                                         |
+| --------------- | --------------------------------------------------------------------------------- |
+| `home.css`      | → `base.css` (global) + `<style>` dans `+page.svelte`, `HeroSection.svelte`, etc. |
+| `rooms.css`     | → `<style>` dans `rooms/+page.svelte`                                             |
+| `playlists.css` | → `<style>` dans `playlists/+page.svelte`                                         |
+| `profile.css`   | → `<style>` dans `profile/+page.svelte`                                           |
+| `settings.css`  | → `<style>` dans `settings/+page.svelte`                                          |
+| `legal.css`     | → `<style>` dans les pages légales                                                |
 
 ### Nouveaux composants Svelte
 
-| Composant | Emplacement | Rôle |
-|---|---|---|
+| Composant            | Emplacement           | Rôle                                                                     |
+| -------------------- | --------------------- | ------------------------------------------------------------------------ |
 | `HeroSection.svelte` | `src/lib/components/` | Aurora blobs + dot grid + titre animé — réutilisable sur plusieurs pages |
-| `RoomCard.svelte` | `src/lib/components/` | Carte room avec accent latéral coloré, hover translateX |
-| `StatCard.svelte` | `src/lib/components/` | Carte stat (chiffre + label) avec shine top |
-| `GlassCard.svelte` | `src/lib/components/` | Base générique glass — icône + titre + description |
-| `Nav.svelte` | `src/lib/components/` | Existant — restyling glassmorphism + bottom bar mobile |
+| `RoomCard.svelte`    | `src/lib/components/` | Carte room avec accent latéral coloré, hover translateX                  |
+| `StatCard.svelte`    | `src/lib/components/` | Carte stat (chiffre + label) avec shine top                              |
+| `GlassCard.svelte`   | `src/lib/components/` | Base générique glass — icône + titre + description                       |
+| `Nav.svelte`         | `src/lib/components/` | Existant — restyling glassmorphism + bottom bar mobile                   |
 
 `ProfileStats.svelte` (existant) est adapté au nouveau style sans refonte de sa logique.
 
@@ -166,13 +166,13 @@ La palette existante et le système de 3 thèmes (dark, light, violet) sont cons
 
 ## SEO — Mots-clés cibles (5 max)
 
-| Priorité | Mot-clé | Justification |
-|---|---|---|
-| 1 | `blind test multijoueur` | Différenciateur ZIK, faible concurrence directe |
-| 2 | `blind test en ligne` | Volume élevé, intent clair (jouer maintenant) |
-| 3 | `blind test gratuit` | Intent fort, élimine la friction |
-| 4 | `blind test musique` | Haut volume, générique incontournable |
-| 5 | `jeu musical en ligne` | Audience adjacente qui ne connaît pas le terme |
+| Priorité | Mot-clé                  | Justification                                   |
+| -------- | ------------------------ | ----------------------------------------------- |
+| 1        | `blind test multijoueur` | Différenciateur ZIK, faible concurrence directe |
+| 2        | `blind test en ligne`    | Volume élevé, intent clair (jouer maintenant)   |
+| 3        | `blind test gratuit`     | Intent fort, élimine la friction                |
+| 4        | `blind test musique`     | Haut volume, générique incontournable           |
+| 5        | `jeu musical en ligne`   | Audience adjacente qui ne connaît pas le terme  |
 
 **`blind test` seul n'est pas ciblé** (Wikipédia + gros médias inattaquables).
 

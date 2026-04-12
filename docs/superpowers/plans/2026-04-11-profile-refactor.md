@@ -12,97 +12,115 @@
 
 ## Fichiers
 
-| Fichier | Action |
-|---|---|
-| `src/routes/(site)/api/stats/[userId]/+server.js` | Réécriture — nouvelles agrégations |
-| `src/lib/components/ProfileStats.svelte` | Création — grille 8 cartes |
-| `static/css/profile.css` | Réécriture complète |
-| `src/routes/(site)/profile/+page.svelte` | Mise à jour — hero + modal + ProfileStats |
-| `src/routes/(site)/user/[username]/+page.svelte` | Mise à jour — hero public + ProfileStats |
+| Fichier                                           | Action                                    |
+| ------------------------------------------------- | ----------------------------------------- |
+| `src/routes/(site)/api/stats/[userId]/+server.js` | Réécriture — nouvelles agrégations        |
+| `src/lib/components/ProfileStats.svelte`          | Création — grille 8 cartes                |
+| `static/css/profile.css`                          | Réécriture complète                       |
+| `src/routes/(site)/profile/+page.svelte`          | Mise à jour — hero + modal + ProfileStats |
+| `src/routes/(site)/user/[username]/+page.svelte`  | Mise à jour — hero public + ProfileStats  |
 
 ---
 
 ## Task 1 : Étendre l'API stats
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/api/stats/[userId]/+server.js`
 
 - [ ] **Step 1 : Remplacer le contenu du fichier**
 
 ```js
-import { json } from '@sveltejs/kit';
-import { supabase } from '$lib/server/config.js';
+import { json } from "@sveltejs/kit";
+import { supabase } from "$lib/server/config.js";
 
 export async function GET({ params, url }) {
   try {
-    const elo = parseInt(url.searchParams.get('elo') || '0');
+    const elo = parseInt(url.searchParams.get("elo") || "0");
 
     const [roomsRes, playersRes, aboveRes, totalRes] = await Promise.all([
-      supabase.from('rooms').select('code, name, emoji, is_official, is_public'),
       supabase
-        .from('game_players')
-        .select('score, rank, games!inner(room_id, ended_at)')
-        .eq('user_id', params.userId)
-        .eq('is_guest', false)
-        .not('games.ended_at', 'is', null),
+        .from("rooms")
+        .select("code, name, emoji, is_official, is_public"),
+      supabase
+        .from("game_players")
+        .select("score, rank, games!inner(room_id, ended_at)")
+        .eq("user_id", params.userId)
+        .eq("is_guest", false)
+        .not("games.ended_at", "is", null),
       elo > 0
-        ? supabase.from('profiles').select('id', { count: 'exact', head: true }).gt('elo', elo)
+        ? supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .gt("elo", elo)
         : Promise.resolve({ count: 0 }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
     ]);
 
-    if (playersRes.error) return json({ error: playersRes.error.message }, { status: 500 });
+    if (playersRes.error)
+      return json({ error: playersRes.error.message }, { status: 500 });
 
     const roomMap = {};
-    (roomsRes.data || []).forEach(r => { roomMap[r.code] = r; });
+    (roomsRes.data || []).forEach((r) => {
+      roomMap[r.code] = r;
+    });
 
     const rows = playersRes.data || [];
 
     // Trier par date décroissante pour recentGames
-    rows.sort((a, b) => new Date(b.games.ended_at) - new Date(a.games.ended_at));
+    rows.sort(
+      (a, b) => new Date(b.games.ended_at) - new Date(a.games.ended_at),
+    );
 
     // Best scores par room officielle
     const bestByRoom = {};
     const officialRoomInfo = {};
-    rows.forEach(row => {
+    rows.forEach((row) => {
       const roomId = row.games?.room_id;
       const room = roomMap[roomId];
       if (!room?.is_official) return;
-      if (!bestByRoom[roomId] || row.score > bestByRoom[roomId]) bestByRoom[roomId] = row.score;
+      if (!bestByRoom[roomId] || row.score > bestByRoom[roomId])
+        bestByRoom[roomId] = row.score;
       officialRoomInfo[roomId] = room;
     });
 
     // Répartition par type de room
     const scoreByRoomType = {
       official: { count: 0, totalScore: 0 },
-      public:   { count: 0, totalScore: 0 },
-      private:  { count: 0, totalScore: 0 },
+      public: { count: 0, totalScore: 0 },
+      private: { count: 0, totalScore: 0 },
     };
-    rows.forEach(row => {
+    rows.forEach((row) => {
       const room = roomMap[row.games?.room_id];
-      const type = room?.is_official ? 'official' : room?.is_public ? 'public' : 'private';
+      const type = room?.is_official
+        ? "official"
+        : room?.is_public
+          ? "public"
+          : "private";
       scoreByRoomType[type].count++;
       scoreByRoomType[type].totalScore += row.score;
     });
 
     // Win rate
-    const wins = rows.filter(r => r.rank === 1).length;
+    const wins = rows.filter((r) => r.rank === 1).length;
 
     // Best / worst score
-    const scores = rows.map(r => r.score);
-    const bestScore  = scores.length ? Math.max(...scores) : 0;
+    const scores = rows.map((r) => r.score);
+    const bestScore = scores.length ? Math.max(...scores) : 0;
     const worstScore = scores.length ? Math.min(...scores) : 0;
-    const bestRank   = rows.length ? Math.min(...rows.map(r => r.rank ?? 999)) : null;
+    const bestRank = rows.length
+      ? Math.min(...rows.map((r) => r.rank ?? 999))
+      : null;
 
     // 10 parties les plus récentes pour la courbe + historique (6 affichés)
-    const recentGames = rows.slice(0, 10).map(row => {
+    const recentGames = rows.slice(0, 10).map((row) => {
       const room = roomMap[row.games?.room_id];
       return {
-        score:    row.score,
-        rank:     row.rank,
-        endedAt:  row.games.ended_at,
-        roomName:  room?.name  ?? 'Room custom',
-        roomEmoji: room?.emoji ?? '🎮',
+        score: row.score,
+        rank: row.rank,
+        endedAt: row.games.ended_at,
+        roomName: room?.name ?? "Room custom",
+        roomEmoji: room?.emoji ?? "🎮",
       };
     });
 
@@ -110,8 +128,8 @@ export async function GET({ params, url }) {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-    const gamesThisMonth = rows.filter(r =>
-      new Date(r.games.ended_at) >= startOfMonth
+    const gamesThisMonth = rows.filter(
+      (r) => new Date(r.games.ended_at) >= startOfMonth,
     ).length;
 
     // Top % classement
@@ -124,7 +142,7 @@ export async function GET({ params, url }) {
       roomInfo: officialRoomInfo,
       recentGames,
       scoreByRoomType,
-      winRate:  { wins, total: rows.length },
+      winRate: { wins, total: rows.length },
       bestScore,
       worstScore,
       bestRank,
@@ -164,6 +182,7 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
 ## Task 2 : Réécrire profile.css
 
 **Fichiers :**
+
 - Modifier : `static/css/profile.css`
 
 - [ ] **Step 1 : Remplacer le contenu complet**
@@ -194,7 +213,11 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
 
 /* ── Hero ── */
 .profile-hero {
-  background: linear-gradient(160deg, rgb(var(--accent-rgb) / 0.1) 0%, transparent 60%);
+  background: linear-gradient(
+    160deg,
+    rgb(var(--accent-rgb) / 0.1) 0%,
+    transparent 60%
+  );
   border-bottom: 1px solid var(--border);
   padding: 36px clamp(16px, 5vw, 60px) 28px;
 }
@@ -206,7 +229,10 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   gap: 24px;
   flex-wrap: wrap;
 }
-.profile-avatar-wrap { position: relative; flex-shrink: 0; }
+.profile-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
 .profile-avatar-big {
   width: 88px;
   height: 88px;
@@ -231,9 +257,12 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   align-items: center;
   justify-content: center;
 }
-.profile-hero-info { flex: 1; min-width: 0; }
+.profile-hero-info {
+  flex: 1;
+  min-width: 0;
+}
 .profile-username {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: "Bricolage Grotesque", sans-serif;
   font-size: 1.9rem;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -267,7 +296,10 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   color: var(--dim);
   margin-top: 3px;
 }
-.profile-xp-row { margin-top: 12px; max-width: 300px; }
+.profile-xp-row {
+  margin-top: 12px;
+  max-width: 300px;
+}
 .profile-xp-label {
   display: flex;
   justify-content: space-between;
@@ -281,7 +313,11 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   height: 6px;
 }
 .profile-xp-fill {
-  background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent)));
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    var(--accent2, var(--accent))
+  );
   height: 100%;
   border-radius: 99px;
   transition: width 0.6s ease;
@@ -312,21 +348,44 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
 }
 
 /* Span */
-.pf-col-3  { grid-column: span 3; }
-.pf-col-4  { grid-column: span 4; }
-.pf-col-6  { grid-column: span 6; }
-.pf-col-8  { grid-column: span 8; }
-.pf-col-12 { grid-column: span 12; }
+.pf-col-3 {
+  grid-column: span 3;
+}
+.pf-col-4 {
+  grid-column: span 4;
+}
+.pf-col-6 {
+  grid-column: span 6;
+}
+.pf-col-8 {
+  grid-column: span 8;
+}
+.pf-col-12 {
+  grid-column: span 12;
+}
 
 /* Responsive */
 @media (max-width: 700px) {
-  .pf-col-3, .pf-col-4, .pf-col-6, .pf-col-8 { grid-column: span 12; }
-  .profile-username { font-size: 1.5rem; }
+  .pf-col-3,
+  .pf-col-4,
+  .pf-col-6,
+  .pf-col-8 {
+    grid-column: span 12;
+  }
+  .profile-username {
+    font-size: 1.5rem;
+  }
 }
 @media (min-width: 701px) and (max-width: 900px) {
-  .pf-col-3 { grid-column: span 6; }
-  .pf-col-4 { grid-column: span 6; }
-  .pf-col-8 { grid-column: span 12; }
+  .pf-col-3 {
+    grid-column: span 6;
+  }
+  .pf-col-4 {
+    grid-column: span 6;
+  }
+  .pf-col-8 {
+    grid-column: span 12;
+  }
 }
 
 /* ── Card base ── */
@@ -347,7 +406,7 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
 
 /* ── Stat big (ELO, parties, score, win rate) ── */
 .pf-stat-val {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: "Bricolage Grotesque", sans-serif;
   font-size: 2.4rem;
   font-weight: 900;
   color: var(--accent);
@@ -397,8 +456,15 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   gap: 2px;
   margin: 12px 0 10px;
 }
-.pf-distrib-seg { height: 100%; border-radius: 99px; }
-.pf-distrib-legend { display: flex; flex-direction: column; gap: 8px; }
+.pf-distrib-seg {
+  height: 100%;
+  border-radius: 99px;
+}
+.pf-distrib-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .pf-distrib-row {
   display: flex;
   align-items: center;
@@ -430,18 +496,38 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
-.pf-score-row:last-child { border-bottom: none; padding-bottom: 0; }
-.pf-score-emoji { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
-.pf-score-info { flex: 1; min-width: 0; }
-.pf-score-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-score-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.pf-score-emoji {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.pf-score-info {
+  flex: 1;
+  min-width: 0;
+}
+.pf-score-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .pf-score-pts {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: "Bricolage Grotesque", sans-serif;
   font-weight: 800;
   font-size: 1rem;
   color: var(--accent);
   flex-shrink: 0;
 }
-.pf-empty { color: var(--dim); font-size: 0.85rem; }
+.pf-empty {
+  color: var(--dim);
+  font-size: 0.85rem;
+}
 
 /* ── Historique ── */
 .pf-hist-row {
@@ -451,11 +537,25 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   padding: 9px 0;
   border-bottom: 1px solid var(--border);
 }
-.pf-hist-row:last-child { border-bottom: none; }
-.pf-hist-date { font-size: 0.7rem; color: var(--dim); width: 52px; flex-shrink: 0; }
-.pf-hist-room { flex: 1; font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-hist-row:last-child {
+  border-bottom: none;
+}
+.pf-hist-date {
+  font-size: 0.7rem;
+  color: var(--dim);
+  width: 52px;
+  flex-shrink: 0;
+}
+.pf-hist-room {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .pf-hist-score {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: "Bricolage Grotesque", sans-serif;
   font-weight: 700;
   color: var(--accent);
   font-size: 0.9rem;
@@ -468,10 +568,22 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   padding: 2px 6px;
   flex-shrink: 0;
 }
-.pf-rank-1 { background: rgba(251,191,36,0.15); color: #fbbf24; }
-.pf-rank-2 { background: rgba(156,163,175,0.15); color: #9ca3af; }
-.pf-rank-3 { background: rgba(180,120,60,0.15); color: #cd7f32; }
-.pf-rank-n { background: rgb(var(--c-glass) / 0.06); color: var(--dim); }
+.pf-rank-1 {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+.pf-rank-2 {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+}
+.pf-rank-3 {
+  background: rgba(180, 120, 60, 0.15);
+  color: #cd7f32;
+}
+.pf-rank-n {
+  background: rgb(var(--c-glass) / 0.06);
+  color: var(--dim);
+}
 
 /* ── Niveau ── */
 .pf-level-row {
@@ -481,24 +593,71 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   margin-bottom: 14px;
 }
 .pf-level-num {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: "Bricolage Grotesque", sans-serif;
   font-size: 2.8rem;
   font-weight: 900;
   color: var(--accent);
   line-height: 1;
 }
-.pf-level-name { font-weight: 700; font-size: 0.95rem; }
-.pf-level-next { font-size: 0.72rem; color: var(--dim); margin-top: 2px; }
-.pf-xp-bar { background: rgb(var(--c-glass) / 0.08); border-radius: 99px; height: 5px; margin-bottom: 5px; }
-.pf-xp-fill { background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent))); height: 100%; border-radius: 99px; }
-.pf-xp-nums { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--dim); }
+.pf-level-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.pf-level-next {
+  font-size: 0.72rem;
+  color: var(--dim);
+  margin-top: 2px;
+}
+.pf-xp-bar {
+  background: rgb(var(--c-glass) / 0.08);
+  border-radius: 99px;
+  height: 5px;
+  margin-bottom: 5px;
+}
+.pf-xp-fill {
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    var(--accent2, var(--accent))
+  );
+  height: 100%;
+  border-radius: 99px;
+}
+.pf-xp-nums {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--dim);
+}
 
 /* ── Score moyen ── */
-.pf-mini-stats { display: flex; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
-.pf-mini-stat { flex: 1; text-align: center; padding: 0 8px; border-right: 1px solid var(--border); }
-.pf-mini-stat:last-child { border-right: none; }
-.pf-mini-val { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.2rem; font-weight: 800; }
-.pf-mini-lbl { font-size: 0.65rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.pf-mini-stats {
+  display: flex;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.pf-mini-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0 8px;
+  border-right: 1px solid var(--border);
+}
+.pf-mini-stat:last-child {
+  border-right: none;
+}
+.pf-mini-val {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.pf-mini-lbl {
+  font-size: 0.65rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
 
 /* ── Modal édition ── */
 .avatar-preview-wrap {
@@ -517,8 +676,8 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   background: var(--surface);
 }
 .alert-err {
-  background: rgba(248,113,113,0.08);
-  border: 1px solid rgba(248,113,113,0.2);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
   color: var(--danger);
   padding: 8px 12px;
   border-radius: 8px;
@@ -541,8 +700,14 @@ git commit -m "feat: étendre API stats — répartition, historique, win rate, 
   white-space: nowrap;
   pointer-events: none;
 }
-.toast.success { border-color: var(--success); color: var(--success); }
-.toast.error   { border-color: var(--danger);  color: var(--danger); }
+.toast.success {
+  border-color: var(--success);
+  color: var(--success);
+}
+.toast.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
 ```
 
 - [ ] **Step 2 : Commit**
@@ -557,6 +722,7 @@ git commit -m "style: réécriture profile.css — grille cartes, thème, respon
 ## Task 3 : Créer ProfileStats.svelte
 
 **Fichiers :**
+
 - Créer : `src/lib/components/ProfileStats.svelte`
 
 Ce composant reçoit `profile` et `stats` en props et rend les 8 cartes.
@@ -869,6 +1035,7 @@ git commit -m "feat: composant ProfileStats — 8 cartes stats profil"
 ## Task 4 : Mettre à jour `/profile/+page.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/profile/+page.svelte`
 
 - [ ] **Step 1 : Remplacer le contenu complet**
@@ -1115,6 +1282,7 @@ git commit -m "feat: refonte page /profile — hero + 8 cartes stats"
 ## Task 5 : Mettre à jour `/user/[username]/+page.svelte`
 
 **Fichiers :**
+
 - Modifier : `src/routes/(site)/user/[username]/+page.svelte`
 
 - [ ] **Step 1 : Remplacer le contenu complet**
@@ -1285,6 +1453,7 @@ git commit -m "feat: refonte page /user/[username] — hero public + cartes stat
 ## Self-review
 
 **Couverture spec :**
+
 - ✅ Hero : avatar, nom, ELO, Top%, membre depuis, barre XP
 - ✅ 8 cartes : ELO, parties, score total, win rate, courbe, répartition, meilleurs scores, historique + niveau, score moyen
 - ✅ Composant partagé ProfileStats pour /profile et /user/[username]
@@ -1296,4 +1465,5 @@ git commit -m "feat: refonte page /user/[username] — hero public + cartes stat
 - ✅ Pas de nouvelle dépendance
 
 **Points ajustables post-implémentation :**
+
 - La formule `xpForNextLevel(level) = level * 1000` est une estimation — à aligner avec la fonction Supabase `update_player_stats` si elle diffère.
