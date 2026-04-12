@@ -282,3 +282,213 @@
 
   </div>
 </div>
+
+<style>
+/* -- Grille de cartes -- */
+.profile-grid-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 5vw, 60px) 60px;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+
+.pf-col-3  { grid-column: span 3; }
+.pf-col-4  { grid-column: span 4; }
+.pf-col-6  { grid-column: span 6; }
+.pf-col-8  { grid-column: span 8; }
+.pf-col-12 { grid-column: span 12; }
+
+@media (max-width: 700px) {
+  .pf-col-3, .pf-col-4, .pf-col-6, .pf-col-8 { grid-column: span 12; }
+}
+@media (min-width: 701px) and (max-width: 900px) {
+  .pf-col-3 { grid-column: span 6; }
+  .pf-col-4 { grid-column: span 6; }
+  .pf-col-8 { grid-column: span 12; }
+}
+
+/* -- Card base (Glass) -- */
+.pf-card {
+  background: rgb(var(--c-glass) / 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.pf-card::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-glass) / 0.08), transparent);
+  pointer-events: none;
+}
+.pf-card-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  margin-bottom: 14px;
+}
+
+/* -- Stat big -- */
+.pf-stat-val {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.pf-stat-lbl {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+}
+.pf-stat-sub {
+  font-size: 0.75rem;
+  color: var(--dim);
+  margin-top: 6px;
+}
+
+/* -- Win rate -- */
+.pf-wr-bar {
+  height: 4px;
+  background: rgb(var(--c-glass) / 0.08);
+  border-radius: 99px;
+  margin-top: 10px;
+}
+.pf-wr-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+}
+
+/* -- Courbe SVG -- */
+.pf-curve-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--dim);
+  margin-top: 4px;
+}
+
+/* -- Répartition -- */
+.pf-distrib-bar {
+  display: flex;
+  border-radius: 99px;
+  overflow: hidden;
+  height: 8px;
+  gap: 2px;
+  margin: 12px 0 10px;
+}
+.pf-distrib-seg { height: 100%; border-radius: 99px; }
+.pf-distrib-legend { display: flex; flex-direction: column; gap: 8px; }
+.pf-distrib-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+.pf-distrib-dot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--dim);
+}
+.pf-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pf-distrib-pts {
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+/* -- Meilleurs scores -- */
+.pf-score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pf-score-row:last-child { border-bottom: none; padding-bottom: 0; }
+.pf-score-emoji { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
+.pf-score-info { flex: 1; min-width: 0; }
+.pf-score-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-score-pts {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.pf-empty { color: var(--dim); font-size: 0.85rem; }
+
+/* -- Historique -- */
+.pf-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pf-hist-row:last-child { border-bottom: none; }
+.pf-hist-date { font-size: 0.7rem; color: var(--dim); width: 52px; flex-shrink: 0; }
+.pf-hist-room { flex: 1; font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pf-hist-score {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.pf-rank-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+.pf-rank-1 { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.pf-rank-2 { background: rgba(156,163,175,0.15); color: #9ca3af; }
+.pf-rank-3 { background: rgba(180,120,60,0.15); color: #cd7f32; }
+.pf-rank-n { background: rgb(var(--c-glass) / 0.06); color: var(--dim); }
+
+/* -- Niveau -- */
+.pf-level-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.pf-level-num {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+}
+.pf-level-name { font-weight: 700; font-size: 0.95rem; }
+.pf-level-next { font-size: 0.72rem; color: var(--dim); margin-top: 2px; }
+.pf-xp-bar { background: rgb(var(--c-glass) / 0.08); border-radius: 99px; height: 5px; margin-bottom: 5px; }
+.pf-xp-fill { background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent))); height: 100%; border-radius: 99px; }
+.pf-xp-nums { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--dim); }
+
+/* -- Score moyen -- */
+.pf-mini-stats { display: flex; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+.pf-mini-stat { flex: 1; text-align: center; padding: 0 8px; border-right: 1px solid var(--border); }
+.pf-mini-stat:last-child { border-right: none; }
+.pf-mini-val { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.2rem; font-weight: 800; }
+.pf-mini-lbl { font-size: 0.65rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+</style>

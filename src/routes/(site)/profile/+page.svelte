@@ -126,9 +126,8 @@
 </script>
 
 <svelte:head>
-  <title>ZIK &mdash; Mon profil</title>
+  <title>ZIK — Mon Profil | Blind Test Multijoueur</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="/css/profile.css">
 </svelte:head>
 
 <div id="profile-page">
@@ -145,6 +144,10 @@
   </div>
 {:else}
   <div class="profile-hero">
+    <div class="hero-bg">
+      <div class="aurora-blob aurora-blob-1" style="opacity:0.5"></div>
+      <div class="aurora-blob aurora-blob-2" style="opacity:0.3"></div>
+    </div>
     <div class="profile-hero-inner">
       <div class="profile-avatar-wrap">
         <img src={avatar} alt="" class="profile-avatar-big">
@@ -222,3 +225,228 @@
 {#if toastMsg}
   <div class="toast {toastType}" style="display:block">{toastMsg}</div>
 {/if}
+
+<style>
+/* -- Profile page -- */
+.pl-loading {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.88rem;
+}
+.profile-auth-wall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding-top: var(--nav-h);
+  text-align: center;
+}
+.profile-auth-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#profile-page {
+  padding-top: var(--nav-h);
+  flex: 1;
+}
+
+/* -- Hero -- */
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgb(var(--accent-rgb) / 0.06) 0%, transparent 60%);
+  border-bottom: 1px solid var(--border);
+  padding: 36px clamp(16px, 5vw, 60px) 28px;
+}
+.profile-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.profile-avatar-wrap { position: relative; flex-shrink: 0; }
+.profile-avatar-big {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgb(var(--accent-rgb) / 0.35);
+  background: var(--surface);
+}
+.profile-avatar-edit {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  border: 2px solid var(--bg);
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-hero-info { flex: 1; min-width: 0; }
+.profile-username {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.profile-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.profile-elo-badge {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.profile-top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgb(var(--accent-rgb) / 0.1);
+  border: 1px solid rgb(var(--accent-rgb) / 0.25);
+  border-radius: 99px;
+  padding: 2px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.profile-since {
+  font-size: 0.78rem;
+  color: var(--dim);
+  margin-top: 3px;
+}
+.profile-xp-row { margin-top: 12px; max-width: 300px; }
+.profile-xp-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--dim);
+  margin-bottom: 5px;
+}
+.profile-xp-bar {
+  background: rgb(var(--c-glass) / 0.08);
+  border-radius: 99px;
+  height: 6px;
+}
+.profile-xp-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent2, var(--accent)));
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+.profile-privacy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--dim);
+  margin-top: 6px;
+  background: rgb(var(--c-glass) / 0.06);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 2px 10px;
+}
+
+/* -- Modal edition -- */
+.avatar-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 12px;
+  flex-wrap: wrap;
+}
+.avatar-preview-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  background: rgb(var(--c-glass) / 0.06);
+}
+.alert-err {
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.2);
+  color: var(--danger);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  margin-top: 6px;
+}
+
+/* -- Toast -- */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.error   { border-color: var(--danger);  color: var(--danger); }
+
+/* -- Overlay + Modal -- */
+.overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  width: 100%; max-width: 440px;
+}
+.modal h2 {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 1.1rem; font-weight: 800; margin-bottom: 16px;
+}
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 0.78rem; font-weight: 600; color: var(--mid); }
+.field input {
+  background: rgb(var(--c-glass) / 0.04);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+}
+.field input:focus {
+  border-color: rgb(var(--accent-rgb) / 0.4);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.08);
+}
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+@media (max-width: 700px) {
+  .profile-username { font-size: 1.5rem; }
+}
+</style>

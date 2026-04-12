@@ -28,3 +28,6 @@ supabase/functions/**/node_modules
 
 # Vite (SvelteKit utilise Vite sous le capot)
 vite.config.js.timestamp-*
+
+# Visual companion brainstorming
+.superpowers/
