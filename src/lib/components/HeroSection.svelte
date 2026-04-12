@@ -49,8 +49,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(var(--nav-h) + 72px) clamp(16px, 5vw, 80px) 64px;
+    padding: calc(var(--nav-h) + 72px) clamp(20px, 5vw, 80px) 64px;
     text-align: center;
+    min-height: 56vh;
   }
   .hero-content {
     position: relative;
@@ -58,8 +59,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 18px;
-    max-width: 680px;
+    gap: 20px;
+    max-width: 700px;
     width: 100%;
   }
   .hero-badge {
@@ -67,46 +68,56 @@
     align-items: center;
     gap: 8px;
     background: rgb(var(--accent-rgb) / 0.08);
-    border: 1px solid rgb(var(--accent-rgb) / 0.2);
+    border: 1px solid rgb(var(--accent-rgb) / 0.22);
     padding: 6px 16px;
     border-radius: 50px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-    animation: fade-up 0.6s ease-out both;
+    animation: fade-up 0.55s ease-out both;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse-glow 2s ease-in-out infinite;
   }
   .hero-title {
     font-family: "Bricolage Grotesque", sans-serif;
-    font-size: clamp(2.6rem, 5.5vw, 4.8rem);
+    font-size: clamp(2.6rem, 5.5vw, 5rem);
     font-weight: 900;
     letter-spacing: -3px;
-    line-height: 1.05;
+    line-height: 1.03;
     color: var(--text);
-    animation: fade-up 0.7s 0.1s ease-out both;
+    animation: fade-up 0.65s 0.08s ease-out both;
   }
   .hero-title em { font-style: normal; display: inline-block; }
   .hero-sub {
-    font-size: clamp(0.88rem, 1.8vw, 1.05rem);
+    font-size: clamp(0.9rem, 1.8vw, 1.05rem);
     color: var(--mid);
-    max-width: 420px;
-    line-height: 1.65;
-    animation: fade-up 0.7s 0.2s ease-out both;
+    max-width: 440px;
+    line-height: 1.7;
+    animation: fade-up 0.65s 0.16s ease-out both;
   }
   .hero-actions {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
     flex-wrap: wrap;
     justify-content: center;
-    animation: fade-up 0.7s 0.3s ease-out both;
+    animation: fade-up 0.65s 0.24s ease-out both;
+    margin-top: 6px;
   }
   @media (max-width: 600px) {
-    .hero-section { padding-top: calc(var(--nav-h) + 40px); padding-bottom: 40px; }
-    .hero-title { letter-spacing: -2px; }
+    .hero-section { padding-top: calc(var(--nav-h) + 44px); padding-bottom: 48px; min-height: 52vh; overflow-x: hidden; }
+    .hero-title { letter-spacing: -1.5px; max-width: 100%; word-break: break-word; }
     .hero-actions { flex-direction: column; width: 100%; }
     .hero-actions :global(.btn-accent),
     .hero-actions :global(.btn-ghost) { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 380px) {
+    .hero-title { letter-spacing: -1px; }
   }
 </style>

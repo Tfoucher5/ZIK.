@@ -95,18 +95,18 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 ## 🛠️ Stack Technique
 
-| Couche               | Techno                                   |
-| -------------------- | ---------------------------------------- |
-| **Framework**        | SvelteKit (Svelte 5 runes)               |
-| **Serveur**          | Node.js + SvelteKit adapter-node         |
-| **Temps réel**       | Socket.IO                                |
-| **Base de données**  | Supabase (PostgreSQL + RLS)              |
-| **Auth**             | Supabase Auth (email + Google OAuth)     |
-| **Musique**          | YouTube IFrame API (lecture)             |
-| **Import playlists** | Spotify Web API + Deezer API             |
-| **Style**            | CSS vanilla (variables, dark mode natif) |
-| **Email**            | Resend (via Supabase Edge Functions)     |
-| **Déploiement**      | Railway (serveur Node)                   |
+| Couche               | Techno                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| **Framework**        | SvelteKit (Svelte 5 runes)                                                           |
+| **Serveur**          | Node.js + SvelteKit adapter-node                                                     |
+| **Temps réel**       | Socket.IO                                                                            |
+| **Base de données**  | Supabase (PostgreSQL + RLS)                                                          |
+| **Auth**             | Supabase Auth (email + Google OAuth)                                                 |
+| **Musique**          | YouTube IFrame API (lecture)                                                         |
+| **Import playlists** | Spotify Web API + Deezer API                                                         |
+| **Style**            | CSS vanilla — Aurora Glass design system (variables, glassmorphism, dark mode natif) |
+| **Email**            | Resend (via Supabase Edge Functions)                                                 |
+| **Déploiement**      | Railway (serveur Node)                                                               |
 
 ---
 
@@ -117,7 +117,7 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 ├── server.js                  # Serveur HTTP + Socket.IO
 ├── src/
 │   ├── lib/
-│   │   ├── components/        # AuthModal.svelte, Nav.svelte
+│   │   ├── components/        # HeroSection, GlassCard, StatCard, RoomCard, Nav, AuthModal…
 │   │   ├── server/
 │   │   │   ├── config.js      # Client Supabase serveur
 │   │   │   ├── middleware/    # Auth JWT, rate limiting
@@ -143,13 +143,38 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 │       ├── confidentialite/   # Politique de confidentialité
 │       ├── mentions-legales/  # Mentions légales (LCEN)
 │       └── api/               # Endpoints REST
-├── static/css/                # Styles par page
+├── static/css/                # theme.css + base.css + animations.css (globaux) — styles scoped par composant
 └── supabase_schema.sql        # Schéma complet de la base de données
 ```
 
 ---
 
 ## 📋 Changelog
+
+### v2.0.0 — Aurora Glass — Refonte visuelle complète
+
+- **Design system Aurora Glass** : nouvelle identité visuelle unifiée — aurora blobs animés, glassmorphism, backdrop-filter, dot grid, glow effects, gradient text animé
+- **Page d'accueil** entièrement redesignée : hero `HeroSection`, stats strip animée (compteurs dynamiques), grille de fonctionnalités, cartes rooms officielles dédiées, CTA Mode Salon, podium classement (rectangles étagés) + liste scrollable
+- **Composants réutilisables** : `HeroSection`, `GlassCard`, `StatCard`, `RoomCard` — cohérents sur toutes les pages
+- **Navigation** : nouveaux liens desktop avec animation underline, bouton pill "Mode Salon" avec dot pulsant, barre de navigation mobile fixe (4 items)
+- **Page rooms** redesignée : `HeroSection`, filter chips animés, cartes glassmorphism avec hover premium
+- **Page playlists** redesignée : `HeroSection`, cartes avec shimmer line et hover accent
+- **Footer** 4 colonnes avec lien Contact (modal), copyright mis à jour, version affichée
+- **Page profil** : hero aurora, affichage Niveau / barre XP / XP caption restructuré pour éviter la confusion
+- **Architecture CSS v2.0** : suppression de tous les fichiers CSS par page — styles scoped dans chaque composant/page, seuls `theme.css`, `base.css` et `animations.css` sont globaux
+- **Boutons retour** ajoutés sur toutes les pages secondaires (profil, room, docs)
+- **Corrections mobile** : rejoindre par code — bouton empilé sous l'input, footer dégagé de la bottom nav, hero titre anti-overflow, profil hero sans retour à la ligne excessif
+- **Docs** : badge "Nouveau" retiré du Mode Salon (sidebar + titre de section)
+
+### v1.5.0 — ELO pairwise, Chat, Sync audio & Multi-playlists
+
+- **Système ELO pairwise** : calcul K-factor par adversaire individuel, pondération selon différence de classement — plus juste que l'ancien ELO moyen
+- **Chat en partie** : messagerie temps réel entre joueurs pendant le jeu
+- **Synchronisation audio** : correction du décalage audio entre joueurs
+- **Réponses custom par track** : champs configurables par titre (Film, Série, Album, etc.) en remplacement de Artiste/Titre
+- **Multi-playlists par room** : plusieurs playlists actives simultanément dans une room
+- **Stats homepage** : compteur de joueurs en live, rooms actives et inscrits affiché en temps réel
+- **Réponse admin aux reporters** : depuis `/admin/reports`, l'admin peut envoyer un email de réponse directement au reporter
 
 ### v1.4.0 — Contact, Signalements & Admin
 
@@ -277,6 +302,28 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 - [x] Interface admin `/admin/reports` (protégée super_admin, filtres, actions)
 - [x] Refonte complète de l'interface de jeu (layout 3 colonnes, glassmorphism, mobile)
 - [x] SEO Bing / IndexNow (soumission automatique via GitHub Action)
+
+### ✅ v1.5.0 — ELO pairwise, Chat & Multi-playlists
+
+- [x] Système ELO pairwise (K-factor + pondération adversaires)
+- [x] Chat en partie temps réel
+- [x] Synchronisation audio entre joueurs
+- [x] Réponses custom par track (Film, Série, Album…)
+- [x] Multi-playlists par room
+- [x] Compteurs live homepage (joueurs, rooms, inscrits)
+- [x] Réponse email admin aux reporters
+
+### ✅ v2.0.0 — Aurora Glass — Refonte visuelle complète
+
+- [x] Design system Aurora Glass (blobs, glassmorphism, glow, gradient text)
+- [x] Composants réutilisables : `HeroSection`, `GlassCard`, `StatCard`, `RoomCard`
+- [x] Page d'accueil entièrement redesignée (stats, features, podium, CTA salon)
+- [x] Pages rooms, playlists, profil redesignées
+- [x] Navigation desktop + bottom nav mobile fixe
+- [x] Footer 4 colonnes avec Contact
+- [x] Architecture CSS v2.0 — styles scoped par composant, finis les CSS par page
+- [x] Boutons retour sur toutes les pages secondaires
+- [x] Corrections mobile (rejoindre par code, hero overflow, profil hero)
 
 ---
 

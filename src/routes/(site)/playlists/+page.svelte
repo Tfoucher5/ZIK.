@@ -1000,22 +1000,30 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
+  border-radius: 18px;
+  padding: 22px;
   cursor: pointer;
   transition:
     transform 0.2s,
     border-color 0.2s,
-    box-shadow 0.2s;
+    box-shadow 0.2s,
+    background 0.2s;
   position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 140px;
+  min-height: 150px;
+}
+.pl-card::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--c-glass) / 0.15), transparent);
 }
 .pl-card:hover {
   transform: translateY(-3px);
-  border-color: rgb(var(--c-glass) / 0.15);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgb(var(--accent-rgb) / 0.2);
+  background: rgb(var(--c-glass) / 0.07);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
 }
 
 .pl-card-emoji {

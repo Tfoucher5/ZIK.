@@ -504,12 +504,12 @@
   .rooms-main {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 32px clamp(16px, 4vw, 48px) 80px;
+    padding: 40px clamp(16px, 4vw, 56px) 96px;
   }
   .rooms-toolbar {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
 
   /* ── Tabs ── */
@@ -584,23 +584,30 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 16px;
-    transition: background 0.2s, border-color 0.2s;
+    border-radius: 16px;
+    padding: 18px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
   }
   .room-card::before {
     content: "";
     position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgb(var(--c-glass) / 0.08), transparent);
+    background: linear-gradient(90deg, transparent, rgb(var(--c-glass) / 0.12), transparent);
   }
   .room-card:hover {
-    background: rgb(var(--c-glass) / 0.07);
+    background: rgb(var(--c-glass) / 0.08);
     border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
   }
   .room-card-official {
-    border-color: rgb(var(--accent2-rgb, 167,139,250) / 0.3);
+    border-color: rgba(167,139,250, 0.3);
+    background: rgba(167,139,250, 0.03);
+  }
+  .room-card-official:hover {
+    border-color: rgba(167,139,250, 0.45);
   }
   .room-card-head {
     display: flex;

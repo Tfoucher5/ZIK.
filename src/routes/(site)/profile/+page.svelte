@@ -143,6 +143,9 @@
     </div>
   </div>
 {:else}
+  <div class="profile-back-row">
+    <button class="btn-back" onclick={() => history.back()}>Retour</button>
+  </div>
   <div class="profile-hero">
     <div class="hero-bg">
       <div class="aurora-blob aurora-blob-1" style="opacity:0.5"></div>
@@ -166,13 +169,11 @@
         {/if}
         {#if profile}
           <div class="profile-xp-row">
-            <div class="profile-xp-label">
-              <span>Niveau {profile.level ?? 1}</span>
-              <span>{profile.xp ?? 0} / {xpForNextLevel(profile.level ?? 1)} XP</span>
-            </div>
+            <div class="profile-xp-level">Niveau {profile.level ?? 1}</div>
             <div class="profile-xp-bar">
               <div class="profile-xp-fill" style="width:{xpPct(profile.xp ?? 0, profile.level ?? 1)}%"></div>
             </div>
+            <div class="profile-xp-caption">{profile.xp ?? 0} / {xpForNextLevel(profile.level ?? 1)} XP</div>
           </div>
         {/if}
       </div>
@@ -254,6 +255,11 @@
   flex: 1;
 }
 
+/* -- Bouton retour -- */
+.profile-back-row {
+  padding: 14px clamp(16px, 5vw, 60px) 0;
+}
+
 /* -- Hero -- */
 .profile-hero {
   position: relative;
@@ -333,13 +339,11 @@
   color: var(--dim);
   margin-top: 3px;
 }
-.profile-xp-row { margin-top: 12px; max-width: 300px; }
-.profile-xp-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--dim);
-  margin-bottom: 5px;
+.profile-xp-row { margin-top: 12px; max-width: 300px; display: flex; flex-direction: column; gap: 5px; }
+.profile-xp-level {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
 }
 .profile-xp-bar {
   background: rgb(var(--c-glass) / 0.08);
@@ -351,6 +355,10 @@
   height: 100%;
   border-radius: 99px;
   transition: width 0.6s ease;
+}
+.profile-xp-caption {
+  font-size: 0.68rem;
+  color: var(--dim);
 }
 .profile-privacy-badge {
   display: inline-flex;
@@ -447,6 +455,20 @@
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 
 @media (max-width: 700px) {
-  .profile-username { font-size: 1.5rem; }
+  .profile-hero-inner {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .profile-avatar-big { width: 68px; height: 68px; }
+  .profile-hero-info { min-width: 0; overflow: hidden; }
+  .profile-username {
+    font-size: 1.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .profile-hero-inner > .btn-ghost { flex-shrink: 0; align-self: flex-start; margin-top: 4px; }
+  .profile-xp-row { max-width: 100%; }
 }
 </style>

@@ -137,16 +137,53 @@
 
 {#if !isGame}
 <footer class="site-footer">
-  <div class="footer-logo">ZIK<span>.</span></div>
-  <div class="footer-links">
-    <a href="/rooms">Rooms</a>
-    <a href="/playlists">Playlists</a>
-    <a href="/docs">Docs</a>
-    <a href="/mentions-legales">Mentions légales</a>
-    <a href="/cgu">CGU</a>
-    <a href="/confidentialite">Confidentialité</a>
+  <div class="footer-grid">
+    <!-- Brand -->
+    <div class="footer-brand">
+      <a href="/" class="footer-logo">ZIK<span>.</span></a>
+      <p class="footer-tagline">Le blind test multijoueur en ligne. Gratuit, sans installation, directement dans le navigateur.</p>
+      <span class="footer-badge">
+        <span class="footer-badge-dot"></span>
+        En ligne · zik-music.fr
+      </span>
+    </div>
+
+    <!-- Jouer -->
+    <div class="footer-col">
+      <p class="footer-col-title">Jouer</p>
+      <div class="footer-col-links">
+        <a href="/rooms">Rooms</a>
+        <a href="/playlists">Playlists</a>
+        <a href="/salon">Mode Salon</a>
+        <a href="/docs">Documentation</a>
+      </div>
+    </div>
+
+    <!-- Compte -->
+    <div class="footer-col">
+      <p class="footer-col-title">Compte</p>
+      <div class="footer-col-links">
+        <a href="/profile">Mon profil</a>
+        <a href="/settings">Paramètres</a>
+      </div>
+    </div>
+
+    <!-- Légal -->
+    <div class="footer-col">
+      <p class="footer-col-title">Légal</p>
+      <div class="footer-col-links">
+        <a href="/cgu">CGU</a>
+        <a href="/confidentialite">Confidentialité</a>
+        <a href="/mentions-legales">Mentions légales</a>
+        <button class="footer-contact-btn" onclick={() => contactOpen = true}>Contact</button>
+      </div>
+    </div>
   </div>
-  <span class="footer-version">v2.0.0 · <a href="/portfolio" style="color:inherit">Theo Foucher</a></span>
+
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2026 ZIK · Fait avec ❤️ et beaucoup de musique · par <a href="/portfolio">Theo Foucher</a></span>
+    <span class="footer-version-tag">v2.0.0</span>
+  </div>
 </footer>
 {/if}
 
