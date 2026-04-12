@@ -66,7 +66,7 @@
 </script>
 
 <svelte:head>
-  <title>Guide complet — Blind Test ZIK | Règles, Points, Mode Salon</title>
+  <title>ZIK — Documentation | Blind Test Multijoueur</title>
   <meta name="description" content="Guide complet du blind test ZIK : comment jouer, système de points et bonus vitesse, Mode Salon Kahoot-like, import Deezer, classement ELO, FAQ. Gratuit en ligne." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.zik-music.fr/docs" />
