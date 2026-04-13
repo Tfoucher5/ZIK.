@@ -2,6 +2,13 @@ import { error } from "@sveltejs/kit";
 import { getAdminClient } from "$lib/server/config.js";
 import { requireAdmin, logAdminAction } from "$lib/server/middleware/auth.js";
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function assertUuid(id) {
+  if (!UUID_RE.test(id)) throw error(400, "ID invalide");
+}
+
 const ALLOWED_SORT = ["last_active_at", "created_at", "name"];
 const ALLOWED_FLAGS = ["is_official", "is_public"];
 const PAGE_SIZE = 50;
@@ -41,6 +48,7 @@ export const actions = {
   toggleFlag: async ({ request }) => {
     const { adminUser, formData } = await requireAdmin(request);
     const id = formData.get("id");
+    assertUuid(id);
     const field = formData.get("field");
     const value = formData.get("value") === "true";
     if (!ALLOWED_FLAGS.includes(field)) throw error(400, "Champ invalide");
@@ -60,6 +68,7 @@ export const actions = {
   editRoom: async ({ request }) => {
     const { adminUser, formData } = await requireAdmin(request);
     const id = formData.get("id");
+    assertUuid(id);
     const name = formData.get("name")?.trim();
     const emoji = formData.get("emoji")?.trim() || "🎵";
     const description = formData.get("description")?.trim() || null;
@@ -99,12 +108,14 @@ export const actions = {
   deleteRoom: async ({ request }) => {
     const { adminUser, formData } = await requireAdmin(request);
     const id = formData.get("id");
+    assertUuid(id);
     const sb = getAdminClient();
     const { data: room } = await sb
       .from("rooms")
       .select("code, name")
       .eq("id", id)
       .single();
+    if (!room) return { success: false, error: "Room introuvable" };
     const { error: err } = await sb.from("rooms").delete().eq("id", id);
     if (err) return { success: false, error: err.message };
     await logAdminAction(adminUser.id, "delete_room", id, "room", {
