@@ -435,6 +435,8 @@ function cancelAutoCountdown(roomId, io) {
 
 async function startAutoCountdown(roomId, io) {
   if (autoStartCountdowns[roomId]) return; // already running
+  const room = roomGames[roomId];
+  if (room?.game?.adminBlocked) return;
   const startAt = Date.now();
   io.to(`room:${roomId}`).emit("game_countdown", { seconds: AUTO_START_DELAY });
   autoStartCountdowns[roomId] = {
@@ -949,11 +951,24 @@ export function adminGetRoomsSnapshot() {
 
 export function adminPauseRoom(roomId) {
   const room = roomGames[roomId];
-  if (!room || !room.game.isActive || room.game.isPaused) return false;
-  clearInterval(room.game.interval);
-  room.game.interval = null;
+  if (!room || room.game.isPaused) return false;
+  const io = globalThis.__zik_io;
+  // Sauvegarder l'état avant pause
+  if (room.game.interval) {
+    room.game._pausedState = "round";
+    clearInterval(room.game.interval);
+    room.game.interval = null;
+  } else if (room.game.breakTimer) {
+    room.game._pausedState = "break";
+    clearTimeout(room.game.breakTimer);
+    room.game.breakTimer = null;
+  } else {
+    room.game._pausedState = "none";
+  }
+  // Annuler l'auto-countdown si en cours
+  cancelAutoCountdown(roomId, io);
   room.game.isPaused = true;
-  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_pause");
+  io?.to(`room:${roomId}`).emit("admin_pause");
   return true;
 }
 
@@ -962,14 +977,24 @@ export function adminResumeRoom(roomId) {
   if (!room || !room.game.isPaused) return false;
   const io = globalThis.__zik_io;
   room.game.isPaused = false;
-  room.game.interval = setInterval(() => {
-    room.game.timer--;
-    io?.to(`room:${roomId}`).emit("timer_update", {
-      current: room.game.timer,
-      max: room.game.roundDuration,
-    });
-    if (room.game.timer <= 0) endRound(roomId, "Temps écoulé !", io);
-  }, 1000);
+  const state = room.game._pausedState ?? "none";
+  room.game._pausedState = null;
+
+  if (state === "round") {
+    room.game.interval = setInterval(() => {
+      room.game.timer--;
+      io?.to(`room:${roomId}`).emit("timer_update", {
+        current: room.game.timer,
+        max: room.game.roundDuration,
+      });
+      if (room.game.timer <= 0) endRound(roomId, "Temps écoulé !", io);
+    }, 1000);
+  } else if (state === "break") {
+    room.game.breakTimer = setTimeout(() => {
+      room.game.breakTimer = null;
+      startNextRound(roomId, io);
+    }, 1000);
+  }
   io?.to(`room:${roomId}`).emit("admin_resume");
   return true;
 }
@@ -1001,8 +1026,10 @@ export function adminEndGame(roomId) {
 export function adminBlockRoom(roomId) {
   const room = roomGames[roomId];
   if (!room) return false;
+  const io = globalThis.__zik_io;
   room.game.adminBlocked = true;
-  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_blocked");
+  cancelAutoCountdown(roomId, io);
+  io?.to(`room:${roomId}`).emit("admin_blocked");
   return true;
 }
 
