@@ -525,6 +525,7 @@ function leaveRoom(socket, roomId, io) {
 // ─── Socket.IO registration ───────────────────────────────────────────────────
 
 export function register(io) {
+  globalThis.__zik_io = io;
   io.on("connection", (socket) => {
     socket.on("join_room", async ({ roomId, username, userId, isGuest }) => {
       if (!username?.trim()) return socket.emit("error", "Pseudo requis");
@@ -662,6 +663,10 @@ export function register(io) {
       if (!roomId) return;
       const room = getOrCreateRoom(roomId);
       if (room.game.isActive || room.game.isSyncWaiting) return;
+      if (room.game.adminBlocked) {
+        socket.emit("server_error", "Partie bloquée par un administrateur.");
+        return;
+      }
 
       // Manual-mode DB rooms: only the owner can start
       const dbRoom = dbRooms[roomId];
@@ -925,6 +930,7 @@ export function adminGetRoomsSnapshot() {
     })),
     isActive: room.game.isActive,
     isPaused: room.game.isPaused ?? false,
+    adminBlocked: room.game.adminBlocked ?? false,
     currentRound: room.game.currentRound,
     maxRounds: room.game.maxRounds,
     timer: room.game.timer,
@@ -989,6 +995,22 @@ export function adminEndGame(roomId) {
     .sort((a, b) => b.score - a.score)
     .map(sanitizePlayer);
   io?.to(`room:${roomId}`).emit("game_over", finalScores);
+  return true;
+}
+
+export function adminBlockRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  room.game.adminBlocked = true;
+  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_blocked");
+  return true;
+}
+
+export function adminUnblockRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  room.game.adminBlocked = false;
+  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_unblocked");
   return true;
 }
 
