@@ -2,9 +2,16 @@ import { error } from "@sveltejs/kit";
 import { getAdminClient } from "$lib/server/config.js";
 import { requireAdmin, logAdminAction } from "$lib/server/middleware/auth.js";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function assertUuid(id) {
+  if (!UUID_RE.test(id)) throw error(400, "ID invalide");
+}
+
 export async function load({ params }) {
   const sb = getAdminClient();
   const { id } = params;
+  assertUuid(id);
 
   const [profileRes, authUserRes, gamesRes, reportsRes] = await Promise.all([
     sb.from("profiles").select("*").eq("id", id).single(),
@@ -39,6 +46,7 @@ export async function load({ params }) {
 
 export const actions = {
   ban: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser } = await requireAdmin(request);
     const sb = getAdminClient();
     await sb.auth.admin.updateUserById(params.id, { ban_duration: "87600h" });
@@ -47,6 +55,7 @@ export const actions = {
   },
 
   unban: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser } = await requireAdmin(request);
     const sb = getAdminClient();
     await sb.auth.admin.updateUserById(params.id, { ban_duration: "none" });
@@ -55,17 +64,19 @@ export const actions = {
   },
 
   editStats: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser, formData } = await requireAdmin(request);
     const sb = getAdminClient();
-    const xp = parseInt(formData.get("xp")) || 0;
-    const elo = parseInt(formData.get("elo")) || 1000;
-    const level = parseInt(formData.get("level")) || 1;
+    const xp    = Math.max(0, parseInt(formData.get("xp"),    10) || 0);
+    const elo   = Math.max(0, Math.min(99999, parseInt(formData.get("elo"),   10) || 1000));
+    const level = Math.max(1, Math.min(1000,  parseInt(formData.get("level"), 10) || 1));
     await sb.from("profiles").update({ xp, elo, level }).eq("id", params.id);
     await logAdminAction(adminUser.id, "edit_stats", params.id, "user", { xp, elo, level });
     return { success: true };
   },
 
   editUsername: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser, formData } = await requireAdmin(request);
     const sb = getAdminClient();
     const username = formData.get("username")?.trim();
@@ -77,6 +88,7 @@ export const actions = {
   },
 
   resetStats: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser } = await requireAdmin(request);
     const sb = getAdminClient();
     await sb.from("profiles").update({
@@ -87,7 +99,9 @@ export const actions = {
   },
 
   setRole: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser, formData } = await requireAdmin(request);
+    if (params.id === adminUser.id) return { success: false, error: "Impossible de modifier son propre rôle" };
     const role = formData.get("role");
     if (!["user", "super_admin"].includes(role)) return { success: false };
     const sb = getAdminClient();
@@ -97,13 +111,14 @@ export const actions = {
   },
 
   deleteUser: async ({ request, params }) => {
+    assertUuid(params.id);
     const { adminUser, formData } = await requireAdmin(request);
     const confirm = formData.get("confirm_username")?.trim();
     const sb = getAdminClient();
     const { data: profile } = await sb.from("profiles").select("username").eq("id", params.id).single();
     if (confirm !== profile?.username) return { success: false, error: "Username incorrect — suppression annulée" };
-    await logAdminAction(adminUser.id, "delete_user", params.id, "user", { username: profile.username });
     await sb.auth.admin.deleteUser(params.id);
+    await logAdminAction(adminUser.id, "delete_user", params.id, "user", { username: profile.username });
     return { success: true, deleted: true };
   },
 };

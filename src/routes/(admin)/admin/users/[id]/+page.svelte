@@ -8,7 +8,9 @@
   const adminCtx = getContext('adminToken');
   const token = $derived(adminCtx?.token ?? '');
 
-  const { profile, games, reports } = data;
+  const profile  = $derived(data.profile);
+  const games    = $derived(data.games);
+  const reports  = $derived(data.reports);
   const isBanned = $derived(data.isBanned);
 
   let confirmUsername = $state('');
