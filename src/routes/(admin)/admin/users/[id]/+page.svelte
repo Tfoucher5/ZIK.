@@ -8,10 +8,12 @@
   const adminCtx = getContext('adminToken');
   const token = $derived(adminCtx?.token ?? '');
 
-  const { profile, isBanned, games, reports } = data;
+  const { profile, games, reports } = data;
+  const isBanned = $derived(data.isBanned);
 
   let confirmUsername = $state('');
   let showDeleteModal = $state(false);
+  let showResetModal = $state(false);
 
   function fmt(iso) {
     if (!iso) return '—';
@@ -91,10 +93,17 @@
     <div class="action-card">
       <div class="action-title">// RESET_STATS</div>
       <p class="action-desc">Remet XP=0, ELO=1000, LVL=1, games=0, score=0</p>
-      <form method="POST" action="?/resetStats" use:enhance>
-        <input type="hidden" name="_token" value={token}>
-        <button class="btn-action btn-red" onclick="return confirm('Reset toutes les stats ?')">RESET ALL STATS</button>
-      </form>
+      {#if showResetModal}
+        <form method="POST" action="?/resetStats" use:enhance onsubmit={() => showResetModal = false}>
+          <input type="hidden" name="_token" value={token}>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-action btn-red">CONFIRM RESET</button>
+            <button type="button" class="btn-action btn-ghost" onclick={() => showResetModal = false}>CANCEL</button>
+          </div>
+        </form>
+      {:else}
+        <button class="btn-action btn-red" onclick={() => showResetModal = true}>RESET ALL STATS</button>
+      {/if}
     </div>
 
     <div class="action-card">
