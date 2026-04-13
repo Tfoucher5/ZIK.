@@ -7,12 +7,13 @@
   let connected = $state(false);
   let retryDelay = 1000;
   let es;
+  let retryTimer;
 
   const adminCtx = getContext('adminToken');
 
   onMount(() => {
     connect();
-    return () => es?.close();
+    return () => { clearTimeout(retryTimer); es?.close(); };
   });
 
   function connect() {
@@ -27,7 +28,8 @@
     es.onerror = () => {
       connected = false;
       es?.close();
-      setTimeout(() => connect(), retryDelay);
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => connect(), retryDelay);
       retryDelay = Math.min(retryDelay * 2, 30000);
     };
   }
