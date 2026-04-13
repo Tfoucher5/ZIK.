@@ -13,11 +13,13 @@
   }
 
   let searchInput = $state(data.q);
-  let searchTimer;
+  let searchTimer = $state(undefined);
   function onSearch(e) {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => setParam('q', e.target.value), 300);
+    const val = e.target.value;
+    searchTimer = setTimeout(() => setParam('q', val), 300);
   }
+  $effect(() => () => clearTimeout(searchTimer));
 
   const totalPages = $derived(Math.ceil(data.total / data.pageSize));
 

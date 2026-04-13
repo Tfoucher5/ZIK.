@@ -2,10 +2,12 @@ import { getAdminClient } from "$lib/server/config.js";
 
 export async function load({ url }) {
   const sb = getAdminClient();
+  const ALLOWED_SORT = ["elo", "level", "games_played", "created_at"];
   const q = url.searchParams.get("q") || "";
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
-  const sort = url.searchParams.get("sort") || "elo";
-  const order = url.searchParams.get("order") || "desc";
+  const sortParam = url.searchParams.get("sort");
+  const sort = ALLOWED_SORT.includes(sortParam) ? sortParam : "elo";
+  const order = url.searchParams.get("order") === "asc" ? "asc" : "desc";
   const PAGE_SIZE = 50;
 
   let query = sb
