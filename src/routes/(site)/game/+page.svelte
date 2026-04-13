@@ -358,6 +358,24 @@
       goto('/rooms');
     });
 
+    socket.on('admin_pause', () => {
+      try { ytPlayer?.pauseVideo(); } catch { /* ignore */ }
+    });
+
+    socket.on('admin_resume', () => {
+      try { ytPlayer?.playVideo(); } catch { /* ignore */ }
+    });
+
+    socket.on('admin_blocked', () => {
+      startDisabled = true;
+      startLabel = '🔒 Partie bloquée par un admin';
+    });
+
+    socket.on('admin_unblocked', () => {
+      startDisabled = false;
+      startLabel = '🎮 Lancer la partie';
+    });
+
     // Join
     _hasJoined = true;
     socket.emit('join_room', { roomId: ROOM_ID, username: USERNAME, userId: USER_ID, isGuest: IS_GUEST });
