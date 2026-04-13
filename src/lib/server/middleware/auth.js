@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { error } from "@sveltejs/kit";
-import { supabase } from "../config.js";
+import { supabase, getAdminClient } from "../config.js";
 
 // ─── JWT token cache (avoids a Supabase round-trip per request) ──────────────
 const _tokenCache = new Map(); // token -> { user, exp }
@@ -58,4 +58,43 @@ export function userClient(token) {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
+}
+
+// ─── Admin helpers ────────────────────────────────────────────────────────────
+
+export async function requireAdmin(request) {
+  const formData = await request.formData();
+  const token = formData.get("_token");
+  if (!token) throw error(403, "Token manquant");
+
+  const user = await verifyToken(token);
+  if (!user) throw error(403, "Token invalide");
+
+  const { data: profile } = await getAdminClient()
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "super_admin") throw error(403, "Accès refusé");
+
+  return { adminUser: user, formData };
+}
+
+export async function logAdminAction(
+  adminId,
+  action,
+  targetId,
+  targetType,
+  payload = {},
+) {
+  await getAdminClient()
+    .from("admin_audit_log")
+    .insert({
+      admin_id: adminId,
+      action,
+      target_id: targetId,
+      target_type: targetType,
+      payload,
+    });
 }
