@@ -626,6 +626,7 @@ export function register(io) {
           autoStart,
           isAdmin,
           hasOwner: !!ownerId,
+          adminBlocked: room.game.adminBlocked ?? false,
         },
       });
       socket.emit("init_history", room.game.history);
@@ -640,7 +641,7 @@ export function register(io) {
         (room.game.isActive || room.game.isSyncWaiting)
       ) {
         socket.emit("start_round", room.game.lastRoundData);
-        if (room.game.isActive) {
+        if (room.game.isActive && !room.game.isPaused) {
           // Round déjà synchro — le nouveau joueur peut jouer immédiatement
           socket.emit("round_start_sync");
         }

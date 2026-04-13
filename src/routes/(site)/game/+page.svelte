@@ -80,6 +80,7 @@
   let syncTotal    = $state(0);
   let _waitingForSync = false;
   let _syncPaused    = false;
+  let _adminPaused   = false;
 
   // Chat
   let chatOpen     = $state(false);
@@ -243,9 +244,11 @@
       if (roomConfig) {
         const trackInfo = roomConfig.trackCount ? ` \u2014 ${roomConfig.trackCount} titres` : '';
         roomLabel = `${roomConfig.emoji || ''} ${roomConfig.name || ''}${trackInfo}`.trim();
-        autoStart = roomConfig.autoStart || false;
-        isAdmin   = roomConfig.isAdmin   || false;
-        hasOwner  = roomConfig.hasOwner  || false;
+        autoStart   = roomConfig.autoStart    || false;
+        isAdmin     = roomConfig.isAdmin      || false;
+        hasOwner    = roomConfig.hasOwner     || false;
+        adminLocked = roomConfig.adminBlocked || false;
+        if (adminLocked) startDisabled = true;
       }
     });
     socket.on('game_countdown', ({ seconds }) => { startCountdownUI(seconds); });
@@ -360,10 +363,12 @@
     });
 
     socket.on('admin_pause', () => {
+      _adminPaused = true;
       try { ytPlayer?.pauseVideo(); } catch { /* ignore */ }
     });
 
     socket.on('admin_resume', () => {
+      _adminPaused = false;
       try { ytPlayer?.playVideo(); } catch { /* ignore */ }
     });
 
@@ -403,7 +408,7 @@
                 ytPlayer.pauseVideo();
               }
             }
-            if (!_syncPaused && _roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
+            if (!_syncPaused && !_adminPaused && _roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
               const elapsed = (Date.now() - _lastVideo.startedAt) / 1000;
               loadVideo(_lastVideo.videoId, _lastVideo.startSeconds + elapsed);
             }
