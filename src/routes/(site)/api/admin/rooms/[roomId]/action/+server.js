@@ -7,9 +7,11 @@ import {
   adminSkipRound,
   adminEndGame,
   adminKickPlayer,
+  adminBlockRoom,
+  adminUnblockRoom,
 } from "$lib/server/socket/game.js";
 
-const ALLOWED_ACTIONS = ["pause", "resume", "skip_round", "end_game", "kick"];
+const ALLOWED_ACTIONS = ["pause", "resume", "skip_round", "end_game", "kick", "block", "unblock"];
 
 export async function POST({ request, params }) {
   const body = await request.json();
@@ -50,6 +52,12 @@ export async function POST({ request, params }) {
     case "kick":
       if (!username) throw error(400, "username requis");
       ok = adminKickPlayer(roomId, username);
+      break;
+    case "block":
+      ok = adminBlockRoom(roomId);
+      break;
+    case "unblock":
+      ok = adminUnblockRoom(roomId);
       break;
   }
 
