@@ -910,3 +910,104 @@ export function register(io) {
     });
   });
 }
+
+// ─── Admin control ────────────────────────────────────────────────────────────
+
+export function adminGetRoomsSnapshot() {
+  return Object.values(roomGames).map((room) => ({
+    roomId: room.roomId,
+    playerCount: Object.keys(room.players).length,
+    players: Object.values(room.players).map((p) => ({
+      name: p.name,
+      score: p.score,
+      foundArtist: p.foundArtist,
+      foundTitle: p.foundTitle,
+    })),
+    isActive: room.game.isActive,
+    isPaused: room.game.isPaused ?? false,
+    currentRound: room.game.currentRound,
+    maxRounds: room.game.maxRounds,
+    timer: room.game.timer,
+    roundDuration: room.game.roundDuration,
+    isSyncWaiting: room.game.isSyncWaiting,
+    readyCount: room.game.readyPlayers?.size ?? 0,
+    currentTrack: room.game.currentTrack
+      ? {
+          artist:
+            room.game.currentTrack.mainArtist || room.game.currentTrack.artist,
+          title: room.game.currentTrack.title,
+        }
+      : null,
+  }));
+}
+
+export function adminPauseRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room || !room.game.isActive || room.game.isPaused) return false;
+  clearInterval(room.game.interval);
+  room.game.interval = null;
+  room.game.isPaused = true;
+  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_pause");
+  return true;
+}
+
+export function adminResumeRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room || !room.game.isPaused) return false;
+  const io = globalThis.__zik_io;
+  room.game.isPaused = false;
+  room.game.interval = setInterval(() => {
+    room.game.timer--;
+    io?.to(`room:${roomId}`).emit("timer_update", {
+      current: room.game.timer,
+      max: room.game.roundDuration,
+    });
+    if (room.game.timer <= 0) endRound(roomId, "Temps écoulé !", io);
+  }, 1000);
+  io?.to(`room:${roomId}`).emit("admin_resume");
+  return true;
+}
+
+export function adminSkipRound(roomId) {
+  const room = roomGames[roomId];
+  if (!room || !room.game.isActive) return false;
+  const io = globalThis.__zik_io;
+  endRound(roomId, "Round sauté par l'admin", io);
+  return true;
+}
+
+export function adminEndGame(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const io = globalThis.__zik_io;
+  clearInterval(room.game.interval);
+  clearTimeout(room.game.breakTimer);
+  room.game.interval = null;
+  room.game.breakTimer = null;
+  room.game.isActive = false;
+  const finalScores = Object.values(room.players)
+    .sort((a, b) => b.score - a.score)
+    .map(sanitizePlayer);
+  io?.to(`room:${roomId}`).emit("game_over", finalScores);
+  return true;
+}
+
+export function adminKickPlayer(roomId, username) {
+  const room = roomGames[roomId];
+  if (!room || !room.players[username]) return false;
+  const io = globalThis.__zik_io;
+  const socketId = room.nameToSocket[username];
+  if (socketId)
+    io
+      ?.to(socketId)
+      .emit("admin_kicked", { reason: "Expulsé par un administrateur" });
+  delete room.players[username];
+  delete room.nameToSocket[username];
+  for (const sid of Object.keys(room.socketToName)) {
+    if (room.socketToName[sid] === username) delete room.socketToName[sid];
+  }
+  io
+    ?.to(`room:${roomId}`)
+    .emit("update_players", Object.values(room.players).map(sanitizePlayer));
+  return true;
+}
