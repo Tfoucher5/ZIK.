@@ -216,7 +216,7 @@ function startTimer(roomId, io) {
 
 function triggerRoundStart(roomId, io) {
   const room = roomGames[roomId];
-  if (!room || room.game.isActive) return;
+  if (!room || room.game.isActive || room.game.isPaused) return;
   clearTimeout(room.game.readyTimer);
   room.game.readyTimer = null;
   room.game.isSyncWaiting = false;
@@ -273,6 +273,9 @@ async function startNextRound(roomId, io) {
       extraLabels: (game.currentTrack.extraAnswers || []).map((e) => e.label),
       previewUrl: null,
     };
+
+    // Si l'admin a mis en pause pendant le fetch YTS, on abandonne
+    if (game.isPaused) return;
 
     game.isSyncWaiting = true;
     game.readyPlayers = new Set();
@@ -965,7 +968,12 @@ export function adminPauseRoom(roomId) {
   } else {
     room.game._pausedState = "none";
   }
-  // Annuler l'auto-countdown si en cours
+  // Annuler readyTimer + auto-countdown
+  if (room.game.readyTimer) {
+    clearTimeout(room.game.readyTimer);
+    room.game.readyTimer = null;
+    room.game.isSyncWaiting = false;
+  }
   cancelAutoCountdown(roomId, io);
   room.game.isPaused = true;
   io?.to(`room:${roomId}`).emit("admin_pause");
