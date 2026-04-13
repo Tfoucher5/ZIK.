@@ -12,7 +12,16 @@ import {
   adminAnnounce,
 } from "$lib/server/socket/game.js";
 
-const ALLOWED_ACTIONS = ["pause", "resume", "skip_round", "end_game", "kick", "block", "unblock", "announce"];
+const ALLOWED_ACTIONS = [
+  "pause",
+  "resume",
+  "skip_round",
+  "end_game",
+  "kick",
+  "block",
+  "unblock",
+  "announce",
+];
 
 export async function POST({ request, params }) {
   const body = await request.json();

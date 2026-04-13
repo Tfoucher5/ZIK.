@@ -29,16 +29,17 @@ Phase 2 ajoute la gestion des Rooms et des Playlists (avec leurs tracks) depuis 
 
 ### Actions inline
 
-| Action | UI | Confirmation |
-|---|---|---|
-| Toggle `is_official` | clic direct | non |
-| Toggle `is_public` | clic direct | non |
-| Modifier name, emoji, description, max_rounds, round_duration, break_duration, auto_start | modal | non |
-| Supprimer la room | bouton | oui |
+| Action                                                                                    | UI          | Confirmation |
+| ----------------------------------------------------------------------------------------- | ----------- | ------------ |
+| Toggle `is_official`                                                                      | clic direct | non          |
+| Toggle `is_public`                                                                        | clic direct | non          |
+| Modifier name, emoji, description, max_rounds, round_duration, break_duration, auto_start | modal       | non          |
+| Supprimer la room                                                                         | bouton      | oui          |
 
 ### Audit log
 
 Chaque mutation insère dans `admin_audit_log` :
+
 - `toggle_room_flag` — payload : `{ field, old, new }`
 - `edit_room` — payload : diff des champs modifiés
 - `delete_room` — payload : `{ code, name }`
@@ -56,12 +57,12 @@ Chaque mutation insère dans `admin_audit_log` :
 
 ### Actions inline
 
-| Action | UI | Confirmation |
-|---|---|---|
-| Toggle `is_official` | clic direct | non |
-| Toggle `is_public` | clic direct | non |
-| Modifier name, emoji | modal | non |
-| Supprimer la playlist | bouton | oui |
+| Action                | UI          | Confirmation |
+| --------------------- | ----------- | ------------ |
+| Toggle `is_official`  | clic direct | non          |
+| Toggle `is_public`    | clic direct | non          |
+| Modifier name, emoji  | modal       | non          |
+| Supprimer la playlist | bouton      | oui          |
 
 ### Fiche détail (`/admin/playlists/[id]`)
 
@@ -88,6 +89,7 @@ Chargée server-side via `getAdminClient()` :
 ### Nav (`+layout.svelte`)
 
 Ajouter 2 liens :
+
 ```
 ⬡ Dashboard  ◈ Users  ◉ Reports  ◧ Rooms  ◫ Playlists
 ```

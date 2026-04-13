@@ -62,7 +62,8 @@ export const actions = {
     const id = formData.get("id");
     const name = formData.get("name")?.trim();
     const emoji = formData.get("emoji")?.trim() || "🎵";
-    if (!name || name.length < 1) return { success: false, error: "Nom invalide" };
+    if (!name || name.length < 1)
+      return { success: false, error: "Nom invalide" };
     const sb = getAdminClient();
     const { error: err } = await sb
       .from("custom_playlists")

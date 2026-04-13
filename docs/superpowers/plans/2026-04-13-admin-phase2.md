@@ -12,21 +12,22 @@
 
 ## Fichiers créés / modifiés
 
-| Fichier | Action | Rôle |
-|---|---|---|
-| `src/routes/(admin)/+layout.svelte` | Modifier | Ajouter liens ◧ Rooms + ◫ Playlists dans la nav |
-| `src/routes/(admin)/admin/rooms/+page.server.js` | Créer | load rooms paginé + actions toggleFlag / editRoom / deleteRoom |
-| `src/routes/(admin)/admin/rooms/+page.svelte` | Créer | Tableau rooms + modals inline edit + delete |
-| `src/routes/(admin)/admin/playlists/+page.server.js` | Créer | load playlists paginé + actions toggleFlag / editPlaylist / deletePlaylist |
-| `src/routes/(admin)/admin/playlists/+page.svelte` | Créer | Tableau playlists + modals inline |
-| `src/routes/(admin)/admin/playlists/[id]/+page.server.js` | Créer | load fiche playlist + tracks + actions deleteTrack / reorderTrack / deletePlaylist |
-| `src/routes/(admin)/admin/playlists/[id]/+page.svelte` | Créer | Fiche playlist + tableau tracks avec ▲▼ + suppression |
+| Fichier                                                   | Action   | Rôle                                                                               |
+| --------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `src/routes/(admin)/+layout.svelte`                       | Modifier | Ajouter liens ◧ Rooms + ◫ Playlists dans la nav                                    |
+| `src/routes/(admin)/admin/rooms/+page.server.js`          | Créer    | load rooms paginé + actions toggleFlag / editRoom / deleteRoom                     |
+| `src/routes/(admin)/admin/rooms/+page.svelte`             | Créer    | Tableau rooms + modals inline edit + delete                                        |
+| `src/routes/(admin)/admin/playlists/+page.server.js`      | Créer    | load playlists paginé + actions toggleFlag / editPlaylist / deletePlaylist         |
+| `src/routes/(admin)/admin/playlists/+page.svelte`         | Créer    | Tableau playlists + modals inline                                                  |
+| `src/routes/(admin)/admin/playlists/[id]/+page.server.js` | Créer    | load fiche playlist + tracks + actions deleteTrack / reorderTrack / deletePlaylist |
+| `src/routes/(admin)/admin/playlists/[id]/+page.svelte`    | Créer    | Fiche playlist + tableau tracks avec ▲▼ + suppression                              |
 
 ---
 
 ## Task 1 : Nav — ajouter liens Rooms + Playlists
 
 **Files:**
+
 - Modify: `src/routes/(admin)/+layout.svelte`
 
 - [ ] **Ajouter les deux liens dans la nav**
@@ -55,6 +56,7 @@ git commit -m "feat(admin): nav — liens Rooms + Playlists"
 ## Task 2 : Rooms — server (`/admin/rooms`)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/rooms/+page.server.js`
 
 - [ ] **Créer le fichier**
@@ -143,7 +145,15 @@ export const actions = {
     const sb = getAdminClient();
     const { error: err } = await sb
       .from("rooms")
-      .update({ name, emoji, description, max_rounds, round_duration, break_duration, auto_start })
+      .update({
+        name,
+        emoji,
+        description,
+        max_rounds,
+        round_duration,
+        break_duration,
+        auto_start,
+      })
       .eq("id", id);
     if (err) return { success: false, error: err.message };
     await logAdminAction(adminUser.id, "edit_room", id, "room", {
@@ -190,6 +200,7 @@ git commit -m "feat(admin): rooms — server load + actions"
 ## Task 3 : Rooms — UI (`/admin/rooms`)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/rooms/+page.svelte`
 
 - [ ] **Créer le fichier**
@@ -600,6 +611,7 @@ git commit -m "feat(admin): rooms — UI tableau + modals edit/delete"
 ## Task 4 : Playlists — server (`/admin/playlists`)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/playlists/+page.server.js`
 
 - [ ] **Créer le fichier**
@@ -669,7 +681,8 @@ export const actions = {
     const id = formData.get("id");
     const name = formData.get("name")?.trim();
     const emoji = formData.get("emoji")?.trim() || "🎵";
-    if (!name || name.length < 1) return { success: false, error: "Nom invalide" };
+    if (!name || name.length < 1)
+      return { success: false, error: "Nom invalide" };
     const sb = getAdminClient();
     const { error: err } = await sb
       .from("custom_playlists")
@@ -718,6 +731,7 @@ git commit -m "feat(admin): playlists — server load + actions"
 ## Task 5 : Playlists — UI (`/admin/playlists`)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/playlists/+page.svelte`
 
 - [ ] **Créer le fichier**
@@ -1099,6 +1113,7 @@ git commit -m "feat(admin): playlists — UI tableau + modals"
 ## Task 6 : Playlists detail — server (`/admin/playlists/[id]`)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/playlists/[id]/+page.server.js`
 
 - [ ] **Créer le fichier**
@@ -1122,12 +1137,16 @@ export async function load({ params }) {
   const [playlistRes, tracksRes] = await Promise.all([
     sb
       .from("custom_playlists")
-      .select("id, name, emoji, owner_id, is_public, is_official, track_count, created_at, updated_at, profiles!owner_id(username)")
+      .select(
+        "id, name, emoji, owner_id, is_public, is_official, track_count, created_at, updated_at, profiles!owner_id(username)",
+      )
       .eq("id", params.id)
       .single(),
     sb
       .from("custom_playlist_tracks")
-      .select("id, playlist_id, artist, title, preview_url, cover_url, source, position, created_at")
+      .select(
+        "id, playlist_id, artist, title, preview_url, cover_url, source, position, created_at",
+      )
       .eq("playlist_id", params.id)
       .order("position", { ascending: true }),
   ]);
@@ -1199,12 +1218,18 @@ export const actions = {
       .update({ position: a.position })
       .eq("id", b.id);
 
-    await logAdminAction(adminUser.id, "reorder_tracks", params.id, "playlist", {
-      moved_track_id: trackId,
-      direction,
-      old_position: a.position,
-      new_position: b.position,
-    });
+    await logAdminAction(
+      adminUser.id,
+      "reorder_tracks",
+      params.id,
+      "playlist",
+      {
+        moved_track_id: trackId,
+        direction,
+        old_position: a.position,
+        new_position: b.position,
+      },
+    );
     return { success: true };
   },
 
@@ -1222,10 +1247,16 @@ export const actions = {
       .delete()
       .eq("id", params.id);
     if (err) return { success: false, error: err.message };
-    await logAdminAction(adminUser.id, "delete_playlist", params.id, "playlist", {
-      name: playlist?.name,
-      track_count: playlist?.track_count,
-    });
+    await logAdminAction(
+      adminUser.id,
+      "delete_playlist",
+      params.id,
+      "playlist",
+      {
+        name: playlist?.name,
+        track_count: playlist?.track_count,
+      },
+    );
     redirect(302, "/admin/playlists");
   },
 };
@@ -1243,6 +1274,7 @@ git commit -m "feat(admin): playlist detail — server load + actions"
 ## Task 7 : Playlists detail — UI (`/admin/playlists/[id]`)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/playlists/[id]/+page.svelte`
 
 - [ ] **Créer le fichier**

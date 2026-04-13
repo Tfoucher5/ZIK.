@@ -90,7 +90,15 @@ export const actions = {
     const sb = getAdminClient();
     const { error: err } = await sb
       .from("rooms")
-      .update({ name, emoji, description, max_rounds, round_duration, break_duration, auto_start })
+      .update({
+        name,
+        emoji,
+        description,
+        max_rounds,
+        round_duration,
+        break_duration,
+        auto_start,
+      })
       .eq("id", id);
     if (err) return { success: false, error: err.message };
     await logAdminAction(adminUser.id, "edit_room", id, "room", {
