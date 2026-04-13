@@ -93,6 +93,7 @@
             <span class="ri-meta">
               {r.playerCount}p · {r.isActive ? `R${r.currentRound}/${r.maxRounds}` : 'LOBBY'}
               {#if r.isPaused}<span class="badge-paused">⏸</span>{/if}
+              {#if r.adminBlocked}<span class="badge-blocked">🔒</span>{/if}
             </span>
           </button>
         {/each}
@@ -117,6 +118,11 @@
               <button class="act-btn act-skip" onclick={() => doAction(selectedRoom.roomId, 'skip_round')}>⏭ SKIP ROUND</button>
             {/if}
             <button class="act-btn act-end" onclick={() => doAction(selectedRoom.roomId, 'end_game')}>■ END GAME</button>
+            {#if !selectedRoom.adminBlocked}
+              <button class="act-btn act-block" onclick={() => doAction(selectedRoom.roomId, 'block')}>🔒 LOCK</button>
+            {:else}
+              <button class="act-btn act-unblock" onclick={() => doAction(selectedRoom.roomId, 'unblock')}>🔓 UNLOCK</button>
+            {/if}
           </div>
         </div>
 
@@ -254,6 +260,7 @@
 .ri-meta { font-size: 0.65rem; color: rgba(0,255,65,0.4); }
 .room-item.selected .ri-meta { color: rgba(0,255,65,0.6); }
 .badge-paused { color: #ffb300; font-size: 0.7rem; }
+.badge-blocked { font-size: 0.7rem; }
 .empty { font-size: 0.78rem; color: rgba(0,255,65,0.3); padding: 8px 0; }
 
 /* Détail */
@@ -288,6 +295,9 @@
 .act-resume { border-color: rgba(0,255,65,0.4); color: #00ff41; }
 .act-end { border-color: rgba(255,68,68,0.25); color: rgba(255,68,68,0.5); }
 .act-end:hover { color: #ff4444; border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.06); }
+.act-block { border-color: rgba(255,179,0,0.25); color: rgba(255,179,0,0.5); }
+.act-block:hover { color: #ffb300; border-color: rgba(255,179,0,0.5); background: rgba(255,179,0,0.06); }
+.act-unblock { border-color: rgba(0,255,65,0.4); color: #00ff41; }
 
 .round-state { display: flex; flex-direction: column; gap: 8px; }
 .rs-row { display: flex; align-items: center; gap: 12px; font-size: 0.8rem; }
