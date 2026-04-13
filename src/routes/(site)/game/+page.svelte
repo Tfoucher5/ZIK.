@@ -31,7 +31,9 @@
   let showStart   = $state(true);
   let startDisabled = $state(false);
   let startLabel  = $state('&#x1F3AE; Lancer la partie');
-  let adminLocked = $state(false);
+  let adminLocked   = $state(false);
+  let adminAnnounceMsg = $state('');
+  let _announceTimer = null;
   let gameoverShow = $state(false);
   let gameoverScores = $state([]);
   let guessVal    = $state('');
@@ -372,6 +374,12 @@
       try { ytPlayer?.playVideo(); } catch { /* ignore */ }
     });
 
+    socket.on('admin_announce', ({ message }) => {
+      clearTimeout(_announceTimer);
+      adminAnnounceMsg = message;
+      _announceTimer = setTimeout(() => { adminAnnounceMsg = ''; }, 8000);
+    });
+
     socket.on('admin_blocked', () => {
       adminLocked = true;
       startDisabled = true;
@@ -447,6 +455,13 @@
 
 <!-- Timer bar (fixed top) -->
 <div class="g-timer"><div class="g-timer-fill" style="width:{timerPct}%;background:{timerColor}"></div></div>
+
+{#if adminAnnounceMsg}
+  <div class="g-admin-announce" role="alert">
+    <span class="g-announce-icon">📢</span>
+    <span class="g-announce-text">{adminAnnounceMsg}</span>
+  </div>
+{/if}
 
 <div class="g-app">
 

@@ -10,6 +10,7 @@
   let es = null;
   let actionMsg = $state(null);
   let actionMsgTimer = null;
+  let announceText = $state('');
 
   const selectedRoom = $derived(rooms.find(r => r.roomId === selected) ?? null);
 
@@ -41,9 +42,10 @@
     actionMsgTimer = setTimeout(() => { actionMsg = null; }, 3000);
   }
 
-  async function doAction(roomId, action, username = null) {
+  async function doAction(roomId, action, username = null, message = null) {
     const body = { _token: token, action };
     if (username) body.username = username;
+    if (message) body.message = message;
     try {
       const res = await fetch(`/api/admin/rooms/${encodeURIComponent(roomId)}/action`, {
         method: 'POST',
@@ -161,6 +163,26 @@
         </div>
 
         <!-- Tableau joueurs -->
+        <!-- Annonce -->
+        <div class="announce-zone">
+          <div class="section-title">// ANNOUNCE</div>
+          <div class="announce-row">
+            <input
+              class="announce-input"
+              type="text"
+              maxlength="200"
+              placeholder="> Message affiché sur les écrans..."
+              bind:value={announceText}
+              onkeydown={(e) => { if (e.key === 'Enter' && announceText.trim()) { doAction(selectedRoom.roomId, 'announce', null, announceText); announceText = ''; } }}
+            />
+            <button
+              class="act-btn act-announce"
+              disabled={!announceText.trim()}
+              onclick={() => { doAction(selectedRoom.roomId, 'announce', null, announceText); announceText = ''; }}
+            >SEND</button>
+          </div>
+        </div>
+
         <div class="section-title">// PLAYERS ({selectedRoom.playerCount})</div>
         {#if selectedRoom.players.length === 0}
           <div class="empty">Aucun joueur.</div>
@@ -298,6 +320,25 @@
 .act-block { border-color: rgba(255,179,0,0.25); color: rgba(255,179,0,0.5); }
 .act-block:hover { color: #ffb300; border-color: rgba(255,179,0,0.5); background: rgba(255,179,0,0.06); }
 .act-unblock { border-color: rgba(0,255,65,0.4); color: #00ff41; }
+.act-announce { border-color: rgba(255,179,0,0.4); color: #ffb300; flex-shrink: 0; }
+.act-announce:hover { background: rgba(255,179,0,0.08); }
+.act-announce:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.announce-zone { display: flex; flex-direction: column; gap: 8px; }
+.announce-row { display: flex; gap: 8px; }
+.announce-input {
+  flex: 1;
+  background: rgba(0,255,65,0.04);
+  border: 1px solid rgba(0,255,65,0.2);
+  border-radius: 3px;
+  color: #00ff41;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 7px 12px;
+  outline: none;
+}
+.announce-input::placeholder { color: rgba(0,255,65,0.2); }
+.announce-input:focus { border-color: rgba(0,255,65,0.4); }
 
 .round-state { display: flex; flex-direction: column; gap: 8px; }
 .rs-row { display: flex; align-items: center; gap: 12px; font-size: 0.8rem; }

@@ -1032,6 +1032,15 @@ export function adminEndGame(roomId) {
   return true;
 }
 
+export function adminAnnounce(roomId, message) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const msg = String(message ?? "").trim().slice(0, 200);
+  if (!msg) return false;
+  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_announce", { message: msg });
+  return true;
+}
+
 export function adminBlockRoom(roomId) {
   const room = roomGames[roomId];
   if (!room) return false;
