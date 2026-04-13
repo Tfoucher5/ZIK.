@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy, tick } from 'svelte';
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
   import ReportModal from '$lib/components/ReportModal.svelte';
 
   // URL params — read once on mount
@@ -350,6 +351,11 @@
       errorMsg = msg;
       setTimeout(() => { errorMsg = ''; }, 4000);
       startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
+    });
+
+    socket.on('admin_kicked', () => {
+      socket.disconnect();
+      goto('/rooms');
     });
 
     // Join
