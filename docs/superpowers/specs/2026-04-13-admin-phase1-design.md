@@ -21,6 +21,7 @@ Les `actions` SvelteKit des pages admin ne vérifient aucun rôle côté serveur
 ## Section 1 — Sécurité
 
 ### Problème actuel
+
 - Guard 100% client-side → contournable si JS désactivé
 - Aucune vérification de rôle sur les `actions` SvelteKit (POST directs possibles)
 - Pas de traçabilité des actions admin
@@ -28,20 +29,24 @@ Les `actions` SvelteKit des pages admin ne vérifient aucun rôle côté serveur
 ### Ajouts
 
 **1. Helper `requireAdmin(request)` dans `src/lib/server/middleware/auth.js`**
+
 - Extrait le JWT du header `Authorization: Bearer <token>`
 - Appelle `verifyToken()` existant (déjà dans auth.js)
 - Vérifie `role = 'super_admin'` dans `profiles` via service key
 - Throw `error(403, 'Accès refusé')` si non autorisé
 
 **2. Validation server-side sur toutes les `actions` admin**
+
 - Chaque action admin envoie le JWT en hidden field `_token`
 - Le serveur appelle `requireAdmin()` avant toute mutation
 
 **3. Endpoint SSE `/api/admin/live`**
+
 - Valide le token via query param `?token=xxx` à la connexion
 - Lecture seule du state mémoire (`globalThis.__zik_roomGames`, `__zik_salonRooms`)
 
 **4. Table `admin_audit_log` (nouvelle)**
+
 ```sql
 CREATE TABLE admin_audit_log (
   id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -62,24 +67,27 @@ CREATE TABLE admin_audit_log (
 ## Section 2 — Dashboard (`/admin/dashboard`)
 
 ### Style
+
 - Fond `#0a0a0f`, texte vert phosphore `#00ff41` / ambre `#ffb300`
 - Police monospace (Inter Mono ou system-ui mono)
 - Effet scan-lines CSS subtil (pseudo-element sur le fond)
 - Vibe "terminal cartel" — pas de couleurs pastel, tout est data brute
 
 ### Bloc Stats (server-side au load)
+
 6 cartes chargées via `getAdminClient()` :
 
-| Métrique | Source |
-|---|---|
-| Total users inscrits | `COUNT(profiles)` |
-| Users actifs 7j | `COUNT(game_players)` jointure `games` où `started_at > now()-7j` |
-| Parties jouées aujourd'hui | `COUNT(games)` où `started_at > today` |
-| Rooms publiques | `COUNT(rooms)` où `is_public = true` |
-| Reports en attente | `COUNT(reports)` où `status = 'pending'` |
-| Uptime serveur | `process.uptime()` formaté HH:MM:SS |
+| Métrique                   | Source                                                            |
+| -------------------------- | ----------------------------------------------------------------- |
+| Total users inscrits       | `COUNT(profiles)`                                                 |
+| Users actifs 7j            | `COUNT(game_players)` jointure `games` où `started_at > now()-7j` |
+| Parties jouées aujourd'hui | `COUNT(games)` où `started_at > today`                            |
+| Rooms publiques            | `COUNT(rooms)` où `is_public = true`                              |
+| Reports en attente         | `COUNT(reports)` où `status = 'pending'`                          |
+| Uptime serveur             | `process.uptime()` formaté HH:MM:SS                               |
 
 ### Bloc Live (SSE)
+
 Endpoint `GET /api/admin/live?token=xxx` — push toutes les **2 secondes** :
 
 ```json
@@ -104,6 +112,7 @@ Endpoint `GET /api/admin/live?token=xxx` — push toutes les **2 secondes** :
 ## Section 3 — Gestion Users (`/admin/users`)
 
 ### Liste (`/admin/users`)
+
 - Tableau paginé 50 users/page, chargé server-side
 - Colonnes : avatar, username, rôle, ELO, level, games joués, date inscription, statut banni
 - Recherche par username (query param `?q=`, ILIKE)
@@ -111,7 +120,9 @@ Endpoint `GET /api/admin/live?token=xxx` — push toutes les **2 secondes** :
 - Badge coloré pour les `super_admin`
 
 ### Fiche user (`/admin/users/[id]`)
+
 Chargée server-side via `getAdminClient()` :
+
 - Profil complet (avatar, username, stats)
 - 20 dernières parties (`game_players` JOIN `games`)
 - Reports le concernant (reporter ou reporté)
@@ -119,19 +130,20 @@ Chargée server-side via `getAdminClient()` :
 
 ### Actions disponibles
 
-| Action | Implémentation | Confirmé ? |
-|---|---|---|
-| **Ban** | `supabase.auth.admin.updateUserById(id, { ban_duration: 'none' \| '87600h' })` | Oui |
-| **Unban** | Même API, `ban_duration: 'none'` | Non |
-| **Modifier username** | `UPDATE profiles SET username = $1` | Oui (taper le nouveau) |
-| **Modifier XP / ELO / level** | `UPDATE profiles SET xp=$1, elo=$2, level=$3` | Oui |
-| **Reset stats** | `UPDATE profiles SET xp=0, elo=1000, level=1, games_played=0, total_score=0` | Oui (confirmation) |
-| **Changer rôle** | `UPDATE profiles SET role=$1` | Oui |
-| **Supprimer compte** | `supabase.auth.admin.deleteUser(id)` | Double confirmation : taper le username exact |
+| Action                        | Implémentation                                                                 | Confirmé ?                                    |
+| ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------- |
+| **Ban**                       | `supabase.auth.admin.updateUserById(id, { ban_duration: 'none' \| '87600h' })` | Oui                                           |
+| **Unban**                     | Même API, `ban_duration: 'none'`                                               | Non                                           |
+| **Modifier username**         | `UPDATE profiles SET username = $1`                                            | Oui (taper le nouveau)                        |
+| **Modifier XP / ELO / level** | `UPDATE profiles SET xp=$1, elo=$2, level=$3`                                  | Oui                                           |
+| **Reset stats**               | `UPDATE profiles SET xp=0, elo=1000, level=1, games_played=0, total_score=0`   | Oui (confirmation)                            |
+| **Changer rôle**              | `UPDATE profiles SET role=$1`                                                  | Oui                                           |
+| **Supprimer compte**          | `supabase.auth.admin.deleteUser(id)`                                           | Double confirmation : taper le username exact |
 
 **Toutes les actions** → insert dans `admin_audit_log` avant/après.
 
 ### Confirmation double pour suppressions
+
 Modale avec champ texte : "Tape le username pour confirmer la suppression définitive".  
 Vérification côté serveur également.
 
@@ -165,6 +177,7 @@ src/lib/server/middleware/auth.js        ← ajouter requireAdmin()
 ```
 
 ### Passage du JWT aux pages admin
+
 Le layout admin crée son propre client Supabase dans `onMount` et récupère la session.  
 Le JWT (`session.access_token`) est exposé via `setContext('adminToken', token)` pour que les pages puissent l'injecter dans les hidden fields `_token` des form actions.
 

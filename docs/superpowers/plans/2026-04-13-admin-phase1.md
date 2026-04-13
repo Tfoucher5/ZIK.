@@ -14,24 +14,25 @@
 
 ## Fichiers créés / modifiés
 
-| Fichier | Action | Rôle |
-|---|---|---|
-| `src/lib/server/middleware/auth.js` | Modifier | Ajouter `requireAdmin()` et `logAdminAction()` |
-| `src/routes/(admin)/+layout.svelte` | Modifier | Nav links + `setContext('adminToken')` |
-| `src/routes/(admin)/admin/+page.server.js` | Modifier | Redirect → `/admin/dashboard` |
-| `src/routes/(admin)/admin/dashboard/+page.server.js` | Créer | Queries stats globales |
-| `src/routes/(admin)/admin/dashboard/+page.svelte` | Créer | UI darknet + SSE client |
-| `src/routes/(site)/api/admin/live/+server.js` | Créer | SSE endpoint live |
-| `src/routes/(admin)/admin/users/+page.server.js` | Créer | Liste users paginée + search |
-| `src/routes/(admin)/admin/users/+page.svelte` | Créer | Tableau users |
-| `src/routes/(admin)/admin/users/[id]/+page.server.js` | Créer | Fiche user + toutes les actions |
-| `src/routes/(admin)/admin/users/[id]/+page.svelte` | Créer | Fiche + forms d'actions |
+| Fichier                                               | Action   | Rôle                                           |
+| ----------------------------------------------------- | -------- | ---------------------------------------------- |
+| `src/lib/server/middleware/auth.js`                   | Modifier | Ajouter `requireAdmin()` et `logAdminAction()` |
+| `src/routes/(admin)/+layout.svelte`                   | Modifier | Nav links + `setContext('adminToken')`         |
+| `src/routes/(admin)/admin/+page.server.js`            | Modifier | Redirect → `/admin/dashboard`                  |
+| `src/routes/(admin)/admin/dashboard/+page.server.js`  | Créer    | Queries stats globales                         |
+| `src/routes/(admin)/admin/dashboard/+page.svelte`     | Créer    | UI darknet + SSE client                        |
+| `src/routes/(site)/api/admin/live/+server.js`         | Créer    | SSE endpoint live                              |
+| `src/routes/(admin)/admin/users/+page.server.js`      | Créer    | Liste users paginée + search                   |
+| `src/routes/(admin)/admin/users/+page.svelte`         | Créer    | Tableau users                                  |
+| `src/routes/(admin)/admin/users/[id]/+page.server.js` | Créer    | Fiche user + toutes les actions                |
+| `src/routes/(admin)/admin/users/[id]/+page.svelte`    | Créer    | Fiche + forms d'actions                        |
 
 ---
 
 ## Task 1 : Migration BDD — table `admin_audit_log`
 
 **Files:**
+
 - Supabase SQL (via MCP `apply_migration`)
 
 - [ ] **Appliquer la migration SQL via Supabase MCP**
@@ -69,6 +70,7 @@ git commit -m "feat(admin): migration admin_audit_log"
 ## Task 2 : `requireAdmin()` + `logAdminAction()` dans auth.js
 
 **Files:**
+
 - Modify: `src/lib/server/middleware/auth.js`
 
 - [ ] **Ajouter les deux fonctions à la fin de auth.js**
@@ -98,10 +100,22 @@ export async function requireAdmin(request) {
 }
 
 // Logue une action admin dans admin_audit_log.
-export async function logAdminAction(adminId, action, targetId, targetType, payload = {}) {
+export async function logAdminAction(
+  adminId,
+  action,
+  targetId,
+  targetType,
+  payload = {},
+) {
   await getAdminClient()
     .from("admin_audit_log")
-    .insert({ admin_id: adminId, action, target_id: targetId, target_type: targetType, payload });
+    .insert({
+      admin_id: adminId,
+      action,
+      target_id: targetId,
+      target_type: targetType,
+      payload,
+    });
 }
 ```
 
@@ -121,6 +135,7 @@ git commit -m "feat(admin): requireAdmin() et logAdminAction()"
 ## Task 3 : SSE endpoint `/api/admin/live`
 
 **Files:**
+
 - Create: `src/routes/(site)/api/admin/live/+server.js`
 
 - [ ] **Créer le fichier**
@@ -155,23 +170,28 @@ export async function GET({ url, request }) {
             round: g.currentRound ?? 0,
             maxRounds: g.maxRounds ?? 0,
             state: g.state ?? "unknown",
-          })
+          }),
         );
 
-        const salonRooms = Object.entries(globalThis.__zik_salonRooms ?? {}).map(
-          ([code, s]) => ({
-            code,
-            host: s.hostName ?? "?",
-            players: (s.players ?? []).length,
-            state: s.game?.state ?? s.state ?? "lobby",
-          })
-        );
+        const salonRooms = Object.entries(
+          globalThis.__zik_salonRooms ?? {},
+        ).map(([code, s]) => ({
+          code,
+          host: s.hostName ?? "?",
+          players: (s.players ?? []).length,
+          state: s.game?.state ?? s.state ?? "lobby",
+        }));
 
         const totalConnected =
           roomGames.reduce((sum, r) => sum + r.players, 0) +
           salonRooms.reduce((sum, s) => sum + s.players, 0);
 
-        const payload = JSON.stringify({ roomGames, salonRooms, totalConnected, ts: Date.now() });
+        const payload = JSON.stringify({
+          roomGames,
+          salonRooms,
+          totalConnected,
+          ts: Date.now(),
+        });
         controller.enqueue(`data: ${payload}\n\n`);
       }
 
@@ -180,7 +200,11 @@ export async function GET({ url, request }) {
 
       request.signal.addEventListener("abort", () => {
         clearInterval(interval);
-        try { controller.close(); } catch { /* already closed */ }
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
       });
     },
   });
@@ -212,6 +236,7 @@ git commit -m "feat(admin): SSE endpoint /api/admin/live"
 ## Task 4 : Mise à jour layout admin (nav + JWT context)
 
 **Files:**
+
 - Modify: `src/routes/(admin)/+layout.svelte`
 - Modify: `src/routes/(admin)/admin/+page.server.js`
 
@@ -396,6 +421,7 @@ git commit -m "feat(admin): layout darknet + nav dashboard/users/reports + JWT c
 ## Task 5 : Dashboard — server (stats)
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/dashboard/+page.server.js`
 
 - [ ] **Créer le fichier**
@@ -408,7 +434,9 @@ export async function load() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(
+    Date.now() - 7 * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   const [
     { count: totalUsers },
@@ -419,11 +447,24 @@ export async function load() {
     activeUsersRes,
   ] = await Promise.all([
     sb.from("profiles").select("*", { count: "exact", head: true }),
-    sb.from("games").select("*", { count: "exact", head: true }).gte("started_at", today.toISOString()),
-    sb.from("rooms").select("*", { count: "exact", head: true }).eq("is_public", true),
-    sb.from("reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    sb.from("custom_playlists").select("*", { count: "exact", head: true }).eq("is_official", true),
-    sb.from("game_players")
+    sb
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .gte("started_at", today.toISOString()),
+    sb
+      .from("rooms")
+      .select("*", { count: "exact", head: true })
+      .eq("is_public", true),
+    sb
+      .from("reports")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"),
+    sb
+      .from("custom_playlists")
+      .select("*", { count: "exact", head: true })
+      .eq("is_official", true),
+    sb
+      .from("game_players")
       .select("user_id", { count: "exact", head: true })
       .gte("games.started_at", sevenDaysAgo)
       .not("user_id", "is", null),
@@ -463,6 +504,7 @@ git commit -m "feat(admin): dashboard stats server load"
 ## Task 6 : Dashboard — UI darknet + SSE client
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/dashboard/+page.svelte`
 
 - [ ] **Créer le fichier**
@@ -659,6 +701,7 @@ git commit -m "feat(admin): dashboard UI darknet + SSE live feed"
 ## Task 7 : Users — liste paginée
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/users/+page.server.js`
 - Create: `src/routes/(admin)/admin/users/+page.svelte`
 
@@ -677,7 +720,10 @@ export async function load({ url }) {
 
   let query = sb
     .from("profiles")
-    .select("id, username, avatar_url, role, xp, level, elo, games_played, created_at, is_private", { count: "exact" })
+    .select(
+      "id, username, avatar_url, role, xp, level, elo, games_played, created_at, is_private",
+      { count: "exact" },
+    )
     .order(sort, { ascending: order === "asc" })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -915,6 +961,7 @@ git commit -m "feat(admin): users list — tableau paginé + recherche + tri"
 ## Task 8 : User detail + toutes les actions
 
 **Files:**
+
 - Create: `src/routes/(admin)/admin/users/[id]/+page.server.js`
 - Create: `src/routes/(admin)/admin/users/[id]/+page.svelte`
 
@@ -929,27 +976,27 @@ export async function load({ params }) {
   const sb = getAdminClient();
   const { id } = params;
 
-  const [
-    profileRes,
-    authUserRes,
-    gamesRes,
-    reportsRes,
-  ] = await Promise.all([
+  const [profileRes, authUserRes, gamesRes, reportsRes] = await Promise.all([
     sb.from("profiles").select("*").eq("id", id).single(),
     sb.auth.admin.getUserById(id),
-    sb.from("game_players")
-      .select("score, rank, is_guest, games(id, room_id, started_at, ended_at, rounds)")
+    sb
+      .from("game_players")
+      .select(
+        "score, rank, is_guest, games(id, room_id, started_at, ended_at, rounds)",
+      )
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(20),
-    sb.from("reports")
+    sb
+      .from("reports")
       .select("*")
       .or(`reporter_id.eq.${id},reported_user_id.eq.${id}`)
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
 
-  if (profileRes.error || !profileRes.data) throw error(404, "User introuvable");
+  if (profileRes.error || !profileRes.data)
+    throw error(404, "User introuvable");
 
   const authUser = authUserRes.data?.user;
   const isBanned = authUser?.banned_until
@@ -970,7 +1017,9 @@ export const actions = {
     const { adminUser } = await requireAdmin(request);
     const sb = getAdminClient();
     await sb.auth.admin.updateUserById(params.id, { ban_duration: "87600h" });
-    await logAdminAction(adminUser.id, "ban_user", params.id, "user", { duration: "87600h" });
+    await logAdminAction(adminUser.id, "ban_user", params.id, "user", {
+      duration: "87600h",
+    });
     return { success: true };
   },
 
@@ -985,11 +1034,15 @@ export const actions = {
   editStats: async ({ request, params }) => {
     const { adminUser, formData } = await requireAdmin(request);
     const sb = getAdminClient();
-    const xp    = parseInt(formData.get("xp"))    || 0;
-    const elo   = parseInt(formData.get("elo"))   || 1000;
+    const xp = parseInt(formData.get("xp")) || 0;
+    const elo = parseInt(formData.get("elo")) || 1000;
     const level = parseInt(formData.get("level")) || 1;
     await sb.from("profiles").update({ xp, elo, level }).eq("id", params.id);
-    await logAdminAction(adminUser.id, "edit_stats", params.id, "user", { xp, elo, level });
+    await logAdminAction(adminUser.id, "edit_stats", params.id, "user", {
+      xp,
+      elo,
+      level,
+    });
     return { success: true };
   },
 
@@ -997,19 +1050,32 @@ export const actions = {
     const { adminUser, formData } = await requireAdmin(request);
     const sb = getAdminClient();
     const username = formData.get("username")?.trim();
-    if (!username || username.length < 3) return { success: false, error: "Username invalide" };
-    const { error: err } = await sb.from("profiles").update({ username }).eq("id", params.id);
+    if (!username || username.length < 3)
+      return { success: false, error: "Username invalide" };
+    const { error: err } = await sb
+      .from("profiles")
+      .update({ username })
+      .eq("id", params.id);
     if (err) return { success: false, error: err.message };
-    await logAdminAction(adminUser.id, "edit_username", params.id, "user", { username });
+    await logAdminAction(adminUser.id, "edit_username", params.id, "user", {
+      username,
+    });
     return { success: true };
   },
 
   resetStats: async ({ request, params }) => {
     const { adminUser } = await requireAdmin(request);
     const sb = getAdminClient();
-    await sb.from("profiles").update({
-      xp: 0, elo: 1000, level: 1, games_played: 0, total_score: 0,
-    }).eq("id", params.id);
+    await sb
+      .from("profiles")
+      .update({
+        xp: 0,
+        elo: 1000,
+        level: 1,
+        games_played: 0,
+        total_score: 0,
+      })
+      .eq("id", params.id);
     await logAdminAction(adminUser.id, "reset_stats", params.id, "user", {});
     return { success: true };
   },
@@ -1028,9 +1094,19 @@ export const actions = {
     const { adminUser, formData } = await requireAdmin(request);
     const confirm = formData.get("confirm_username")?.trim();
     const sb = getAdminClient();
-    const { data: profile } = await sb.from("profiles").select("username").eq("id", params.id).single();
-    if (confirm !== profile?.username) return { success: false, error: "Username incorrect — suppression annulée" };
-    await logAdminAction(adminUser.id, "delete_user", params.id, "user", { username: profile.username });
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("username")
+      .eq("id", params.id)
+      .single();
+    if (confirm !== profile?.username)
+      return {
+        success: false,
+        error: "Username incorrect — suppression annulée",
+      };
+    await logAdminAction(adminUser.id, "delete_user", params.id, "user", {
+      username: profile.username,
+    });
     await sb.auth.admin.deleteUser(params.id);
     return { success: true, deleted: true };
   },

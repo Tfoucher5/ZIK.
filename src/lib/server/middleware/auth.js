@@ -88,13 +88,11 @@ export async function logAdminAction(
   targetType,
   payload = {},
 ) {
-  await getAdminClient()
-    .from("admin_audit_log")
-    .insert({
-      admin_id: adminId,
-      action,
-      target_id: targetId,
-      target_type: targetType,
-      payload,
-    });
+  await getAdminClient().from("admin_audit_log").insert({
+    admin_id: adminId,
+    action,
+    target_id: targetId,
+    target_type: targetType,
+    payload,
+  });
 }

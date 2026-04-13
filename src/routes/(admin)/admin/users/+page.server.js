@@ -12,7 +12,10 @@ export async function load({ url }) {
 
   let query = sb
     .from("profiles")
-    .select("id, username, avatar_url, role, xp, level, elo, games_played, created_at, is_private", { count: "exact" })
+    .select(
+      "id, username, avatar_url, role, xp, level, elo, games_played, created_at, is_private",
+      { count: "exact" },
+    )
     .order(sort, { ascending: order === "asc" })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
