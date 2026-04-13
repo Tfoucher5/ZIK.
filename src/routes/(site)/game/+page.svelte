@@ -31,6 +31,7 @@
   let showStart   = $state(true);
   let startDisabled = $state(false);
   let startLabel  = $state('&#x1F3AE; Lancer la partie');
+  let adminLocked = $state(false);
   let gameoverShow = $state(false);
   let gameoverScores = $state([]);
   let guessVal    = $state('');
@@ -367,13 +368,13 @@
     });
 
     socket.on('admin_blocked', () => {
+      adminLocked = true;
       startDisabled = true;
-      startLabel = '🔒 Partie bloquée par un admin';
     });
 
     socket.on('admin_unblocked', () => {
+      adminLocked = false;
       startDisabled = false;
-      startLabel = '🎮 Lancer la partie';
     });
 
     // Join
@@ -557,7 +558,13 @@
         {/if}
 
         <!-- Start / countdown / attente -->
-        {#if showStart}
+        {#if adminLocked}
+          <div class="g-admin-lock">
+            🔒 Cette room est verrouillée par un administrateur.<br>
+            <small>Le lancement de partie est temporairement désactivé.</small>
+          </div>
+        {/if}
+        {#if showStart && !adminLocked}
           {#if showCountdown}
             <div class="g-countdown">
               <div class="g-countdown-circle">{countdownVal}</div>
@@ -583,6 +590,7 @@
       </main>
 
       <!-- Input bar (dans la colonne centrale) -->
+
       <div class="g-input-bar">
         {#if syncWaiting}
           <div class="g-sync-waiting">

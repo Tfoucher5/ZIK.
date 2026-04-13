@@ -828,6 +828,21 @@ a {
   font-size: 0.75rem;
   opacity: 0.7;
 }
+.g-admin-lock {
+  background: rgba(255, 68, 68, 0.06);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 0.84rem;
+  color: rgba(255, 68, 68, 0.9);
+  text-align: center;
+  line-height: 1.7;
+  max-width: 380px;
+}
+.g-admin-lock small {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
 
 /* ── Input bar ───────────────────────────────────────────────────────────────── */
 .g-input-bar {
