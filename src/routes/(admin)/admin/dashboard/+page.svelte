@@ -35,12 +35,12 @@
   const { stats } = data;
 
   const STAT_CARDS = [
-    { label: 'TOTAL_USERS',     value: () => stats.totalUsers,       color: '#00ff41' },
-    { label: 'GAMES_TODAY',     value: () => stats.gamesToday,       color: '#ffb300' },
-    { label: 'PUBLIC_ROOMS',    value: () => stats.publicRooms,      color: '#ffb300' },
-    { label: 'REPORTS_PENDING', value: () => stats.pendingReports,   color: stats.pendingReports > 0 ? '#ff4444' : '#00ff41' },
-    { label: 'OFFICIAL_PL',     value: () => stats.officialPlaylists,color: '#00ff41' },
-    { label: 'SERVER_UPTIME',   value: () => stats.uptime,           color: '#00bfff' },
+    { label: 'TOTAL_USERS',     value: () => stats.totalUsers,     color: '#00ff41' },
+    { label: 'ACTIVE_7D',       value: () => stats.activeUsers7d,  color: '#00ff41' },
+    { label: 'GAMES_TODAY',     value: () => stats.gamesToday,     color: '#ffb300' },
+    { label: 'PUBLIC_ROOMS',    value: () => stats.publicRooms,    color: '#ffb300' },
+    { label: 'REPORTS_PENDING', value: () => stats.pendingReports, color: stats.pendingReports > 0 ? '#ff4444' : '#00ff41' },
+    { label: 'SERVER_UPTIME',   value: () => stats.uptime,         color: '#00bfff' },
   ];
 </script>
 

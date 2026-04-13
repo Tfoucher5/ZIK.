@@ -5,6 +5,7 @@ export async function load() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const [
     { count: totalUsers },
@@ -12,12 +13,17 @@ export async function load() {
     { count: publicRooms },
     { count: pendingReports },
     { count: officialPlaylists },
+    activeUsersRes,
   ] = await Promise.all([
     sb.from("profiles").select("*", { count: "exact", head: true }),
     sb.from("games").select("*", { count: "exact", head: true }).gte("started_at", today.toISOString()),
     sb.from("rooms").select("*", { count: "exact", head: true }).eq("is_public", true),
     sb.from("reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
     sb.from("custom_playlists").select("*", { count: "exact", head: true }).eq("is_official", true),
+    sb.from("game_players")
+      .select("user_id", { count: "exact", head: true })
+      .gte("games.started_at", sevenDaysAgo)
+      .not("user_id", "is", null),
   ]);
 
   const uptimeSeconds = Math.floor(process.uptime());
@@ -33,6 +39,7 @@ export async function load() {
       publicRooms: publicRooms ?? 0,
       pendingReports: pendingReports ?? 0,
       officialPlaylists: officialPlaylists ?? 0,
+      activeUsers7d: activeUsersRes.count ?? 0,
       uptime,
     },
   };
