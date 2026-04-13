@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy, tick } from 'svelte';
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
   import ReportModal from '$lib/components/ReportModal.svelte';
 
   // URL params — read once on mount
@@ -30,6 +31,9 @@
   let showStart   = $state(true);
   let startDisabled = $state(false);
   let startLabel  = $state('&#x1F3AE; Lancer la partie');
+  let adminLocked   = $state(false);
+  let adminAnnounceMsg = $state('');
+  let _announceTimer = null;
   let gameoverShow = $state(false);
   let gameoverScores = $state([]);
   let guessVal    = $state('');
@@ -78,6 +82,7 @@
   let syncTotal    = $state(0);
   let _waitingForSync = false;
   let _syncPaused    = false;
+  let _adminPaused   = false;
 
   // Chat
   let chatOpen     = $state(false);
@@ -241,9 +246,11 @@
       if (roomConfig) {
         const trackInfo = roomConfig.trackCount ? ` \u2014 ${roomConfig.trackCount} titres` : '';
         roomLabel = `${roomConfig.emoji || ''} ${roomConfig.name || ''}${trackInfo}`.trim();
-        autoStart = roomConfig.autoStart || false;
-        isAdmin   = roomConfig.isAdmin   || false;
-        hasOwner  = roomConfig.hasOwner  || false;
+        autoStart   = roomConfig.autoStart    || false;
+        isAdmin     = roomConfig.isAdmin      || false;
+        hasOwner    = roomConfig.hasOwner     || false;
+        adminLocked = roomConfig.adminBlocked || false;
+        if (adminLocked) startDisabled = true;
       }
     });
     socket.on('game_countdown', ({ seconds }) => { startCountdownUI(seconds); });
@@ -352,6 +359,37 @@
       startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
     });
 
+    socket.on('admin_kicked', () => {
+      socket.disconnect();
+      goto('/rooms');
+    });
+
+    socket.on('admin_pause', () => {
+      _adminPaused = true;
+      try { ytPlayer?.pauseVideo(); } catch { /* ignore */ }
+    });
+
+    socket.on('admin_resume', () => {
+      _adminPaused = false;
+      try { ytPlayer?.playVideo(); } catch { /* ignore */ }
+    });
+
+    socket.on('admin_announce', ({ message }) => {
+      clearTimeout(_announceTimer);
+      adminAnnounceMsg = message;
+      _announceTimer = setTimeout(() => { adminAnnounceMsg = ''; }, 8000);
+    });
+
+    socket.on('admin_blocked', () => {
+      adminLocked = true;
+      startDisabled = true;
+    });
+
+    socket.on('admin_unblocked', () => {
+      adminLocked = false;
+      startDisabled = false;
+    });
+
     // Join
     _hasJoined = true;
     socket.emit('join_room', { roomId: ROOM_ID, username: USERNAME, userId: USER_ID, isGuest: IS_GUEST });
@@ -378,7 +416,7 @@
                 ytPlayer.pauseVideo();
               }
             }
-            if (!_syncPaused && _roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
+            if (!_syncPaused && !_adminPaused && _roundActive && _lastVideo && (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED)) {
               const elapsed = (Date.now() - _lastVideo.startedAt) / 1000;
               loadVideo(_lastVideo.videoId, _lastVideo.startSeconds + elapsed);
             }
@@ -417,6 +455,13 @@
 
 <!-- Timer bar (fixed top) -->
 <div class="g-timer"><div class="g-timer-fill" style="width:{timerPct}%;background:{timerColor}"></div></div>
+
+{#if adminAnnounceMsg}
+  <div class="g-admin-announce" role="alert">
+    <span class="g-announce-icon">📢</span>
+    <span class="g-announce-text">{adminAnnounceMsg}</span>
+  </div>
+{/if}
 
 <div class="g-app">
 
@@ -533,7 +578,13 @@
         {/if}
 
         <!-- Start / countdown / attente -->
-        {#if showStart}
+        {#if adminLocked}
+          <div class="g-admin-lock">
+            🔒 Cette room est verrouillée par un administrateur.<br>
+            <small>Le lancement de partie est temporairement désactivé.</small>
+          </div>
+        {/if}
+        {#if showStart && !adminLocked}
           {#if showCountdown}
             <div class="g-countdown">
               <div class="g-countdown-circle">{countdownVal}</div>
@@ -559,6 +610,7 @@
       </main>
 
       <!-- Input bar (dans la colonne centrale) -->
+
       <div class="g-input-bar">
         {#if syncWaiting}
           <div class="g-sync-waiting">

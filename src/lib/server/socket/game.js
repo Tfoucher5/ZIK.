@@ -216,7 +216,7 @@ function startTimer(roomId, io) {
 
 function triggerRoundStart(roomId, io) {
   const room = roomGames[roomId];
-  if (!room || room.game.isActive) return;
+  if (!room || room.game.isActive || room.game.isPaused) return;
   clearTimeout(room.game.readyTimer);
   room.game.readyTimer = null;
   room.game.isSyncWaiting = false;
@@ -273,6 +273,9 @@ async function startNextRound(roomId, io) {
       extraLabels: (game.currentTrack.extraAnswers || []).map((e) => e.label),
       previewUrl: null,
     };
+
+    // Si l'admin a mis en pause pendant le fetch YTS, on abandonne
+    if (game.isPaused) return;
 
     game.isSyncWaiting = true;
     game.readyPlayers = new Set();
@@ -435,6 +438,8 @@ function cancelAutoCountdown(roomId, io) {
 
 async function startAutoCountdown(roomId, io) {
   if (autoStartCountdowns[roomId]) return; // already running
+  const room = roomGames[roomId];
+  if (room?.game?.adminBlocked) return;
   const startAt = Date.now();
   io.to(`room:${roomId}`).emit("game_countdown", { seconds: AUTO_START_DELAY });
   autoStartCountdowns[roomId] = {
@@ -525,6 +530,7 @@ function leaveRoom(socket, roomId, io) {
 // ─── Socket.IO registration ───────────────────────────────────────────────────
 
 export function register(io) {
+  globalThis.__zik_io = io;
   io.on("connection", (socket) => {
     socket.on("join_room", async ({ roomId, username, userId, isGuest }) => {
       if (!username?.trim()) return socket.emit("error", "Pseudo requis");
@@ -620,6 +626,7 @@ export function register(io) {
           autoStart,
           isAdmin,
           hasOwner: !!ownerId,
+          adminBlocked: room.game.adminBlocked ?? false,
         },
       });
       socket.emit("init_history", room.game.history);
@@ -634,7 +641,7 @@ export function register(io) {
         (room.game.isActive || room.game.isSyncWaiting)
       ) {
         socket.emit("start_round", room.game.lastRoundData);
-        if (room.game.isActive) {
+        if (room.game.isActive && !room.game.isPaused) {
           // Round déjà synchro — le nouveau joueur peut jouer immédiatement
           socket.emit("round_start_sync");
         }
@@ -662,6 +669,10 @@ export function register(io) {
       if (!roomId) return;
       const room = getOrCreateRoom(roomId);
       if (room.game.isActive || room.game.isSyncWaiting) return;
+      if (room.game.adminBlocked) {
+        socket.emit("server_error", "Partie bloquée par un administrateur.");
+        return;
+      }
 
       // Manual-mode DB rooms: only the owner can start
       const dbRoom = dbRooms[roomId];
@@ -909,4 +920,166 @@ export function register(io) {
       if (socket.currentRoom) leaveRoom(socket, socket.currentRoom, io);
     });
   });
+}
+
+// ─── Admin control ────────────────────────────────────────────────────────────
+
+export function adminGetRoomsSnapshot() {
+  return Object.values(roomGames).map((room) => ({
+    roomId: room.roomId,
+    playerCount: Object.keys(room.players).length,
+    players: Object.values(room.players).map((p) => ({
+      name: p.name,
+      score: p.score,
+      foundArtist: p.foundArtist,
+      foundTitle: p.foundTitle,
+    })),
+    isActive: room.game.isActive,
+    isPaused: room.game.isPaused ?? false,
+    adminBlocked: room.game.adminBlocked ?? false,
+    currentRound: room.game.currentRound,
+    maxRounds: room.game.maxRounds,
+    timer: room.game.timer,
+    roundDuration: room.game.roundDuration,
+    isSyncWaiting: room.game.isSyncWaiting,
+    readyCount: room.game.readyPlayers?.size ?? 0,
+    currentTrack: room.game.currentTrack
+      ? {
+          artist:
+            room.game.currentTrack.mainArtist || room.game.currentTrack.artist,
+          title: room.game.currentTrack.title,
+        }
+      : null,
+  }));
+}
+
+export function adminPauseRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room || room.game.isPaused) return false;
+  const io = globalThis.__zik_io;
+  // Sauvegarder l'état avant pause
+  if (room.game.interval) {
+    room.game._pausedState = "round";
+    clearInterval(room.game.interval);
+    room.game.interval = null;
+  } else if (room.game.breakTimer) {
+    room.game._pausedState = "break";
+    clearTimeout(room.game.breakTimer);
+    room.game.breakTimer = null;
+  } else {
+    room.game._pausedState = "none";
+  }
+  // Annuler readyTimer + auto-countdown
+  if (room.game.readyTimer) {
+    clearTimeout(room.game.readyTimer);
+    room.game.readyTimer = null;
+    room.game.isSyncWaiting = false;
+  }
+  cancelAutoCountdown(roomId, io);
+  room.game.isPaused = true;
+  io?.to(`room:${roomId}`).emit("admin_pause");
+  return true;
+}
+
+export function adminResumeRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room || !room.game.isPaused) return false;
+  const io = globalThis.__zik_io;
+  room.game.isPaused = false;
+  const state = room.game._pausedState ?? "none";
+  room.game._pausedState = null;
+
+  if (state === "round") {
+    room.game.interval = setInterval(() => {
+      room.game.timer--;
+      io?.to(`room:${roomId}`).emit("timer_update", {
+        current: room.game.timer,
+        max: room.game.roundDuration,
+      });
+      if (room.game.timer <= 0) endRound(roomId, "Temps écoulé !", io);
+    }, 1000);
+  } else if (state === "break") {
+    room.game.breakTimer = setTimeout(() => {
+      room.game.breakTimer = null;
+      startNextRound(roomId, io);
+    }, 1000);
+  }
+  io?.to(`room:${roomId}`).emit("admin_resume");
+  return true;
+}
+
+export function adminSkipRound(roomId) {
+  const room = roomGames[roomId];
+  if (!room || !room.game.isActive) return false;
+  const io = globalThis.__zik_io;
+  endRound(roomId, "Round sauté par l'admin", io);
+  return true;
+}
+
+export function adminEndGame(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const io = globalThis.__zik_io;
+  clearInterval(room.game.interval);
+  clearTimeout(room.game.breakTimer);
+  room.game.interval = null;
+  room.game.breakTimer = null;
+  room.game.isActive = false;
+  const finalScores = Object.values(room.players)
+    .sort((a, b) => b.score - a.score)
+    .map(sanitizePlayer);
+  io?.to(`room:${roomId}`).emit("game_over", finalScores);
+  return true;
+}
+
+export function adminAnnounce(roomId, message) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const msg = String(message ?? "")
+    .trim()
+    .slice(0, 200);
+  if (!msg) return false;
+  globalThis.__zik_io
+    ?.to(`room:${roomId}`)
+    .emit("admin_announce", { message: msg });
+  return true;
+}
+
+export function adminBlockRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const io = globalThis.__zik_io;
+  room.game.adminBlocked = true;
+  cancelAutoCountdown(roomId, io);
+  io?.to(`room:${roomId}`).emit("admin_blocked");
+  return true;
+}
+
+export function adminUnblockRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  room.game.adminBlocked = false;
+  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_unblocked");
+  return true;
+}
+
+export function adminKickPlayer(roomId, username) {
+  const room = roomGames[roomId];
+  if (!room || !room.players[username]) return false;
+  const io = globalThis.__zik_io;
+  const socketId = room.nameToSocket[username];
+  if (socketId)
+    io?.to(socketId).emit("admin_kicked", {
+      reason: "Expulsé par un administrateur",
+    });
+  delete room.players[username];
+  delete room.nameToSocket[username];
+  for (const sid of Object.keys(room.socketToName)) {
+    if (room.socketToName[sid] === username) delete room.socketToName[sid];
+  }
+  io?.to(`room:${roomId}`).emit(
+    "update_players",
+    Object.values(room.players).map(sanitizePlayer),
+  );
+  return true;
 }

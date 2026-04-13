@@ -17,6 +17,7 @@ const io = new Server(server, {
   httpCompression: { threshold: 1024 },
 });
 
+globalThis.__zik_io = io;
 register(io);
 registerSalon(io);
 preloadAllPlaylists();
