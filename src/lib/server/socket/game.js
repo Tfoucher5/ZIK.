@@ -1063,6 +1063,21 @@ export function adminUnblockRoom(roomId) {
   return true;
 }
 
+export function adminCloseRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const io = globalThis.__zik_io;
+  clearInterval(room.game.interval);
+  clearTimeout(room.game.breakTimer);
+  clearTimeout(room.game.readyTimer);
+  io?.to(`room:${roomId}`).emit("room_force_closed", {
+    message: "La room a été fermée par un administrateur.",
+  });
+  io?.socketsLeave(`room:${roomId}`);
+  delete roomGames[roomId];
+  return true;
+}
+
 export function adminKickPlayer(roomId, username) {
   const room = roomGames[roomId];
   if (!room || !room.players[username]) return false;

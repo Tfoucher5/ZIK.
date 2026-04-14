@@ -23,8 +23,7 @@ export async function load({ params }) {
         "score, rank, is_guest, games(id, room_id, started_at, ended_at, rounds)",
       )
       .eq("user_id", id)
-      .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(50),
     sb
       .from("reports")
       .select("*")
@@ -41,11 +40,17 @@ export async function load({ params }) {
     ? new Date(authUser.banned_until) > new Date()
     : false;
 
+  const games = (gamesRes.data ?? []).sort((a, b) => {
+    const da = a.games?.started_at ? new Date(a.games.started_at).getTime() : 0;
+    const db = b.games?.started_at ? new Date(b.games.started_at).getTime() : 0;
+    return db - da;
+  });
+
   return {
     profile: profileRes.data,
     isBanned,
     bannedUntil: authUser?.banned_until ?? null,
-    games: gamesRes.data ?? [],
+    games,
     reports: reportsRes.data ?? [],
   };
 }
@@ -53,11 +58,15 @@ export async function load({ params }) {
 export const actions = {
   ban: async ({ request, params }) => {
     assertUuid(params.id);
-    const { adminUser } = await requireAdmin(request);
+    const { adminUser, formData } = await requireAdmin(request);
+    const ALLOWED_DURATIONS = ["24h", "168h", "720h", "8760h", "87600h"];
+    const duration = formData.get("duration") || "87600h";
+    if (!ALLOWED_DURATIONS.includes(duration))
+      return { success: false, error: "Durée invalide" };
     const sb = getAdminClient();
-    await sb.auth.admin.updateUserById(params.id, { ban_duration: "87600h" });
+    await sb.auth.admin.updateUserById(params.id, { ban_duration: duration });
     await logAdminAction(adminUser.id, "ban_user", params.id, "user", {
-      duration: "87600h",
+      duration,
     });
     return { success: true };
   },

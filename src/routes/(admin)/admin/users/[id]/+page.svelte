@@ -16,6 +16,7 @@
   let confirmUsername = $state('');
   let showDeleteModal = $state(false);
   let showResetModal = $state(false);
+  let banDuration = $state('87600h');
 
   function fmt(iso) {
     if (!iso) return '—';
@@ -33,7 +34,10 @@
   <div class="user-header">
     <img src={profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${profile.username}`} alt="" class="user-avatar">
     <div class="user-info">
-      <div class="user-name">{profile.username}</div>
+      <div class="user-name">
+        {profile.username}
+        <a href="/user/{profile.username}" target="_blank" rel="noreferrer" class="profile-link">↗ PROFIL</a>
+      </div>
       <div class="user-meta">
         <span class="role-tag role-{profile.role}">{profile.role === 'super_admin' ? 'ROOT' : 'USER'}</span>
         {#if isBanned}<span class="ban-tag">⚠ BANNED</span>{/if}
@@ -65,9 +69,18 @@
           <button class="btn-action btn-green">UNBAN USER</button>
         </form>
       {:else}
-        <form method="POST" action="?/ban" use:enhance>
+        <form method="POST" action="?/ban" use:enhance class="form-inline">
           <input type="hidden" name="_token" value={token}>
-          <button class="btn-action btn-red">BAN USER (10yr)</button>
+          <label>Durée
+            <select name="duration" bind:value={banDuration} class="adm-select">
+              <option value="24h">24 heures</option>
+              <option value="168h">7 jours</option>
+              <option value="720h">30 jours</option>
+              <option value="8760h">1 an</option>
+              <option value="87600h">10 ans</option>
+            </select>
+          </label>
+          <button class="btn-action btn-red">BAN USER</button>
         </form>
       {/if}
     </div>
@@ -201,7 +214,9 @@
 }
 .user-avatar { width: 56px; height: 56px; border-radius: 4px; flex-shrink: 0; }
 .user-info { flex: 1; min-width: 0; }
-.user-name { font-size: 1.3rem; font-weight: 700; color: #00ff41; }
+.user-name { font-size: 1.3rem; font-weight: 700; color: #00ff41; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.profile-link { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; color: rgba(0,255,65,0.4); border: 1px solid rgba(0,255,65,0.2); border-radius: 3px; padding: 2px 8px; transition: all 0.1s; }
+.profile-link:hover { color: #00ff41; border-color: rgba(0,255,65,0.5); }
 .user-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .role-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; padding: 2px 7px; border-radius: 2px; }
 .role-tag.role-super_admin { background: rgba(255,179,0,0.15); color: #ffb300; border: 1px solid rgba(255,179,0,0.3); }

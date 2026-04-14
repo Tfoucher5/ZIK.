@@ -281,8 +281,8 @@
 <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
 <HeroSection
   badge={displayOnline > 0 ? `${displayOnline} joueurs en ligne` : 'Blind Test Multijoueur'}
-  title="Le blind test qui"
-  titleAccent="t'obsède."
+  title="T'as l'oreille ?"
+  titleAccent="Prouve-le."
   subtitle="Multijoueur, temps réel, classements ELO. Prouve que tes oreilles valent mieux que les leurs."
 >
   <button class="btn-accent" onclick={() => goto('/rooms')}>Jouer maintenant →</button>

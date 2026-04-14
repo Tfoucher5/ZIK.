@@ -11,8 +11,8 @@
   let replyValues = $state({});
   let sentIds = $state({});
 
-  const TYPE_LABELS  = { bug: '🐛 Bug', user: '🚨 Joueur', contact: '✉️ Contact' };
-  const STATUS_COLORS = { pending: '#f59e0b', resolved: '#4ade80', dismissed: '#6b7280' };
+  const TYPE_LABELS  = { bug: 'BUG', user: 'USER', contact: 'CONTACT' };
+  const STATUS_COLORS = { pending: '#ffb300', resolved: '#00ff41', dismissed: 'rgba(0,255,65,0.25)' };
 
   function fmt(iso) {
     if (!iso) return '—';
@@ -26,268 +26,254 @@
   }
 </script>
 
-<div class="rp-header">
-  <h1 class="rp-title">📋 Reports</h1>
-  <div class="rp-filters">
-    <select onchange={e => setFilter('status', e.target.value)} value={data.filters.status}>
-      <option value="pending">En attente</option>
-      <option value="resolved">Résolus</option>
-      <option value="dismissed">Ignorés</option>
-      <option value="">Tous</option>
-    </select>
-    <select onchange={e => setFilter('type', e.target.value)} value={data.filters.type}>
-      <option value="">Tous types</option>
-      <option value="bug">🐛 Bug</option>
-      <option value="user">🚨 Joueur</option>
-      <option value="contact">✉️ Contact</option>
-    </select>
+<div class="rp-page">
+  <div class="page-header">
+    <span class="page-title">// REPORTS [{data.reports.length}]</span>
+    <div class="rp-filters">
+      <select onchange={e => setFilter('status', e.target.value)} value={data.filters.status} class="adm-select">
+        <option value="pending">PENDING</option>
+        <option value="resolved">RESOLVED</option>
+        <option value="dismissed">DISMISSED</option>
+        <option value="">ALL</option>
+      </select>
+      <select onchange={e => setFilter('type', e.target.value)} value={data.filters.type} class="adm-select">
+        <option value="">ALL_TYPES</option>
+        <option value="bug">BUG</option>
+        <option value="user">USER</option>
+        <option value="contact">CONTACT</option>
+      </select>
+    </div>
   </div>
-</div>
 
-{#if data.error}
-  <div class="rp-error">Erreur : {data.error}</div>
-{:else if data.reports.length === 0}
-  <div class="rp-empty">Aucun report pour ces filtres.</div>
-{:else}
-  <div class="rp-list">
-    {#each data.reports as r (r.id)}
-      <div class="rp-card {r.status}" class:expanded={expandedId === r.id}>
-
-        <!-- En-tête de la carte -->
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div class="rp-card-head" onclick={() => expandedId = expandedId === r.id ? null : r.id}>
-          <span class="rp-type">{TYPE_LABELS[r.type] || r.type}</span>
-          <span class="rp-dot" style="background:{STATUS_COLORS[r.status]}"></span>
-          <span class="rp-from">
-            {#if r.resolved_username || r.reporter_email}
-              {r.resolved_username || ''}{r.resolved_username && r.reporter_email ? ' — ' : ''}{r.reporter_email || ''}
-            {:else}
-              Anonyme
+  {#if data.error}
+    <div class="alert-err">[ERROR] {data.error}</div>
+  {:else if data.reports.length === 0}
+    <div class="empty">-- NO REPORTS --</div>
+  {:else}
+    <div class="rp-list">
+      {#each data.reports as r (r.id)}
+        <div class="rp-card" class:expanded={expandedId === r.id} data-status={r.status}>
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+          <div class="rp-head" onclick={() => expandedId = expandedId === r.id ? null : r.id}>
+            <span class="rp-dot" style="background:{STATUS_COLORS[r.status]}"></span>
+            <span class="rp-type">[{TYPE_LABELS[r.type] || r.type}]</span>
+            <span class="rp-from">
+              {r.resolved_username || r.reporter_email || 'ANON'}
+            </span>
+            {#if r.reported_username}
+              <span class="rp-target">→ {r.reported_username}</span>
             {/if}
-          </span>
-          {#if r.reported_username}
-            <span class="rp-target">→ {r.reported_username}</span>
-          {/if}
-          {#if r.resolved_room}
-            <span class="rp-room">{r.resolved_room.emoji} {r.resolved_room.name}</span>
-          {:else if r.room_id}
-            <span class="rp-room">room: {r.room_id}</span>
-          {/if}
-          <span class="rp-date">{fmt(r.created_at)}</span>
-          <span class="rp-chevron">{expandedId === r.id ? '▲' : '▼'}</span>
-        </div>
-
-        <!-- Détail (dépliable) -->
-        {#if expandedId === r.id}
-          <div class="rp-card-body">
-            {#if r.subject}
-              <p class="rp-subject"><strong>Objet :</strong> {r.subject}</p>
+            {#if r.resolved_room}
+              <span class="rp-room">#{r.resolved_room.emoji}{r.resolved_room.name}</span>
+            {:else if r.room_id}
+              <span class="rp-room">#{r.room_id}</span>
             {/if}
-            <div class="rp-message">{r.message}</div>
+            <span class="rp-date">{fmt(r.created_at)}</span>
+            <span class="rp-chevron">{expandedId === r.id ? '▲' : '▼'}</span>
+          </div>
 
-            {#if r.metadata && Object.keys(r.metadata).length}
-              <pre class="rp-meta">{JSON.stringify(r.metadata, null, 2)}</pre>
-            {/if}
+          {#if expandedId === r.id}
+            <div class="rp-body">
+              {#if r.subject}
+                <div class="rp-field"><span class="fl">SUBJECT:</span> <span class="fv">{r.subject}</span></div>
+              {/if}
+              <div class="rp-message">{r.message}</div>
 
-            <form method="POST" action="?/updateStatus" use:enhance={({ formElement, action }) => {
-              if (action.search === '?/sendReply') {
+              {#if r.metadata && Object.keys(r.metadata).length}
+                <pre class="rp-meta">{JSON.stringify(r.metadata, null, 2)}</pre>
+              {/if}
+
+              <form method="POST" action="?/updateStatus" use:enhance={({ formElement }) => {
+                const isReply = formElement.getAttribute('data-reply') === 'true';
                 return async ({ result, update }) => {
-                  if (result.type === 'success') sentIds = { ...sentIds, [r.id]: true };
+                  if (isReply && result.type === 'success') sentIds = { ...sentIds, [r.id]: true };
                   setTimeout(() => { sentIds = { ...sentIds, [r.id]: false }; }, 3000);
                   await update({ reset: false });
                 };
-              }
-            }} class="rp-actions">
-              <input type="hidden" name="id" value={r.id}>
+              }} class="rp-actions">
+                <input type="hidden" name="id" value={r.id}>
 
-              <textarea
-                name="admin_note"
-                class="rp-note"
-                placeholder="Note interne (optionnel)…"
-                rows="2"
-                bind:value={noteValues[r.id]}
-              >{r.admin_note || ''}</textarea>
-
-              {#if r.reporter_email || r.resolved_username}
-                <div class="rp-reply-wrap">
-                  <label class="rp-label" for="reply-{r.id}">
-                    💬 Réponse
-                    {#if r.reporter_email}<span class="rp-label-sub">→ {r.reporter_email}</span>{/if}
-                    {#if !r.reporter_email}<span class="rp-label-sub rp-label-warn">⚠ pas d'email — stocké uniquement</span>{/if}
-                  </label>
+                <div class="rp-row">
+                  <span class="fl">ADMIN_NOTE:</span>
                   <textarea
-                    id="reply-{r.id}"
-                    name="admin_reply"
-                    class="rp-note rp-note-reply"
-                    placeholder="Écris ta réponse ici…"
-                    rows="3"
-                    bind:value={replyValues[r.id]}
-                  >{r.admin_reply || ''}</textarea>
-                  {#if r.reporter_email}
-                    <button
-                      type="submit"
-                      formaction="?/sendReply"
-                      class="rp-btn rp-btn-send"
-                      disabled={!replyValues[r.id]?.trim()}
-                    >
-                      {sentIds[r.id] ? '✓ Envoyé !' : '📨 Envoyer sans changer le statut'}
-                    </button>
+                    name="admin_note"
+                    class="rp-textarea"
+                    placeholder="Note interne…"
+                    rows="2"
+                    bind:value={noteValues[r.id]}
+                  >{r.admin_note || ''}</textarea>
+                </div>
+
+                {#if r.reporter_email || r.resolved_username}
+                  <div class="rp-row">
+                    <span class="fl">
+                      REPLY{r.reporter_email ? ` → ${r.reporter_email}` : ' (no email — stocké seulement)'}:
+                    </span>
+                    <textarea
+                      name="admin_reply"
+                      class="rp-textarea"
+                      placeholder="Réponse…"
+                      rows="3"
+                      bind:value={replyValues[r.id]}
+                    >{r.admin_reply || ''}</textarea>
+                    {#if r.reporter_email}
+                      <button
+                        type="submit"
+                        formaction="?/sendReply"
+                        data-reply="true"
+                        class="btn-action btn-amber"
+                        disabled={!replyValues[r.id]?.trim()}
+                      >{sentIds[r.id] ? '[OK] SENT' : '📨 SEND_REPLY'}</button>
+                    {/if}
+                  </div>
+                {/if}
+
+                {#if r.admin_reply}
+                  <div class="rp-saved">// SAVED_REPLY: {r.admin_reply}</div>
+                {/if}
+
+                <div class="rp-btns">
+                  <button name="status" value="resolved" class="btn-action btn-green">✓ RESOLVE</button>
+                  <button name="status" value="dismissed" class="btn-action btn-ghost">✕ DISMISS</button>
+                  {#if r.status !== 'pending'}
+                    <button name="status" value="pending" class="btn-action btn-amber">↩ REOPEN</button>
                   {/if}
                 </div>
-              {/if}
-
-              {#if r.admin_reply}
-                <p class="rp-note-saved">💾 Réponse enregistrée : <em>{r.admin_reply}</em></p>
-              {/if}
-
-              <div class="rp-btns">
-                <button name="status" value="resolved" class="rp-btn rp-btn-resolve">✓ Résolu</button>
-                <button name="status" value="dismissed" class="rp-btn rp-btn-dismiss">✕ Ignorer</button>
-                {#if r.status !== 'pending'}
-                  <button name="status" value="pending" class="rp-btn rp-btn-reopen">↩ Rouvrir</button>
-                {/if}
-              </div>
-            </form>
-          </div>
-        {/if}
-      </div>
-    {/each}
-  </div>
-{/if}
+              </form>
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>
 
 <style>
-.rp-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.rp-title {
-  font-family: "Bricolage Grotesque", sans-serif;
-  font-size: 1.6rem;
-  font-weight: 800;
-}
-.rp-filters { display: flex; gap: 10px; }
-.rp-filters select {
-  background: #1e293b;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  color: #e2e8f0;
-  padding: 7px 12px;
-  font-size: 0.85rem;
-  cursor: pointer;
+.rp-page { display: flex; flex-direction: column; gap: 16px; }
+
+.page-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.page-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.1em; }
+
+.rp-filters { display: flex; gap: 8px; }
+.adm-select {
+  background: rgba(0,255,65,0.04);
+  border: 1px solid rgba(0,255,65,0.2);
+  border-radius: 3px;
+  color: #00ff41;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
   outline: none;
+  cursor: pointer;
 }
-.rp-filters select:focus { border-color: #6366f1; }
+.adm-select option { background: #0a0a0f; }
+.adm-select:focus { border-color: rgba(0,255,65,0.5); }
 
-.rp-error { color: #f87171; background: rgba(248,113,113,0.1); padding: 12px 16px; border-radius: 10px; }
-.rp-empty { color: #64748b; text-align: center; padding: 60px 0; font-size: 0.9rem; }
+.alert-err { color: #ff4444; font-size: 0.82rem; background: rgba(255,68,68,0.06); border: 1px solid rgba(255,68,68,0.2); padding: 8px 12px; border-radius: 3px; }
+.empty { font-size: 0.8rem; color: rgba(0,255,65,0.25); padding: 24px 0; }
 
-.rp-list { display: flex; flex-direction: column; gap: 8px; }
+.rp-list { display: flex; flex-direction: column; gap: 4px; }
 
 .rp-card {
-  background: #111827;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 12px;
+  border: 1px solid rgba(0,255,65,0.1);
+  border-radius: 3px;
   overflow: hidden;
-  transition: border-color 0.15s;
 }
-.rp-card.pending  { border-left: 3px solid #f59e0b; }
-.rp-card.resolved { border-left: 3px solid #4ade80; }
-.rp-card.dismissed{ border-left: 3px solid #374151; }
-.rp-card:hover    { border-color: rgba(255,255,255,0.14); }
+.rp-card[data-status="pending"]  { border-left: 3px solid #ffb300; }
+.rp-card[data-status="resolved"] { border-left: 3px solid rgba(0,255,65,0.5); }
+.rp-card[data-status="dismissed"]{ border-left: 3px solid rgba(0,255,65,0.15); }
 
-.rp-card-head {
+.rp-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 13px 16px;
+  padding: 10px 14px;
   cursor: pointer;
   user-select: none;
+  font-size: 0.78rem;
   flex-wrap: wrap;
 }
-.rp-type {
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: rgba(255,255,255,0.06);
-  padding: 3px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-.rp-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.rp-from { font-size: 0.82rem; color: #94a3b8; flex: 1; min-width: 0; }
-.rp-target { font-size: 0.8rem; color: #f87171; white-space: nowrap; }
-.rp-room { font-size: 0.75rem; color: #64748b; font-family: monospace; }
-.rp-date { font-size: 0.75rem; color: #475569; white-space: nowrap; margin-left: auto; }
-.rp-chevron { font-size: 0.65rem; color: #475569; }
+.rp-head:hover { background: rgba(0,255,65,0.03); }
 
-.rp-card-body {
-  padding: 0 16px 16px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+.rp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.rp-type { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; color: rgba(0,255,65,0.5); min-width: 70px; }
+.rp-from { color: rgba(0,255,65,0.8); font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-target { font-size: 0.72rem; color: #ff4444; white-space: nowrap; }
+.rp-room { font-size: 0.68rem; color: rgba(0,255,65,0.3); white-space: nowrap; }
+.rp-date { font-size: 0.68rem; color: rgba(0,255,65,0.25); white-space: nowrap; margin-left: auto; }
+.rp-chevron { font-size: 0.6rem; color: rgba(0,255,65,0.3); }
+
+.rp-body {
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(0,255,65,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.rp-subject { font-size: 0.82rem; color: #94a3b8; margin: 12px 0 6px; }
+
+.rp-field { font-size: 0.75rem; }
+.fl { font-size: 0.65rem; letter-spacing: 0.08em; color: rgba(0,255,65,0.4); }
+.fv { color: rgba(0,255,65,0.8); }
+
 .rp-message {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 0.85rem;
+  background: rgba(0,255,65,0.02);
+  border: 1px solid rgba(0,255,65,0.08);
+  border-radius: 3px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  color: rgba(0,255,65,0.75);
 }
+
 .rp-meta {
-  margin-top: 8px;
   background: rgba(0,0,0,0.3);
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 0.72rem;
-  color: #64748b;
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-size: 0.7rem;
+  color: rgba(0,255,65,0.3);
   overflow-x: auto;
 }
-.rp-actions { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
-.rp-note {
-  width: 100%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px;
-  padding: 9px 12px;
-  color: #e2e8f0;
+
+.rp-actions { display: flex; flex-direction: column; gap: 8px; }
+
+.rp-row { display: flex; flex-direction: column; gap: 5px; }
+
+.rp-textarea {
+  background: rgba(0,255,65,0.03);
+  border: 1px solid rgba(0,255,65,0.15);
+  border-radius: 3px;
+  color: #00ff41;
   font-family: inherit;
-  font-size: 0.83rem;
+  font-size: 0.78rem;
+  padding: 8px 10px;
   resize: vertical;
   outline: none;
+  width: 100%;
 }
-.rp-note:focus { border-color: #6366f1; }
-.rp-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.rp-btn {
-  padding: 7px 14px;
-  border-radius: 8px;
+.rp-textarea:focus { border-color: rgba(0,255,65,0.4); }
+.rp-textarea::placeholder { color: rgba(0,255,65,0.2); }
+
+.rp-saved { font-size: 0.7rem; color: rgba(0,255,65,0.4); border-left: 2px solid rgba(0,255,65,0.2); padding-left: 8px; }
+
+.rp-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.btn-action {
   border: none;
+  border-radius: 3px;
   font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 0.1s;
 }
-.rp-btn:hover { opacity: 0.85; }
-.rp-btn-resolve  { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
-.rp-btn-dismiss  { background: rgba(107,114,128,0.15); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
-.rp-btn-reopen   { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
-.rp-reply-wrap { display: flex; flex-direction: column; gap: 6px; }
-.rp-label { font-size: 0.78rem; font-weight: 600; color: #94a3b8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.rp-label-sub { font-weight: 400; color: #6366f1; }
-.rp-label-warn { color: #f59e0b; }
-.rp-note-reply { border-color: rgba(99,102,241,0.3); }
-.rp-note-reply:focus { border-color: #6366f1; }
-.rp-note-saved { font-size: 0.75rem; color: #4ade80; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15); border-radius: 6px; padding: 6px 10px; line-height: 1.5; }
-.rp-note-saved em { font-style: normal; color: #94a3b8; }
-.rp-btn-send { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); align-self: flex-start; }
-.rp-btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-action:disabled { opacity: 0.25; cursor: not-allowed; }
+.btn-action:hover:not(:disabled) { opacity: 0.8; }
+.btn-green { background: rgba(0,255,65,0.1); color: #00ff41; border: 1px solid rgba(0,255,65,0.3); }
+.btn-amber { background: rgba(255,179,0,0.1); color: #ffb300; border: 1px solid rgba(255,179,0,0.3); }
+.btn-ghost { background: transparent; color: rgba(0,255,65,0.4); border: 1px solid rgba(0,255,65,0.15); }
 </style>
