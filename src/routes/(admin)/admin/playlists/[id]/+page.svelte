@@ -11,6 +11,7 @@
   const tracks   = $derived(data.tracks);
 
   let deletePlaylistModal = $state(false);
+  let editMetaModal = $state(null); // track object
 
   function fmt(iso) {
     if (!iso) return '—';
@@ -61,8 +62,15 @@
           {#each tracks as t, i (t.id)}
             <tr>
               <td class="td-pos">{t.position}</td>
-              <td class="td-artist">{t.artist}</td>
-              <td>{t.title}</td>
+              <td class="td-artist">
+                {t.custom_artist || t.artist}
+                {#if t.custom_artist}<span class="custom-badge" title="Nom custom">✎</span>{/if}
+              </td>
+              <td>
+                {t.custom_title || t.title}
+                {#if t.custom_title}<span class="custom-badge" title="Titre custom">✎</span>{/if}
+                {#if t.custom_feats?.length}<span class="feat-badge">feat: {t.custom_feats.join(', ')}</span>{/if}
+              </td>
               <td class="td-dim">{t.source}</td>
               <td class="td-dim">
                 {#if t.preview_url}
@@ -73,21 +81,23 @@
               </td>
               <td class="td-actions">
                 <!-- Réordonner ▲ -->
-                <form method="POST" action="?/reorderTrack" use:enhance={() => ({ onResult: () => invalidateAll() })}>
+                <form method="POST" action="?/reorderTrack" use:enhance={() => async ({ update }) => { await update({ reset: false }); }}>
                   <input type="hidden" name="_token" value={token}>
                   <input type="hidden" name="track_id" value={t.id}>
                   <input type="hidden" name="direction" value="up">
                   <button class="btn-order" disabled={i === 0}>▲</button>
                 </form>
                 <!-- Réordonner ▼ -->
-                <form method="POST" action="?/reorderTrack" use:enhance={() => ({ onResult: () => invalidateAll() })}>
+                <form method="POST" action="?/reorderTrack" use:enhance={() => async ({ update }) => { await update({ reset: false }); }}>
                   <input type="hidden" name="_token" value={token}>
                   <input type="hidden" name="track_id" value={t.id}>
                   <input type="hidden" name="direction" value="down">
                   <button class="btn-order" disabled={i === tracks.length - 1}>▼</button>
                 </form>
+                <!-- Éditer meta -->
+                <button class="btn-meta" onclick={() => editMetaModal = { ...t }}>✎</button>
                 <!-- Supprimer -->
-                <form method="POST" action="?/deleteTrack" use:enhance={() => ({ onResult: () => invalidateAll() })}>
+                <form method="POST" action="?/deleteTrack" use:enhance={() => async ({ update }) => { await update({ reset: false }); }}>
                   <input type="hidden" name="_token" value={token}>
                   <input type="hidden" name="track_id" value={t.id}>
                   <button class="btn-del">✕</button>
@@ -107,6 +117,33 @@
     </button>
   </div>
 </div>
+
+<!-- Modal edit track meta -->
+{#if editMetaModal}
+  <div class="modal-overlay" onclick={() => editMetaModal = null} role="presentation">
+    <div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
+      <div class="modal-title">// EDIT_TRACK_META</div>
+      <p class="modal-sub">{editMetaModal.artist} — {editMetaModal.title}</p>
+      <form method="POST" action="?/editTrackMeta" use:enhance={() => async ({ update }) => { await update({ reset: false }); editMetaModal = null; }}>
+        <input type="hidden" name="_token" value={token}>
+        <input type="hidden" name="track_id" value={editMetaModal.id}>
+        <label class="field-label">ARTISTE CUSTOM (laisser vide = original)
+          <input class="field-input" type="text" name="custom_artist" value={editMetaModal.custom_artist ?? ''} placeholder={editMetaModal.artist}>
+        </label>
+        <label class="field-label">TITRE CUSTOM (laisser vide = original)
+          <input class="field-input" type="text" name="custom_title" value={editMetaModal.custom_title ?? ''} placeholder={editMetaModal.title}>
+        </label>
+        <label class="field-label">FEATURINGS / NOMS ALTERNATIFS (séparés par des virgules)
+          <input class="field-input" type="text" name="custom_feats" value={editMetaModal.custom_feats?.join(', ') ?? ''} placeholder="ex: feat. Nekfeu, film: Titanic">
+        </label>
+        <div class="modal-btns">
+          <button type="button" class="btn-cancel" onclick={() => editMetaModal = null}>CANCEL</button>
+          <button type="submit" class="btn-confirm">SAVE</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
 
 <!-- Modal delete playlist -->
 {#if deletePlaylistModal}
@@ -213,6 +250,44 @@
 }
 .btn-order:hover:not(:disabled) { color: #00ff41; border-color: rgba(0,255,65,0.4); }
 .btn-order:disabled { opacity: 0.15; cursor: not-allowed; }
+
+.custom-badge { font-size: 0.65rem; color: #ffb300; margin-left: 4px; opacity: 0.7; }
+.feat-badge { font-size: 0.65rem; color: rgba(0,255,65,0.4); background: rgba(0,255,65,0.06); border: 1px solid rgba(0,255,65,0.12); border-radius: 2px; padding: 1px 5px; margin-left: 6px; }
+
+.btn-meta {
+  background: transparent;
+  border: 1px solid rgba(255,179,0,0.2);
+  border-radius: 3px;
+  color: rgba(255,179,0,0.5);
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.1s;
+  font-family: inherit;
+}
+.btn-meta:hover { color: #ffb300; border-color: rgba(255,179,0,0.5); }
+
+.modal-sub { font-size: 0.75rem; color: rgba(0,255,65,0.4); }
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: rgba(0,255,65,0.5);
+}
+.field-input {
+  background: rgba(0,255,65,0.04);
+  border: 1px solid rgba(0,255,65,0.2);
+  border-radius: 3px;
+  color: #00ff41;
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 7px 10px;
+  outline: none;
+}
+.field-input:focus { border-color: rgba(0,255,65,0.5); }
+.field-input::placeholder { color: rgba(0,255,65,0.2); }
 
 .btn-del {
   background: transparent;

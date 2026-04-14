@@ -11,6 +11,7 @@
   let actionMsg = $state(null);
   let actionMsgTimer = null;
   let announceText = $state('');
+  let confirmClose = $state(false);
 
   const selectedRoom = $derived(rooms.find(r => r.roomId === selected) ?? null);
 
@@ -124,6 +125,12 @@
               <button class="act-btn act-block" onclick={() => doAction(selectedRoom.roomId, 'block')}>🔒 LOCK</button>
             {:else}
               <button class="act-btn act-unblock" onclick={() => doAction(selectedRoom.roomId, 'unblock')}>🔓 UNLOCK</button>
+            {/if}
+            {#if !confirmClose}
+              <button class="act-btn act-close" onclick={() => confirmClose = true}>✕ CLOSE ROOM</button>
+            {:else}
+              <button class="act-btn act-close-confirm" onclick={() => { doAction(selectedRoom.roomId, 'close_room'); confirmClose = false; selected = null; }}>CONFIRM CLOSE</button>
+              <button class="act-btn act-ghost" onclick={() => confirmClose = false}>CANCEL</button>
             {/if}
           </div>
         </div>
@@ -323,6 +330,10 @@
 .act-announce { border-color: rgba(255,179,0,0.4); color: #ffb300; flex-shrink: 0; }
 .act-announce:hover { background: rgba(255,179,0,0.08); }
 .act-announce:disabled { opacity: 0.25; cursor: not-allowed; }
+.act-close { border-color: rgba(255,68,68,0.2); color: rgba(255,68,68,0.4); }
+.act-close:hover { color: #ff4444; border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.06); }
+.act-close-confirm { border-color: rgba(255,68,68,0.6); color: #ff4444; background: rgba(255,68,68,0.1); font-weight: 900; }
+.act-ghost { border-color: rgba(0,255,65,0.15); color: rgba(0,255,65,0.3); }
 
 .announce-zone { display: flex; flex-direction: column; gap: 8px; }
 .announce-row { display: flex; gap: 8px; }

@@ -10,9 +10,20 @@ import {
   adminBlockRoom,
   adminUnblockRoom,
   adminAnnounce,
+  adminCloseRoom,
 } from "$lib/server/socket/game.js";
 
-const ALLOWED_ACTIONS = ["pause", "resume", "skip_round", "end_game", "kick", "block", "unblock", "announce"];
+const ALLOWED_ACTIONS = [
+  "pause",
+  "resume",
+  "skip_round",
+  "end_game",
+  "kick",
+  "block",
+  "unblock",
+  "announce",
+  "close_room",
+];
 
 export async function POST({ request, params }) {
   const body = await request.json();
@@ -62,6 +73,9 @@ export async function POST({ request, params }) {
       break;
     case "announce":
       ok = adminAnnounce(roomId, body.message);
+      break;
+    case "close_room":
+      ok = adminCloseRoom(roomId);
       break;
   }
 

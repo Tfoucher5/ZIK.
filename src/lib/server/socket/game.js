@@ -1035,9 +1035,13 @@ export function adminEndGame(roomId) {
 export function adminAnnounce(roomId, message) {
   const room = roomGames[roomId];
   if (!room) return false;
-  const msg = String(message ?? "").trim().slice(0, 200);
+  const msg = String(message ?? "")
+    .trim()
+    .slice(0, 200);
   if (!msg) return false;
-  globalThis.__zik_io?.to(`room:${roomId}`).emit("admin_announce", { message: msg });
+  globalThis.__zik_io
+    ?.to(`room:${roomId}`)
+    .emit("admin_announce", { message: msg });
   return true;
 }
 
@@ -1059,22 +1063,38 @@ export function adminUnblockRoom(roomId) {
   return true;
 }
 
+export function adminCloseRoom(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return false;
+  const io = globalThis.__zik_io;
+  clearInterval(room.game.interval);
+  clearTimeout(room.game.breakTimer);
+  clearTimeout(room.game.readyTimer);
+  io?.to(`room:${roomId}`).emit("room_force_closed", {
+    message: "La room a été fermée par un administrateur.",
+  });
+  io?.socketsLeave(`room:${roomId}`);
+  delete roomGames[roomId];
+  return true;
+}
+
 export function adminKickPlayer(roomId, username) {
   const room = roomGames[roomId];
   if (!room || !room.players[username]) return false;
   const io = globalThis.__zik_io;
   const socketId = room.nameToSocket[username];
   if (socketId)
-    io
-      ?.to(socketId)
-      .emit("admin_kicked", { reason: "Expulsé par un administrateur" });
+    io?.to(socketId).emit("admin_kicked", {
+      reason: "Expulsé par un administrateur",
+    });
   delete room.players[username];
   delete room.nameToSocket[username];
   for (const sid of Object.keys(room.socketToName)) {
     if (room.socketToName[sid] === username) delete room.socketToName[sid];
   }
-  io
-    ?.to(`room:${roomId}`)
-    .emit("update_players", Object.values(room.players).map(sanitizePlayer));
+  io?.to(`room:${roomId}`).emit(
+    "update_players",
+    Object.values(room.players).map(sanitizePlayer),
+  );
   return true;
 }

@@ -16,12 +16,16 @@ export async function load({ params }) {
   const [playlistRes, tracksRes] = await Promise.all([
     sb
       .from("custom_playlists")
-      .select("id, name, emoji, owner_id, is_public, is_official, track_count, created_at, updated_at, profiles!owner_id(username)")
+      .select(
+        "id, name, emoji, owner_id, is_public, is_official, track_count, created_at, updated_at, profiles!owner_id(username)",
+      )
       .eq("id", params.id)
       .single(),
     sb
       .from("custom_playlist_tracks")
-      .select("id, playlist_id, artist, title, preview_url, cover_url, source, position, created_at")
+      .select(
+        "id, playlist_id, artist, title, preview_url, cover_url, source, position, created_at, custom_artist, custom_title, custom_feats",
+      )
       .eq("playlist_id", params.id)
       .order("position", { ascending: true }),
   ]);
@@ -93,12 +97,54 @@ export const actions = {
       .update({ position: a.position })
       .eq("id", b.id);
 
-    await logAdminAction(adminUser.id, "reorder_tracks", params.id, "playlist", {
-      moved_track_id: trackId,
-      direction,
-      old_position: a.position,
-      new_position: b.position,
-    });
+    await logAdminAction(
+      adminUser.id,
+      "reorder_tracks",
+      params.id,
+      "playlist",
+      {
+        moved_track_id: trackId,
+        direction,
+        old_position: a.position,
+        new_position: b.position,
+      },
+    );
+    return { success: true };
+  },
+
+  editTrackMeta: async ({ request, params }) => {
+    assertUuid(params.id);
+    const { adminUser, formData } = await requireAdmin(request);
+    const trackId = formData.get("track_id");
+    const sb = getAdminClient();
+
+    const custom_artist = formData.get("custom_artist")?.trim() || null;
+    const custom_title = formData.get("custom_title")?.trim() || null;
+    const featsRaw = formData.get("custom_feats")?.trim() || "";
+    const custom_feats = featsRaw
+      ? featsRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : null;
+
+    const { error: err } = await sb
+      .from("custom_playlist_tracks")
+      .update({ custom_artist, custom_title, custom_feats })
+      .eq("id", trackId);
+    if (err) return { success: false, error: err.message };
+    await logAdminAction(
+      adminUser.id,
+      "edit_track_meta",
+      params.id,
+      "playlist",
+      {
+        track_id: trackId,
+        custom_artist,
+        custom_title,
+        custom_feats,
+      },
+    );
     return { success: true };
   },
 
@@ -116,10 +162,16 @@ export const actions = {
       .delete()
       .eq("id", params.id);
     if (err) return { success: false, error: err.message };
-    await logAdminAction(adminUser.id, "delete_playlist", params.id, "playlist", {
-      name: playlist?.name,
-      track_count: playlist?.track_count,
-    });
+    await logAdminAction(
+      adminUser.id,
+      "delete_playlist",
+      params.id,
+      "playlist",
+      {
+        name: playlist?.name,
+        track_count: playlist?.track_count,
+      },
+    );
     redirect(302, "/admin/playlists");
   },
 };

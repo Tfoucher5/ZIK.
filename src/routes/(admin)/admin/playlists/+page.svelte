@@ -92,7 +92,7 @@
 
               <!-- Toggle is_public -->
               <td>
-                <form method="POST" action="?/toggleFlag" use:enhance={() => ({ onResult: () => invalidateAll() })}>
+                <form method="POST" action="?/toggleFlag" use:enhance={() => async ({ update }) => { await update({ reset: false }); }}>
                   <input type="hidden" name="_token" value={token}>
                   <input type="hidden" name="id" value={pl.id}>
                   <input type="hidden" name="field" value="is_public">
@@ -103,7 +103,7 @@
 
               <!-- Toggle is_official -->
               <td>
-                <form method="POST" action="?/toggleFlag" use:enhance={() => ({ onResult: () => invalidateAll() })}>
+                <form method="POST" action="?/toggleFlag" use:enhance={() => async ({ update }) => { await update({ reset: false }); }}>
                   <input type="hidden" name="_token" value={token}>
                   <input type="hidden" name="id" value={pl.id}>
                   <input type="hidden" name="field" value="is_official">
