@@ -1,279 +1,296 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>ZIK — Affiche</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  <head>
+    <meta charset="UTF-8" />
+    <title>ZIK — Affiche</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
 
-  body {
-    width: 210mm;
-    height: 297mm;
-    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-    background: #fff;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
+      body {
+        width: 210mm;
+        height: 297mm;
+        font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+        background: #fff;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
 
-  .poster {
-    width: 210mm;
-    height: 297mm;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: #fff;
-    overflow: hidden;
-  }
+      .poster {
+        width: 210mm;
+        height: 297mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #fff;
+        overflow: hidden;
+      }
 
-  .top-bar {
-    width: 100%;
-    height: 12mm;
-    background: linear-gradient(90deg, #6d28d9 0%, #0ea5e9 50%, #f59e0b 100%);
-    flex-shrink: 0;
-  }
+      .top-bar {
+        width: 100%;
+        height: 12mm;
+        background: linear-gradient(
+          90deg,
+          #6d28d9 0%,
+          #0ea5e9 50%,
+          #f59e0b 100%
+        );
+        flex-shrink: 0;
+      }
 
-  .body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12mm 18mm 0;
-    width: 100%;
-  }
+      .body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12mm 18mm 0;
+        width: 100%;
+      }
 
-  .label {
-    font-size: 9pt;
-    font-weight: 700;
-    letter-spacing: 3pt;
-    color: #9ca3af;
-    text-transform: uppercase;
-    margin-bottom: 5mm;
-  }
+      .label {
+        font-size: 9pt;
+        font-weight: 700;
+        letter-spacing: 3pt;
+        color: #9ca3af;
+        text-transform: uppercase;
+        margin-bottom: 5mm;
+      }
 
-  .logo {
-    font-size: 100pt;
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: -3pt;
-    color: #111;
-    line-height: 1;
-    margin-bottom: 3mm;
-  }
+      .logo {
+        font-size: 100pt;
+        font-weight: 900;
+        font-style: italic;
+        letter-spacing: -3pt;
+        color: #111;
+        line-height: 1;
+        margin-bottom: 3mm;
+      }
 
-  .logo em {
-    font-style: normal;
-    color: #6d28d9;
-  }
+      .logo em {
+        font-style: normal;
+        color: #6d28d9;
+      }
 
-  .tagline {
-    font-size: 17pt;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 8mm;
-    text-align: center;
-    letter-spacing: 0.5pt;
-  }
+      .tagline {
+        font-size: 17pt;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 8mm;
+        text-align: center;
+        letter-spacing: 0.5pt;
+      }
 
-  .sep {
-    width: 25mm;
-    height: 2pt;
-    background: linear-gradient(90deg, #6d28d9, #0ea5e9);
-    border-radius: 2pt;
-    margin-bottom: 8mm;
-  }
+      .sep {
+        width: 25mm;
+        height: 2pt;
+        background: linear-gradient(90deg, #6d28d9, #0ea5e9);
+        border-radius: 2pt;
+        margin-bottom: 8mm;
+      }
 
-  .desc {
-    font-size: 12pt;
-    color: #4b5563;
-    text-align: center;
-    line-height: 1.65;
-    max-width: 150mm;
-    margin-bottom: 10mm;
-  }
+      .desc {
+        font-size: 12pt;
+        color: #4b5563;
+        text-align: center;
+        line-height: 1.65;
+        max-width: 150mm;
+        margin-bottom: 10mm;
+      }
 
-  .features {
-    display: flex;
-    flex-direction: column;
-    gap: 3mm;
-    width: 100%;
-    max-width: 162mm;
-    margin-bottom: 12mm;
-  }
+      .features {
+        display: flex;
+        flex-direction: column;
+        gap: 3mm;
+        width: 100%;
+        max-width: 162mm;
+        margin-bottom: 12mm;
+      }
 
-  .feat {
-    display: flex;
-    align-items: center;
-    gap: 5mm;
-    padding: 4mm 5mm;
-    background: #f5f3ff;
-    border-left: 3.5pt solid #6d28d9;
-  }
+      .feat {
+        display: flex;
+        align-items: center;
+        gap: 5mm;
+        padding: 4mm 5mm;
+        background: #f5f3ff;
+        border-left: 3.5pt solid #6d28d9;
+      }
 
-  .feat-icon {
-    font-size: 20pt;
-    width: 9mm;
-    text-align: center;
-    flex-shrink: 0;
-  }
+      .feat-icon {
+        font-size: 20pt;
+        width: 9mm;
+        text-align: center;
+        flex-shrink: 0;
+      }
 
-  .feat-title {
-    font-size: 11pt;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 1mm;
-  }
+      .feat-title {
+        font-size: 11pt;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 1mm;
+      }
 
-  .feat-sub {
-    font-size: 9.5pt;
-    color: #6b7280;
-    line-height: 1.4;
-  }
+      .feat-sub {
+        font-size: 9.5pt;
+        color: #6b7280;
+        line-height: 1.4;
+      }
 
-  /* Zone QR */
-  .qr-section {
-    display: flex;
-    align-items: center;
-    gap: 12mm;
-    padding: 8mm 10mm;
-    background: #f9fafb;
-    border: 1.5pt solid #e5e7eb;
-    width: 100%;
-    max-width: 162mm;
-    margin-bottom: 0;
-  }
+      /* Zone QR */
+      .qr-section {
+        display: flex;
+        align-items: center;
+        gap: 12mm;
+        padding: 8mm 10mm;
+        background: #f9fafb;
+        border: 1.5pt solid #e5e7eb;
+        width: 100%;
+        max-width: 162mm;
+        margin-bottom: 0;
+      }
 
-  .qr-img {
-    width: 42mm;
-    height: 42mm;
-    display: block;
-    flex-shrink: 0;
-    background: #fff;
-  }
+      .qr-img {
+        width: 42mm;
+        height: 42mm;
+        display: block;
+        flex-shrink: 0;
+        background: #fff;
+      }
 
-  .qr-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2mm;
-  }
+      .qr-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2mm;
+      }
 
-  .qr-cta {
-    font-size: 10pt;
-    font-weight: 700;
-    letter-spacing: 1.5pt;
-    color: #6d28d9;
-    text-transform: uppercase;
-  }
+      .qr-cta {
+        font-size: 10pt;
+        font-weight: 700;
+        letter-spacing: 1.5pt;
+        color: #6d28d9;
+        text-transform: uppercase;
+      }
 
-  .qr-url {
-    font-size: 22pt;
-    font-weight: 900;
-    color: #111;
-    letter-spacing: -0.5pt;
-  }
+      .qr-url {
+        font-size: 22pt;
+        font-weight: 900;
+        color: #111;
+        letter-spacing: -0.5pt;
+      }
 
-  .qr-url span { color: #6d28d9; }
+      .qr-url span {
+        color: #6d28d9;
+      }
 
-  .qr-note {
-    font-size: 9pt;
-    color: #9ca3af;
-    line-height: 1.5;
-  }
+      .qr-note {
+        font-size: 9pt;
+        color: #9ca3af;
+        line-height: 1.5;
+      }
 
-  .bottom-bar {
-    width: 100%;
-    height: 15mm;
-    background: #111827;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6mm;
-    flex-shrink: 0;
-    margin-top: auto;
-  }
+      .bottom-bar {
+        width: 100%;
+        height: 15mm;
+        background: #111827;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6mm;
+        flex-shrink: 0;
+        margin-top: auto;
+      }
 
-  .pill {
-    font-size: 8.5pt;
-    font-weight: 700;
-    letter-spacing: 1pt;
-    color: #fff;
-    text-transform: uppercase;
-    padding: 1.5mm 4mm;
-    border: 1pt solid rgba(255,255,255,0.3);
-    border-radius: 20pt;
-  }
-</style>
-</head>
-<body>
-<div class="poster">
+      .pill {
+        font-size: 8.5pt;
+        font-weight: 700;
+        letter-spacing: 1pt;
+        color: #fff;
+        text-transform: uppercase;
+        padding: 1.5mm 4mm;
+        border: 1pt solid rgba(255, 255, 255, 0.3);
+        border-radius: 20pt;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="poster">
+      <!-- <div class="top-bar"></div> -->
 
-  <!-- <div class="top-bar"></div> -->
+      <div class="body">
+        <div class="label">Blind Test multijoueur en ligne</div>
 
-  <div class="body">
-    <div class="label">Blind Test multijoueur en ligne</div>
+        <div class="logo">Z<em>I</em>K</div>
+        <div class="tagline">Le Blind Test Multijoueur</div>
+        <div class="sep"></div>
 
-    <div class="logo">Z<em>I</em>K</div>
-    <div class="tagline">Le Blind Test Multijoueur</div>
-    <div class="sep"></div>
+        <p class="desc">
+          Reconnais les musiques avant tout le monde,<br />
+          grimpe dans le classement et prouve que<br />
+          tu as les meilleures oreilles de la room.
+        </p>
 
-    <p class="desc">
-      Reconnais les musiques avant tout le monde,<br>
-      grimpe dans le classement et prouve que<br>
-      tu as les meilleures oreilles de la room.
-    </p>
+        <div class="features">
+          <div class="feat">
+            <div class="feat-icon">🎵</div>
+            <div>
+              <div class="feat-title">Des centaines de titres</div>
+              <div class="feat-sub">
+                Pop, rap, rock, variété, années 80-90, bandes originales…
+              </div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">⚡</div>
+            <div>
+              <div class="feat-title">Rapide à lancer</div>
+              <div class="feat-sub">
+                Aucune inscription requise — rejoins une room en 10 secondes
+                depuis ton téléphone.
+              </div>
+            </div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🏆</div>
+            <div>
+              <div class="feat-title">Classements & progression</div>
+              <div class="feat-sub">
+                Crée un compte gratuit pour suivre tes statistiques et défier
+                tes amis.
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <div class="features">
-      <div class="feat">
-        <div class="feat-icon">🎵</div>
-        <div>
-          <div class="feat-title">Des centaines de titres</div>
-          <div class="feat-sub">Pop, rap, rock, variété, années 80-90, bandes originales…</div>
+        <div class="qr-section">
+          <img
+            class="qr-img"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=https%3A%2F%2Fwww.zik-music.fr&margin=4&format=png"
+            alt="QR code zik-music.fr"
+          />
+          <div class="qr-text">
+            <div class="qr-cta">↑ Scanner pour jouer</div>
+            <div class="qr-url">www.<span>zik-music</span>.fr</div>
+            <div class="qr-note">
+              Fonctionne sur tous les téléphones.<br />
+              Aucune application à installer.
+            </div>
+          </div>
         </div>
       </div>
-      <div class="feat">
-        <div class="feat-icon">⚡</div>
-        <div>
-          <div class="feat-title">Rapide à lancer</div>
-          <div class="feat-sub">Aucune inscription requise — rejoins une room en 10 secondes depuis ton téléphone.</div>
-        </div>
-      </div>
-      <div class="feat">
-        <div class="feat-icon">🏆</div>
-        <div>
-          <div class="feat-title">Classements & progression</div>
-          <div class="feat-sub">Crée un compte gratuit pour suivre tes statistiques et défier tes amis.</div>
-        </div>
+
+      <div class="bottom-bar">
+        <div class="pill">100% Gratuit</div>
+        <div class="pill">Sans pub</div>
+        <div class="pill">Sur téléphone</div>
+        <div class="pill">Multijoueur</div>
       </div>
     </div>
-
-    <div class="qr-section">
-      <img
-        class="qr-img"
-        src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=https%3A%2F%2Fwww.zik-music.fr&margin=4&format=png"
-        alt="QR code zik-music.fr"
-      >
-      <div class="qr-text">
-        <div class="qr-cta">↑ Scanner pour jouer</div>
-        <div class="qr-url">www.<span>zik-music</span>.fr</div>
-        <div class="qr-note">
-          Fonctionne sur tous les téléphones.<br>
-          Aucune application à installer.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bottom-bar">
-    <div class="pill">100% Gratuit</div>
-    <div class="pill">Sans pub</div>
-    <div class="pill">Sur téléphone</div>
-    <div class="pill">Multijoueur</div>
-  </div>
-
-</div>
-</body>
+  </body>
 </html>
