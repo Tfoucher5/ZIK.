@@ -14,12 +14,14 @@
   let loginPassword = $state('');
   let loginError    = $state('');
   let loginLoading  = $state(false);
+  let showLoginPwd  = $state(false);
 
   let regUsername = $state('');
   let regEmail    = $state('');
   let regPassword = $state('');
   let regError    = $state('');
   let regLoading  = $state(false);
+  let showRegPwd  = $state(false);
 
   function resetFields() {
     loginError = ''; regError = '';
@@ -89,8 +91,16 @@
         </button>
         <div class="auth-divider"><span>ou</span></div>
         <div class="field"><label for="email">Email</label><input type="email" bind:value={loginEmail} placeholder="ton@email.com" autocomplete="email"></div>
-        <div class="field"><label for="password">Mot de passe</label><input type="password" bind:value={loginPassword} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password"
-          onkeypress={e => { if (e.key === 'Enter') handleLogin(); }}></div>
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <div class="pwd-wrap">
+            <input type={showLoginPwd ? 'text' : 'password'} bind:value={loginPassword} placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password"
+              onkeypress={e => { if (e.key === 'Enter') handleLogin(); }}>
+            <button type="button" class="pwd-eye" onclick={() => showLoginPwd = !showLoginPwd} tabindex="-1">
+              {#if showLoginPwd}🙈{:else}👁️{/if}
+            </button>
+          </div>
+        </div>
         {#if loginError}<div class="alert-err">{loginError}</div>{/if}
         <button class="btn-accent full" onclick={handleLogin} disabled={loginLoading}>
           {loginLoading ? 'Connexion...' : 'Se connecter'}
@@ -110,8 +120,16 @@
         <div class="auth-divider"><span>ou</span></div>
         <div class="field"><label for="pseudo">Pseudo</label><input type="text" bind:value={regUsername} placeholder="MonPseudo" maxlength="20" autocomplete="username"></div>
         <div class="field"><label for="email">Email</label><input type="email" bind:value={regEmail} placeholder="ton@email.com" autocomplete="email"></div>
-        <div class="field"><label for="pasword">Mot de passe</label><input type="password" bind:value={regPassword} placeholder="Min. 6 caract&egrave;res" autocomplete="new-password"
-          onkeypress={e => { if (e.key === 'Enter') handleRegister(); }}></div>
+        <div class="field">
+          <label for="pasword">Mot de passe</label>
+          <div class="pwd-wrap">
+            <input type={showRegPwd ? 'text' : 'password'} bind:value={regPassword} placeholder="Min. 6 caract&egrave;res" autocomplete="new-password"
+              onkeypress={e => { if (e.key === 'Enter') handleRegister(); }}>
+            <button type="button" class="pwd-eye" onclick={() => showRegPwd = !showRegPwd} tabindex="-1">
+              {#if showRegPwd}🙈{:else}👁️{/if}
+            </button>
+          </div>
+        </div>
         {#if regError}<div class="alert-err">{regError}</div>{/if}
         <button class="btn-accent full" onclick={handleRegister} disabled={regLoading}>
           {regLoading ? 'Cr&eacute;ation...' : 'Cr&eacute;er mon compte'}
