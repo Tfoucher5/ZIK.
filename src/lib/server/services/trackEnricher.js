@@ -6,35 +6,8 @@ const MB_DELAY_MS = 1100;
 
 // ─── Patterns de bruit à supprimer du titre ───────────────────────────────────
 
-const NOISE_RES = [
-  // Remaster
-  /\s*[([]\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+[^)[\]]+)?[)\]]\s*/gi,
-  /\s*-\s*(?:\d{4}\s+)?remaster(?:ed)?\s*$/gi,
-  // Live
-  /\s*[([]\s*live(?:\s+[^)[\]]+)?[)\]]\s*/gi,
-  // Edits radio/single/album
-  /\s*[([]\s*(?:radio|single|album)\s+edit[)\]]\s*/gi,
-  // Versions alternatives
-  /\s*[([]\s*(?:acoustic|instrumental|extended|demo|karaoke|a\s*cappella|unplugged)(?:\s+[^)[\]]*)?[)\]]\s*/gi,
-  // Club / Night / Version
-  /\s*[([]\s*(?:club|night|dance|long|short|12"\s*|7"\s*)?(?:\s+)?version[)\]]\s*/gi,
-  /\s*[([]\s*(?:club|night|dance)\s+(?:mix|edit|version)[)\]]\s*/gi,
-  /\s*-\s*(?:club|night|dance)\s+(?:mix|edit|version)\s*$/gi,
-  // Official video/audio
-  /\s*[([]\s*official\s+(?:video|audio|music\s+video|lyric\s+video)[)\]]\s*/gi,
-  // Original/club mix
-  /\s*[([]\s*(?:original|club)\s+mix[)\]]\s*/gi,
-  // Deluxe edition
-  /\s*[([]\s*deluxe(?:\s+[^)[\]]+)?[)\]]\s*/gi,
-  // Theme / Love Theme / Main Theme
-  /\s*[([]\s*(?:love\s+|main\s+|original\s+)?theme(?:\s+from\s+[^)[\]]+)?[)\]]\s*/gi,
-  // Soundtrack / OST / Score
-  /\s*[([]\s*(?:from\s+the\s+(?:original\s+)?(?:motion\s+picture|soundtrack|score|movie|film|serie|show)[^)[\]]*)[)\]]\s*/gi,
-  // Année seule
-  /\s*[([]\s*\d{4}\s*[)\]]\s*/g,
-  // Parenthèses/crochets vides
-  /\s*[([]\s*[)\]]\s*/g,
-];
+// Supprime tout tiret + suffixe en fin de titre (ex: "- Remaster", "- Club Mix")
+const DASH_SUFFIX_RE = /\s+-\s+.+$/i;
 
 const FEAT_IN_TITLE_RE =
   /\s*[([]\s*(?:feat\.?|ft\.?|featuring|with|avec)\s+([^)[\]]+)[)\]]\s*/i;
@@ -56,9 +29,12 @@ export function parseTitle(rawTitle) {
     title = title.replace(FEAT_IN_TITLE_RE, "");
   }
 
-  for (const re of NOISE_RES) {
-    title = title.replace(re, " ");
-  }
+  // 2. Supprimer tout ce qui reste entre parenthèses ou crochets
+  title = title.replace(/\s*[([][^)[\]]*[)\]]\s*/g, " ");
+
+  // 3. Supprimer les suffixes après tiret (- Remaster, - Club Mix, etc.)
+  title = title.replace(DASH_SUFFIX_RE, "");
+
   title = title.replace(/\s+/g, " ").trim();
   return { title, feats };
 }
