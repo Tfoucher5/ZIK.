@@ -245,27 +245,19 @@
 />
 
 <div class="rooms-main">
-  {#if !authReady}
+  {#if !authReady && !user}
     <div class="pl-loading">Chargement...</div>
-  {:else if !user}
-    <div class="auth-wall">
-      <div class="auth-wall-icon">&#x1F512;</div>
-      <h2>Connecte-toi pour acc&eacute;der aux rooms</h2>
-      <p>Cr&eacute;e un compte ou connecte-toi pour cr&eacute;er et rejoindre des rooms.</p>
-      <div style="margin-top:20px;display:flex;gap:10px;justify-content:center">
-        <button class="btn-ghost" onclick={() => openAuthModal('login')}>Connexion</button>
-        <button class="btn-accent" onclick={() => openAuthModal('register')}>S&apos;inscrire</button>
-      </div>
-    </div>
   {:else}
-    <div class="rooms-toolbar">
-      {#if user}
+    {#if user}
+      <div class="rooms-toolbar">
         <button class="btn-accent sm" onclick={openCreate}>+ Créer une room</button>
-      {/if}
-    </div>
+      </div>
+    {/if}
     <div class="rooms-tabs">
       <button class="rtab" class:active={tab === 'public'} onclick={() => switchTab('public')}>Rooms publiques</button>
-      <button class="rtab" class:active={tab === 'mine'}   onclick={() => switchTab('mine')}>Mes rooms</button>
+      {#if user}
+        <button class="rtab" class:active={tab === 'mine'} onclick={() => switchTab('mine')}>Mes rooms</button>
+      {/if}
     </div>
 
     {#if tab === 'public'}

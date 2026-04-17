@@ -200,7 +200,7 @@
     if (val && !guessDisabled && socket) {
       socket.emit('submit_guess', val);
       guessVal = '';
-      setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
+      tick().then(() => document.getElementById('guessInput')?.focus());
     }
   }
 
@@ -298,8 +298,10 @@
       syncWaiting = false;
       guessDisabled = false;
       _syncPaused = false;
+      if (ytPlayer?.unMute) ytPlayer.unMute();
+      if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
       if (ytPlayer?.playVideo) ytPlayer.playVideo();
-      setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
+      tick().then(() => document.getElementById('guessInput')?.focus());
     });
     socket.on('ready_update', ({ ready, total }) => {
       syncReady = ready;
