@@ -830,7 +830,9 @@ img {
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.pwd-eye:hover { opacity: 1; }
+.pwd-eye:hover {
+  opacity: 1;
+}
 
 .alert-err {
   background: rgba(239, 68, 68, 0.08);
