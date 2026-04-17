@@ -57,6 +57,7 @@ CREATE TABLE user_achievements (
 ```
 
 RLS :
+
 - SELECT : `user_id = auth.uid()` OU profil public
 - INSERT/UPDATE : bloqué côté client — les insertions se font exclusivement depuis `game.js` via le client Supabase service role (qui bypass RLS)
 
@@ -83,18 +84,18 @@ RLS : SELECT public (lien partageable accessible sans auth).
 
 ## 2. Achievements définis (données initiales)
 
-| ID | Nom | Type | Tiers (target) | Rareté | Catégorie |
-|---|---|---|---|---|---|
-| `first_win` | Première victoire | one_time | — | common | wins |
-| `wins_count` | Gagnant | tiered | B:5 / S:25 / G:100 | common→rare→epic | wins |
-| `podium_count` | Sur le podium | tiered | B:10 / S:50 / G:200 | common→rare→epic | wins |
-| `streak_days` | Assidu | tiered | B:3j / S:7j / G:30j | rare→epic→legendary | streak |
-| `win_streak` | En feu | tiered | B:3 / S:5 / G:10 | rare→epic→legendary | streak |
-| `score_1000` | Mille points | one_time | — | common | score |
-| `perfect_game` | Sans faute | one_time | — | rare | score |
-| `score_total` | Collectionneur | tiered | B:10k / S:100k / G:1M | common→rare→epic | score |
-| `games_played` | Vétéran | tiered | B:10 / S:50 / G:200 | common→rare→epic | social |
-| `early_adopter` | Early Adopter | one_time | — | legendary | social |
+| ID              | Nom               | Type     | Tiers (target)        | Rareté              | Catégorie |
+| --------------- | ----------------- | -------- | --------------------- | ------------------- | --------- |
+| `first_win`     | Première victoire | one_time | —                     | common              | wins      |
+| `wins_count`    | Gagnant           | tiered   | B:5 / S:25 / G:100    | common→rare→epic    | wins      |
+| `podium_count`  | Sur le podium     | tiered   | B:10 / S:50 / G:200   | common→rare→epic    | wins      |
+| `streak_days`   | Assidu            | tiered   | B:3j / S:7j / G:30j   | rare→epic→legendary | streak    |
+| `win_streak`    | En feu            | tiered   | B:3 / S:5 / G:10      | rare→epic→legendary | streak    |
+| `score_1000`    | Mille points      | one_time | —                     | common              | score     |
+| `perfect_game`  | Sans faute        | one_time | —                     | rare                | score     |
+| `score_total`   | Collectionneur    | tiered   | B:10k / S:100k / G:1M | common→rare→epic    | score     |
+| `games_played`  | Vétéran           | tiered   | B:10 / S:50 / G:200   | common→rare→epic    | social    |
+| `early_adopter` | Early Adopter     | one_time | —                     | legendary           | social    |
 
 `perfect_game` = avoir répondu correctement à tous les rounds d'une partie (`correctAnswers === totalRounds`, minimum 5 rounds).  
 `early_adopter` = débloqué manuellement par l'admin pour les premiers inscrits.
@@ -110,6 +111,7 @@ Appelée après `update_player_stats` pour chaque joueur authentifié non-guest.
 `gameData` contient : `{ score, rank, totalPlayers, correctAnswers, totalRounds }`
 
 **Étape 1 — Mise à jour streaks dans `profiles` :**
+
 - Charger `last_played_date`, `current_streak`, `best_streak`, `win_streak`, `best_win_streak`
 - Streak journalière :
   - Si `last_played_date` = hier → `current_streak + 1`
@@ -123,6 +125,7 @@ Appelée après `update_player_stats` pour chaque joueur authentifié non-guest.
 - Upsert `profiles` avec les nouvelles valeurs + `last_played_date = today`
 
 **Étape 2 — Vérification achievements :**
+
 - Charger le profil mis à jour + tous les `user_achievements` du joueur
 - Pour chaque achievement de la liste :
   - Calculer la valeur courante (ex: `games_played`, `best_streak`, `win_streak`, `total_score`, etc.)
@@ -131,13 +134,15 @@ Appelée après `update_player_stats` pour chaque joueur authentifié non-guest.
 - Collecter tous les nouveaux déblocages
 
 **Étape 3 — Stockage résultat partageable :**
+
 - Insérer dans `game_results` : score, rank, totalPlayers, roomName, roomEmoji, achievement_ids débloqués cette partie
 
 **Étape 4 — Émission Socket.io :**
+
 ```js
-socket.emit('achievements_unlocked', newUnlocks)
+socket.emit("achievements_unlocked", newUnlocks);
 // newUnlocks = [{ id, name, icon, tier, rarity }]
-socket.emit('game_result_id', resultId)
+socket.emit("game_result_id", resultId);
 // resultId = uuid de game_results pour construire le lien partageable
 ```
 
@@ -148,6 +153,7 @@ socket.emit('game_result_id', resultId)
 **Comportement actuel :** clic sur "Rejouer" relance immédiatement pour tout le monde.
 
 **Nouveau comportement :**
+
 - Le premier joueur qui clique émet `request_restart`
 - Le serveur émet `restart_countdown` à tous les joueurs dans la room
 - Côté client : affichage d'un décompte de 10s sur la popup de fin de partie
@@ -168,12 +174,14 @@ socket.emit('game_result_id', resultId)
 ### Page Profil (`/profile` + `/user/[username]`)
 
 **Section streaks (en haut du profil) :**
+
 ```
 🔥 X jours consécutifs  (record : Y)
 ⚡ X victoires d'affilée (record : Y)
 ```
 
 **Section achievements (compacte) :**
+
 - Badges épinglés : 3-5 slots, le joueur choisit lesquels afficher (drag ou sélection)
 - Bouton "Voir tous les achievements (X débloqués / Y total)"
 - Ouvre `AchievementsModal.svelte`
