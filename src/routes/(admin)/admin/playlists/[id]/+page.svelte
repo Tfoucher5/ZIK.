@@ -13,6 +13,56 @@
   let deletePlaylistModal = $state(false);
   let editMetaModal = $state(null); // track object
 
+  // Enrichissement automatique
+  let enrichOpen    = $state(false);
+  let enrichDone    = $state(false);
+  let enrichTotal   = $state(0);
+  let enrichCurrent = $state(0);
+  let enrichLogs    = $state([]);
+
+  async function enrichPlaylist() {
+    enrichOpen    = true;
+    enrichDone    = false;
+    enrichTotal   = 0;
+    enrichCurrent = 0;
+    enrichLogs    = [];
+
+    const res = await fetch(`/api/admin/playlists/${playlist.id}/enrich`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      enrichLogs = [{ status: 'error', track: 'Erreur serveur', changes: [] }];
+      enrichDone = true;
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop() ?? '';
+      for (const part of parts) {
+        const line = part.replace(/^data: /, '').trim();
+        if (!line) continue;
+        try {
+          const evt = JSON.parse(line);
+          if (evt.status === 'done') { enrichDone = true; continue; }
+          enrichTotal   = evt.total;
+          enrichCurrent = evt.current;
+          enrichLogs = [...enrichLogs, evt];
+        } catch { /* ignore */ }
+      }
+    }
+    enrichDone = true;
+  }
+
   function fmt(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('fr-FR');
@@ -41,7 +91,12 @@
     <div class="alert-ok">[OK] Action appliquée.</div>
   {/if}
 
-  <div class="section-title">// TRACKS ({tracks.length})</div>
+  <div class="section-header">
+    <div class="section-title">// TRACKS ({tracks.length})</div>
+    {#if tracks.length > 0}
+      <button class="btn-enrich" onclick={enrichPlaylist}>✨ AUTO_ENRICH</button>
+    {/if}
+  </div>
 
   {#if tracks.length === 0}
     <div class="empty">Aucune track.</div>
@@ -118,6 +173,37 @@
   </div>
 </div>
 
+<!-- Modal enrichissement -->
+{#if enrichOpen}
+  <div class="modal-overlay" role="presentation">
+    <div class="modal enrich-modal" role="dialog">
+      <div class="modal-title">// AUTO_ENRICH — {playlist.emoji} {playlist.name}</div>
+      {#if !enrichDone}
+        <div class="enrich-status">TRAITEMENT {enrichCurrent} / {enrichTotal}…</div>
+        <div class="enrich-bar-wrap">
+          <div class="enrich-bar-fill" style="width: {enrichTotal ? (enrichCurrent / enrichTotal * 100) : 0}%"></div>
+        </div>
+      {:else}
+        <div class="enrich-status enrich-ok">DONE — {enrichLogs.filter(l => l.status === 'enriched').length} enrichi(s) / {enrichTotal}</div>
+      {/if}
+      <div class="enrich-log">
+        {#each enrichLogs as log}
+          <div class="enrich-row enrich-{log.status}">
+            <span class="enrich-icon">{log.status === 'enriched' ? '✓' : log.status === 'error' ? '✕' : '·'}</span>
+            <span class="enrich-track">{log.track}</span>
+            {#if log.changes?.length}
+              <span class="enrich-changes">{log.changes.join(' | ')}</span>
+            {/if}
+          </div>
+        {/each}
+      </div>
+      <div class="modal-btns">
+        <button class="btn-confirm" disabled={!enrichDone} onclick={() => { enrichOpen = false; invalidateAll(); }}>FERMER</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <!-- Modal edit track meta -->
 {#if editMetaModal}
   <div class="modal-overlay" onclick={() => editMetaModal = null} role="presentation">
@@ -166,6 +252,36 @@
 
 <style>
 .pl-detail { display: flex; flex-direction: column; gap: 24px; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.btn-enrich {
+  background: transparent;
+  border: 1px solid rgba(0,255,65,0.25);
+  border-radius: 3px;
+  color: rgba(0,255,65,0.6);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-enrich:hover { color: #00ff41; border-color: rgba(0,255,65,0.5); background: rgba(0,255,65,0.05); }
+
+.enrich-modal { width: 520px; }
+.enrich-status { font-size: 0.72rem; color: rgba(0,255,65,0.5); letter-spacing: 0.08em; }
+.enrich-ok { color: #00ff41; }
+.enrich-bar-wrap { height: 4px; background: rgba(0,255,65,0.1); border-radius: 2px; overflow: hidden; }
+.enrich-bar-fill { height: 100%; background: rgba(0,255,65,0.6); border-radius: 2px; transition: width 0.3s; }
+.enrich-log { display: flex; flex-direction: column; gap: 3px; max-height: 280px; overflow-y: auto; padding: 8px 0; }
+.enrich-row { display: grid; grid-template-columns: 16px 1fr; gap: 6px; font-size: 0.72rem; align-items: start; }
+.enrich-icon { color: rgba(0,255,65,0.3); text-align: center; }
+.enrich-enriched .enrich-icon { color: #00ff41; }
+.enrich-error .enrich-icon { color: #ff4444; }
+.enrich-track { color: rgba(0,255,65,0.7); }
+.enrich-changes { grid-column: 2; font-size: 0.65rem; color: rgba(0,255,65,0.4); }
 
 .back {
   font-size: 0.72rem;
