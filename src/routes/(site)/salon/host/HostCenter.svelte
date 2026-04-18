@@ -75,7 +75,12 @@
           events: {
             onReady: (e) => e.target.playVideo(),
             onStateChange: (e) => {
-              if (e.data === 1 /* PLAYING */) onMusicReady?.();
+              if (e.data === 1 /* PLAYING */) {
+                if ('mediaSession' in navigator) {
+                  navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
+                }
+                onMusicReady?.();
+              }
             },
           },
         });

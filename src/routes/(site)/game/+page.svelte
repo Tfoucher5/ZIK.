@@ -400,18 +400,30 @@
     window.onYouTubeIframeAPIReady = () => {
       ytPlayer = new window.YT.Player('yt-player', {
         height: '1', width: '1',
-        playerVars: { autoplay: 1, controls: 0, enablejsapi: 1 },
+        playerVars: { autoplay: 1, controls: 0, enablejsapi: 1, playsinline: 1 },
         events: {
           onReady(e) {
             ytReady = true;
-            const v = savedVol();
-            e.target.setVolume(v);
+            e.target.setVolume(savedVol());
+            // iOS Safari bloque l'autoplay : déverrouiller au premier touch utilisateur
+            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+              document.addEventListener('touchstart', function iosUnlock() {
+                document.removeEventListener('touchstart', iosUnlock, true);
+                ytPlayer.mute();
+                ytPlayer.playVideo();
+                setTimeout(() => { if (!_roundActive) ytPlayer.pauseVideo(); }, 200);
+              }, { capture: true, once: true });
+            }
             if (pendingLoad) { loadVideo(pendingLoad.id, pendingLoad.start); pendingLoad = null; }
           },
           onStateChange(e) {
             if (e.data === window.YT.PlayerState.PLAYING) {
               ytPlayer.setVolume(savedVol());
               ytPlayer.unMute();
+              // Masquer le titre réel dans les contrôles système (iOS/Android)
+              if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
+              }
               if (_waitingForSync && socket) {
                 socket.emit('player_ready');
                 _syncPaused = true;
