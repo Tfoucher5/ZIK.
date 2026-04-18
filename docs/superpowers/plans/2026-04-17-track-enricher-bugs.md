@@ -12,15 +12,15 @@
 
 ## Fichiers modifiés / créés
 
-| Fichier | Action |
-|---|---|
-| `src/routes/(site)/game/+page.svelte` | Fix tick() focus + unMute() safety |
-| `src/routes/(site)/rooms/+page.svelte` | Retrait auth-wall non-connectés |
-| `src/lib/server/services/trackEnricher.js` | **Nouveau** — pipeline complet |
-| `src/routes/(site)/api/playlists/[id]/enrich/+server.js` | **Nouveau** — endpoint SSE user |
-| `src/routes/(site)/api/admin/playlists/[id]/enrich/+server.js` | **Nouveau** — endpoint SSE admin |
-| `src/routes/(site)/playlists/+page.svelte` | Bouton + modale progression |
-| `src/routes/(admin)/admin/playlists/[id]/+page.svelte` | Bouton enrichissement admin |
+| Fichier                                                        | Action                             |
+| -------------------------------------------------------------- | ---------------------------------- |
+| `src/routes/(site)/game/+page.svelte`                          | Fix tick() focus + unMute() safety |
+| `src/routes/(site)/rooms/+page.svelte`                         | Retrait auth-wall non-connectés    |
+| `src/lib/server/services/trackEnricher.js`                     | **Nouveau** — pipeline complet     |
+| `src/routes/(site)/api/playlists/[id]/enrich/+server.js`       | **Nouveau** — endpoint SSE user    |
+| `src/routes/(site)/api/admin/playlists/[id]/enrich/+server.js` | **Nouveau** — endpoint SSE admin   |
+| `src/routes/(site)/playlists/+page.svelte`                     | Bouton + modale progression        |
+| `src/routes/(admin)/admin/playlists/[id]/+page.svelte`         | Bouton enrichissement admin        |
 
 ---
 
@@ -31,46 +31,54 @@
 - [ ] **Ajouter l'import de `tick`** (il est déjà importé ligne 2 — vérifier)
 
   Ligne 2 actuelle :
+
   ```js
-  import { onMount, onDestroy, tick } from 'svelte';
+  import { onMount, onDestroy, tick } from "svelte";
   ```
+
   ✓ Déjà présent. Rien à faire.
 
 - [ ] **Corriger `submitGuess()` (ligne ~203)**
 
   Remplacer :
+
   ```js
-  guessVal = '';
-  setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
+  guessVal = "";
+  setTimeout(() => document.getElementById("guessInput")?.focus(), 50);
   ```
+
   Par :
+
   ```js
-  guessVal = '';
-  tick().then(() => document.getElementById('guessInput')?.focus());
+  guessVal = "";
+  tick().then(() => document.getElementById("guessInput")?.focus());
   ```
 
 - [ ] **Corriger le handler `round_start_sync` (ligne ~302)**
 
   Remplacer :
+
   ```js
-  socket.on('round_start_sync', () => {
+  socket.on("round_start_sync", () => {
     _waitingForSync = false;
     syncWaiting = false;
     guessDisabled = false;
     _syncPaused = false;
     if (ytPlayer?.playVideo) ytPlayer.playVideo();
-    setTimeout(() => document.getElementById('guessInput')?.focus(), 50);
+    setTimeout(() => document.getElementById("guessInput")?.focus(), 50);
   });
   ```
+
   Par :
+
   ```js
-  socket.on('round_start_sync', () => {
+  socket.on("round_start_sync", () => {
     _waitingForSync = false;
     syncWaiting = false;
     guessDisabled = false;
     _syncPaused = false;
     if (ytPlayer?.playVideo) ytPlayer.playVideo();
-    tick().then(() => document.getElementById('guessInput')?.focus());
+    tick().then(() => document.getElementById("guessInput")?.focus());
   });
   ```
 
@@ -89,8 +97,9 @@
 - [ ] **Ajouter `unMute()` et `setVolume()` explicites dans `round_start_sync`**
 
   Dans le handler `round_start_sync` modifié à la Task 1, ajouter avant `playVideo()` :
+
   ```js
-  socket.on('round_start_sync', () => {
+  socket.on("round_start_sync", () => {
     _waitingForSync = false;
     syncWaiting = false;
     guessDisabled = false;
@@ -98,7 +107,7 @@
     if (ytPlayer?.unMute) ytPlayer.unMute();
     if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
     if (ytPlayer?.playVideo) ytPlayer.playVideo();
-    tick().then(() => document.getElementById('guessInput')?.focus());
+    tick().then(() => document.getElementById("guessInput")?.focus());
   });
   ```
 
@@ -117,6 +126,7 @@
 - [ ] **Remplacer le bloc conditionnel principal**
 
   Localiser le bloc (autour de la ligne 248) :
+
   ```svelte
   <div class="rooms-main">
     {#if !authReady}
@@ -144,6 +154,7 @@
   ```
 
   Remplacer par (retire le `{:else if !user}` auth-wall, masque seulement les éléments qui nécessitent une connexion) :
+
   ```svelte
   <div class="rooms-main">
     {#if !authReady && !user}
@@ -181,10 +192,10 @@
 - [ ] **Créer le fichier**
 
   ```js
-  import { getFetch } from './fetch.js';
-  import { parseFeaturing } from './playlist.js';
+  import { getFetch } from "./fetch.js";
+  import { parseFeaturing } from "./playlist.js";
 
-  const MB_USER_AGENT = 'ZIK-BlindTest/1.0 (zik-music.fr)';
+  const MB_USER_AGENT = "ZIK-BlindTest/1.0 (zik-music.fr)";
   const MB_DELAY_MS = 1100;
 
   // ─── Patterns de bruit à supprimer du titre ───────────────────────────────────
@@ -201,24 +212,29 @@
     /\s*[\(\[]\s*[\)\]]\s*/g,
   ];
 
-  const FEAT_IN_TITLE_RE = /\s*[\(\[]\s*(?:feat\.?|ft\.?|featuring|with|avec)\s+([^\)\]]+)[\)\]]\s*/i;
+  const FEAT_IN_TITLE_RE =
+    /\s*[\(\[]\s*(?:feat\.?|ft\.?|featuring|with|avec)\s+([^\)\]]+)[\)\]]\s*/i;
 
   // ─── Parse un titre brut → titre propre + feats extraits ─────────────────────
   export function parseTitle(rawTitle) {
-    if (!rawTitle) return { title: '', feats: [] };
+    if (!rawTitle) return { title: "", feats: [] };
     let title = rawTitle;
     const feats = [];
 
     const featMatch = title.match(FEAT_IN_TITLE_RE);
     if (featMatch) {
-      featMatch[1].split(/\s*[,&]\s*/).map(s => s.trim()).filter(Boolean).forEach(f => feats.push(f));
-      title = title.replace(FEAT_IN_TITLE_RE, '');
+      featMatch[1]
+        .split(/\s*[,&]\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((f) => feats.push(f));
+      title = title.replace(FEAT_IN_TITLE_RE, "");
     }
 
     for (const re of NOISE_RES) {
-      title = title.replace(re, ' ');
+      title = title.replace(re, " ");
     }
-    title = title.replace(/\s+/g, ' ').trim();
+    title = title.replace(/\s+/g, " ").trim();
     return { title, feats };
   }
 
@@ -227,7 +243,8 @@
 
   async function mbDelay() {
     const elapsed = Date.now() - _lastMbRequest;
-    if (elapsed < MB_DELAY_MS) await new Promise(r => setTimeout(r, MB_DELAY_MS - elapsed));
+    if (elapsed < MB_DELAY_MS)
+      await new Promise((r) => setTimeout(r, MB_DELAY_MS - elapsed));
     _lastMbRequest = Date.now();
   }
 
@@ -235,26 +252,33 @@
     if (!artist || !title) return null;
     await mbDelay();
     const fetchFn = await getFetch();
-    const q = `artist:"${artist.replace(/"/g, '')}" recording:"${title.replace(/"/g, '')}"`;
+    const q = `artist:"${artist.replace(/"/g, "")}" recording:"${title.replace(/"/g, "")}"`;
     try {
       const res = await fetchFn(
         `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(q)}&limit=5&fmt=json`,
-        { headers: { 'User-Agent': MB_USER_AGENT }, signal: AbortSignal.timeout(12000) }
+        {
+          headers: { "User-Agent": MB_USER_AGENT },
+          signal: AbortSignal.timeout(12000),
+        },
       );
       if (!res.ok) return null;
       const data = await res.json();
-      const best = (data.recordings || []).find(r => (r.score || 0) >= 85);
+      const best = (data.recordings || []).find((r) => (r.score || 0) >= 85);
       if (!best) return null;
 
-      const credits = best['artist-credit'] || [];
-      const artistNames = credits.filter(c => c.artist).map(c => c.artist.name);
-      const { title: mbTitle } = parseTitle(best.title || '');
+      const credits = best["artist-credit"] || [];
+      const artistNames = credits
+        .filter((c) => c.artist)
+        .map((c) => c.artist.name);
+      const { title: mbTitle } = parseTitle(best.title || "");
 
       return {
         title: mbTitle || best.title || null,
         mainArtist: artistNames[0] || null,
         feats: artistNames.slice(1),
-        year: best['first-release-date'] ? parseInt(best['first-release-date'].slice(0, 4)) : null,
+        year: best["first-release-date"]
+          ? parseInt(best["first-release-date"].slice(0, 4))
+          : null,
         score: best.score,
       };
     } catch {
@@ -266,18 +290,25 @@
   export async function deezerSearch(artist, title) {
     if (!artist || !title) return null;
     const fetchFn = await getFetch();
-    const q = `artist:"${artist.replace(/"/g, '')}" track:"${title.replace(/"/g, '')}"`;
+    const q = `artist:"${artist.replace(/"/g, "")}" track:"${title.replace(/"/g, "")}"`;
     try {
       const res = await fetchFn(
         `https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=3`,
-        { headers: { 'User-Agent': 'ZIK-BlindTest/1.0' }, signal: AbortSignal.timeout(8000) }
+        {
+          headers: { "User-Agent": "ZIK-BlindTest/1.0" },
+          signal: AbortSignal.timeout(8000),
+        },
       );
       if (!res.ok) return null;
       const data = await res.json();
       const track = data.data?.[0];
       if (!track) return null;
       return {
-        coverUrl: track.album?.cover_xl || track.album?.cover_big || track.album?.cover_medium || null,
+        coverUrl:
+          track.album?.cover_xl ||
+          track.album?.cover_big ||
+          track.album?.cover_medium ||
+          null,
         previewUrl: track.preview || null,
       };
     } catch {
@@ -287,22 +318,25 @@
 
   // ─── Pipeline principal ───────────────────────────────────────────────────────
   export async function enrichTrack(track) {
-    const rawArtist = track.custom_artist || track.artist || '';
-    const rawTitle  = track.custom_title  || track.title  || '';
+    const rawArtist = track.custom_artist || track.artist || "";
+    const rawTitle = track.custom_title || track.title || "";
 
     // Step 1: string parse
     const { title: parsedTitle, feats: titleFeats } = parseTitle(rawTitle);
-    const { main: parsedMain, feats: artistFeats }  = parseFeaturing(rawArtist);
+    const { main: parsedMain, feats: artistFeats } = parseFeaturing(rawArtist);
 
     // Merge feats des deux sources, sans doublons
     const mergedFeats = [...new Set([...artistFeats, ...titleFeats])];
 
     // Step 2: MusicBrainz
-    const mb = await musicBrainzLookup(parsedMain || rawArtist, parsedTitle || rawTitle);
+    const mb = await musicBrainzLookup(
+      parsedMain || rawArtist,
+      parsedTitle || rawTitle,
+    );
 
     // Step 3: Deezer (sur les données les plus propres disponibles)
     const lookupArtist = mb?.mainArtist || parsedMain || rawArtist;
-    const lookupTitle  = mb?.title      || parsedTitle || rawTitle;
+    const lookupTitle = mb?.title || parsedTitle || rawTitle;
     const dz = await deezerSearch(lookupArtist, lookupTitle);
 
     // Step 4: Merge avec scoring
@@ -325,26 +359,33 @@
 
     // Feats
     const finalFeats = mb?.feats?.length ? mb.feats : mergedFeats;
-    const currentFeats = Array.isArray(track.custom_feats) ? track.custom_feats : [];
+    const currentFeats = Array.isArray(track.custom_feats)
+      ? track.custom_feats
+      : [];
     if (
       finalFeats.length > 0 &&
-      JSON.stringify([...finalFeats].sort()) !== JSON.stringify([...currentFeats].sort())
+      JSON.stringify([...finalFeats].sort()) !==
+        JSON.stringify([...currentFeats].sort())
     ) {
       updates.custom_feats = finalFeats;
-      const added = finalFeats.filter(f => !currentFeats.includes(f));
-      changes.push(added.length ? `feat ajouté: ${added.join(', ')}` : `feats: [${finalFeats.join(', ')}]`);
+      const added = finalFeats.filter((f) => !currentFeats.includes(f));
+      changes.push(
+        added.length
+          ? `feat ajouté: ${added.join(", ")}`
+          : `feats: [${finalFeats.join(", ")}]`,
+      );
     }
 
     // Cover (seulement si absente)
     if (dz?.coverUrl && !track.cover_url) {
       updates.cover_url = dz.coverUrl;
-      changes.push('cover ajoutée');
+      changes.push("cover ajoutée");
     }
 
     // Preview (seulement si absent)
     if (dz?.previewUrl && !track.preview_url) {
       updates.preview_url = dz.previewUrl;
-      changes.push('preview ajouté');
+      changes.push("preview ajouté");
     }
 
     return { updates, changes };
@@ -366,10 +407,10 @@
 - [ ] **Créer le répertoire et le fichier**
 
   ```js
-  import { error } from '@sveltejs/kit';
-  import { requireAuth } from '$lib/server/middleware/auth.js';
-  import { getAdminClient } from '$lib/server/config.js';
-  import { enrichTrack } from '$lib/server/services/trackEnricher.js';
+  import { error } from "@sveltejs/kit";
+  import { requireAuth } from "$lib/server/middleware/auth.js";
+  import { getAdminClient } from "$lib/server/config.js";
+  import { enrichTrack } from "$lib/server/services/trackEnricher.js";
 
   export async function POST({ params, request }) {
     const { user } = await requireAuth(request);
@@ -377,20 +418,22 @@
 
     // Vérifier propriété de la playlist
     const { data: playlist, error: plErr } = await sb
-      .from('custom_playlists')
-      .select('id, owner_id')
-      .eq('id', params.id)
+      .from("custom_playlists")
+      .select("id, owner_id")
+      .eq("id", params.id)
       .single();
 
-    if (plErr || !playlist) throw error(404, 'Playlist introuvable');
-    if (playlist.owner_id !== user.id) throw error(403, 'Accès refusé');
+    if (plErr || !playlist) throw error(404, "Playlist introuvable");
+    if (playlist.owner_id !== user.id) throw error(403, "Accès refusé");
 
     // Charger les tracks
     const { data: tracks } = await sb
-      .from('custom_playlist_tracks')
-      .select('id, artist, title, custom_artist, custom_title, custom_feats, cover_url, preview_url')
-      .eq('playlist_id', params.id)
-      .order('position');
+      .from("custom_playlist_tracks")
+      .select(
+        "id, artist, title, custom_artist, custom_title, custom_feats, cover_url, preview_url",
+      )
+      .eq("playlist_id", params.id)
+      .order("position");
 
     const allTracks = tracks || [];
     const total = allTracks.length;
@@ -398,7 +441,8 @@
     const stream = new ReadableStream({
       async start(controller) {
         const enc = new TextEncoder();
-        const send = (obj) => controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`));
+        const send = (obj) =>
+          controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
         for (let i = 0; i < total; i++) {
           const track = allTracks[i];
@@ -406,29 +450,38 @@
           try {
             const { updates, changes } = await enrichTrack(track);
             if (Object.keys(updates).length > 0) {
-              await sb.from('custom_playlist_tracks').update(updates).eq('id', track.id);
+              await sb
+                .from("custom_playlist_tracks")
+                .update(updates)
+                .eq("id", track.id);
             }
             send({
               current: i + 1,
               total,
               track: label,
-              status: changes.length > 0 ? 'enriched' : 'unchanged',
+              status: changes.length > 0 ? "enriched" : "unchanged",
               changes,
             });
           } catch (err) {
-            send({ current: i + 1, total, track: label, status: 'error', changes: [] });
+            send({
+              current: i + 1,
+              total,
+              track: label,
+              status: "error",
+              changes: [],
+            });
           }
         }
-        send({ current: total, total, status: 'done' });
+        send({ current: total, total, status: "done" });
         controller.close();
       },
     });
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
     });
   }
@@ -449,31 +502,33 @@
 - [ ] **Créer le fichier**
 
   ```js
-  import { error } from '@sveltejs/kit';
-  import { verifyToken } from '$lib/server/middleware/auth.js';
-  import { getAdminClient } from '$lib/server/config.js';
-  import { enrichTrack } from '$lib/server/services/trackEnricher.js';
+  import { error } from "@sveltejs/kit";
+  import { verifyToken } from "$lib/server/middleware/auth.js";
+  import { getAdminClient } from "$lib/server/config.js";
+  import { enrichTrack } from "$lib/server/services/trackEnricher.js";
 
   export async function POST({ params, request }) {
-    const token = request.headers.get('authorization')?.slice(7);
-    if (!token) throw error(401, 'Token manquant');
+    const token = request.headers.get("authorization")?.slice(7);
+    if (!token) throw error(401, "Token manquant");
 
     const user = await verifyToken(token);
-    if (!user) throw error(401, 'Token invalide');
+    if (!user) throw error(401, "Token invalide");
 
     const sb = getAdminClient();
     const { data: profile } = await sb
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
       .single();
-    if (profile?.role !== 'super_admin') throw error(403, 'Accès refusé');
+    if (profile?.role !== "super_admin") throw error(403, "Accès refusé");
 
     const { data: tracks } = await sb
-      .from('custom_playlist_tracks')
-      .select('id, artist, title, custom_artist, custom_title, custom_feats, cover_url, preview_url')
-      .eq('playlist_id', params.id)
-      .order('position');
+      .from("custom_playlist_tracks")
+      .select(
+        "id, artist, title, custom_artist, custom_title, custom_feats, cover_url, preview_url",
+      )
+      .eq("playlist_id", params.id)
+      .order("position");
 
     const allTracks = tracks || [];
     const total = allTracks.length;
@@ -481,7 +536,8 @@
     const stream = new ReadableStream({
       async start(controller) {
         const enc = new TextEncoder();
-        const send = (obj) => controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`));
+        const send = (obj) =>
+          controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
         for (let i = 0; i < total; i++) {
           const track = allTracks[i];
@@ -489,29 +545,38 @@
           try {
             const { updates, changes } = await enrichTrack(track);
             if (Object.keys(updates).length > 0) {
-              await sb.from('custom_playlist_tracks').update(updates).eq('id', track.id);
+              await sb
+                .from("custom_playlist_tracks")
+                .update(updates)
+                .eq("id", track.id);
             }
             send({
               current: i + 1,
               total,
               track: label,
-              status: changes.length > 0 ? 'enriched' : 'unchanged',
+              status: changes.length > 0 ? "enriched" : "unchanged",
               changes,
             });
           } catch (err) {
-            send({ current: i + 1, total, track: label, status: 'error', changes: [] });
+            send({
+              current: i + 1,
+              total,
+              track: label,
+              status: "error",
+              changes: [],
+            });
           }
         }
-        send({ current: total, total, status: 'done' });
+        send({ current: total, total, status: "done" });
         controller.close();
       },
     });
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
     });
   }
@@ -533,11 +598,11 @@
 
   ```js
   // Enrichissement
-  let enrichOpen    = $state(false);
-  let enrichDone    = $state(false);
-  let enrichTotal   = $state(0);
+  let enrichOpen = $state(false);
+  let enrichDone = $state(false);
+  let enrichTotal = $state(0);
   let enrichCurrent = $state(0);
-  let enrichLogs    = $state([]);
+  let enrichLogs = $state([]);
   ```
 
 - [ ] **Ajouter la fonction `enrichPlaylist()`** (dans le bloc `<script>`, avant la fermeture)
@@ -550,30 +615,36 @@
     enrichCurrent = 0;
     enrichLogs = [];
     let session;
-    try { session = await ensureSession(); } catch (e) { toast(e.message, 'error'); enrichOpen = false; return; }
+    try {
+      session = await ensureSession();
+    } catch (e) {
+      toast(e.message, "error");
+      enrichOpen = false;
+      return;
+    }
 
     try {
       const response = await fetch(`/api/playlists/${editorPl.id}/enrich`, {
-        method: 'POST',
+        method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = '';
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
+        const parts = buffer.split("\n\n");
         buffer = parts.pop();
         for (const part of parts) {
-          if (!part.startsWith('data: ')) continue;
+          if (!part.startsWith("data: ")) continue;
           try {
             const evt = JSON.parse(part.slice(6));
-            if (evt.status === 'done') {
+            if (evt.status === "done") {
               enrichDone = true;
             } else {
               enrichCurrent = evt.current;
@@ -584,7 +655,7 @@
         }
       }
     } catch (e) {
-      toast('Erreur enrichissement : ' + e.message, 'error');
+      toast("Erreur enrichissement : " + e.message, "error");
       enrichOpen = false;
     }
   }
@@ -593,6 +664,7 @@
 - [ ] **Ajouter le bouton dans `editor-header-actions`** (dans le template, dans la div `.editor-header-actions`)
 
   Remplacer :
+
   ```svelte
   <div class="editor-header-actions">
     <button class="btn-ghost sm" onclick={() => openPlModal(editorPl)}>Modifier</button>
@@ -600,7 +672,9 @@
     <button class="btn-danger sm" onclick={deletePl}>Supprimer</button>
   </div>
   ```
+
   Par :
+
   ```svelte
   <div class="editor-header-actions">
     <button class="btn-ghost sm" onclick={() => openPlModal(editorPl)}>Modifier</button>
@@ -675,7 +749,9 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-  .btn-enrich:hover { background: rgb(var(--accent-rgb) / 0.16); }
+  .btn-enrich:hover {
+    background: rgb(var(--accent-rgb) / 0.16);
+  }
 
   .enrich-progress-bar {
     height: 4px;
@@ -708,10 +784,21 @@
     border-radius: 6px;
     background: rgb(var(--c-glass) / 0.02);
   }
-  .enrich-icon { flex-shrink: 0; font-size: 0.85rem; }
-  .enrich-track { font-weight: 500; flex-shrink: 0; }
-  .enrich-changes { color: var(--mid); font-size: 0.72rem; }
-  .enrich-error .enrich-track { color: var(--danger); }
+  .enrich-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+  }
+  .enrich-track {
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .enrich-changes {
+    color: var(--mid);
+    font-size: 0.72rem;
+  }
+  .enrich-error .enrich-track {
+    color: var(--danger);
+  }
   ```
 
 - [ ] **Commit**
@@ -736,12 +823,13 @@
 - [ ] **Ajouter les variables d'état et la fonction d'enrichissement** dans le `<script>` du fichier existant
 
   Le token admin est déjà disponible via `getContext('adminToken')` (ligne 7-8 du fichier existant). Ajouter après les variables existantes :
+
   ```js
-  let enrichOpen    = $state(false);
-  let enrichDone    = $state(false);
-  let enrichTotal   = $state(0);
+  let enrichOpen = $state(false);
+  let enrichDone = $state(false);
+  let enrichTotal = $state(0);
   let enrichCurrent = $state(0);
-  let enrichLogs    = $state([]);
+  let enrichLogs = $state([]);
 
   async function enrichPlaylist() {
     enrichOpen = true;
@@ -752,32 +840,40 @@
 
     try {
       // token est déjà défini : const token = $derived(adminCtx?.token ?? '');
-      const response = await fetch(`/api/admin/playlists/${playlist.id}/enrich`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `/api/admin/playlists/${playlist.id}/enrich`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = '';
+      let buffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
+        const parts = buffer.split("\n\n");
         buffer = parts.pop();
         for (const part of parts) {
-          if (!part.startsWith('data: ')) continue;
+          if (!part.startsWith("data: ")) continue;
           try {
             const evt = JSON.parse(part.slice(6));
-            if (evt.status === 'done') { enrichDone = true; }
-            else { enrichCurrent = evt.current; enrichTotal = evt.total; enrichLogs = [...enrichLogs, evt]; }
+            if (evt.status === "done") {
+              enrichDone = true;
+            } else {
+              enrichCurrent = evt.current;
+              enrichTotal = evt.total;
+              enrichLogs = [...enrichLogs, evt];
+            }
           } catch {}
         }
       }
     } catch (e) {
-      alert('Erreur enrichissement : ' + e.message);
+      alert("Erreur enrichissement : " + e.message);
       enrichOpen = false;
     }
   }
@@ -837,15 +933,19 @@
 ## Task 9 — Lint et vérification finale
 
 - [ ] **Lancer le lint**
+
   ```bash
   npm run lint
   ```
+
   Corriger toute erreur ESLint / Prettier avant de continuer.
 
 - [ ] **Vérifier que le serveur démarre sans erreur**
+
   ```bash
   npm run dev
   ```
+
   Regarder la console : aucune erreur d'import, aucun crash.
 
 - [ ] **Commit final si des corrections lint ont été nécessaires**
@@ -860,46 +960,47 @@
 
 ### 🐛 Bug 1 — Clavier mobile
 
-| Action | Résultat attendu |
-|---|---|
-| Ouvrir `/game` sur mobile (Android Samsung ou autre) | Page charge normalement |
-| Rejoindre une room, attendre le début d'une manche | L'input est focusé automatiquement |
-| Taper un artiste → appuyer Entrée | Le clavier **reste ouvert** sans fermer/rouvrir |
-| Taper un titre → appuyer Entrée | Idem |
-| Valider via le bouton → | L'input reste focusé, clavier stable |
+| Action                                               | Résultat attendu                                |
+| ---------------------------------------------------- | ----------------------------------------------- |
+| Ouvrir `/game` sur mobile (Android Samsung ou autre) | Page charge normalement                         |
+| Rejoindre une room, attendre le début d'une manche   | L'input est focusé automatiquement              |
+| Taper un artiste → appuyer Entrée                    | Le clavier **reste ouvert** sans fermer/rouvrir |
+| Taper un titre → appuyer Entrée                      | Idem                                            |
+| Valider via le bouton →                              | L'input reste focusé, clavier stable            |
 
 ### 🐛 Bug 2 — Son absent
 
-| Action | Résultat attendu |
-|---|---|
-| Jouer plusieurs parties d'affilée (3+) | Son présent sur chaque manche |
+| Action                                          | Résultat attendu                       |
+| ----------------------------------------------- | -------------------------------------- |
+| Jouer plusieurs parties d'affilée (3+)          | Son présent sur chaque manche          |
 | Jouer avec connexion lente (3G simulé DevTools) | Son toujours présent au démarrage sync |
 
 ### 🐛 Bug 3 — Rooms pour non-connectés
 
-| Action | Résultat attendu |
-|---|---|
-| Aller sur `/rooms` sans être connecté | La liste des rooms publiques s'affiche directement |
-| Vérifier le header | Onglet "Mes rooms" absent, bouton "+ Créer" absent |
-| Vérifier les filtres et la recherche | Fonctionnels sans connexion |
-| Cliquer "Rejoindre" sur une room | Redirige vers `/game?roomId=...` (le jeu gère le guest) |
-| Se connecter puis revenir sur `/rooms` | Les onglets "Mes rooms" et "+ Créer" réapparaissent |
+| Action                                 | Résultat attendu                                        |
+| -------------------------------------- | ------------------------------------------------------- |
+| Aller sur `/rooms` sans être connecté  | La liste des rooms publiques s'affiche directement      |
+| Vérifier le header                     | Onglet "Mes rooms" absent, bouton "+ Créer" absent      |
+| Vérifier les filtres et la recherche   | Fonctionnels sans connexion                             |
+| Cliquer "Rejoindre" sur une room       | Redirige vers `/game?roomId=...` (le jeu gère le guest) |
+| Se connecter puis revenir sur `/rooms` | Les onglets "Mes rooms" et "+ Créer" réapparaissent     |
 
 ### ✨ Enrichissement — Playlists utilisateur
 
-| Action | Résultat attendu |
-|---|---|
-| Ouvrir une playlist dans l'éditeur | Bouton "✨ Auto-enrichir" visible dans le header |
-| Cliquer "✨ Auto-enrichir" | Modale s'ouvre, progression démarre |
-| Pendant l'enrichissement | Barre de progression avance, logs apparaissent en temps réel |
-| Track enrichi via MB | Log affiche `✅ Artiste — Titre (feat: X ajouté)` |
-| Track nettoyé seulement | Log affiche `✅ Artiste — Titre (titre nettoyé)` |
-| Track inchangé | Log affiche `— Artiste — Titre` |
-| Bouton "Fermer" | Disabled pendant l'enrichissement, actif à la fin |
-| Après fermeture | La liste des tracks est rechargée (vérifier les custom_* en BDD) |
-| Playlist vide (0 tracks) | Modale s'ouvre et se ferme immédiatement avec "Terminé" |
+| Action                             | Résultat attendu                                                   |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| Ouvrir une playlist dans l'éditeur | Bouton "✨ Auto-enrichir" visible dans le header                   |
+| Cliquer "✨ Auto-enrichir"         | Modale s'ouvre, progression démarre                                |
+| Pendant l'enrichissement           | Barre de progression avance, logs apparaissent en temps réel       |
+| Track enrichi via MB               | Log affiche `✅ Artiste — Titre (feat: X ajouté)`                  |
+| Track nettoyé seulement            | Log affiche `✅ Artiste — Titre (titre nettoyé)`                   |
+| Track inchangé                     | Log affiche `— Artiste — Titre`                                    |
+| Bouton "Fermer"                    | Disabled pendant l'enrichissement, actif à la fin                  |
+| Après fermeture                    | La liste des tracks est rechargée (vérifier les custom\_\* en BDD) |
+| Playlist vide (0 tracks)           | Modale s'ouvre et se ferme immédiatement avec "Terminé"            |
 
 **Tests cas limites :**
+
 - Track avec `(Remaster 2021)` dans le titre → titre propre en BDD après enrichissement
 - Track `Jay-Z feat. Linkin Park` → `custom_feats: ["Linkin Park"]` si MusicBrainz le trouve
 - Track sans cover → cover ajoutée depuis Deezer si trouvée
@@ -907,16 +1008,16 @@
 
 ### ✨ Enrichissement — Admin
 
-| Action | Résultat attendu |
-|---|---|
-| Aller sur `/admin/playlists/[id]` | Bouton "✨ Auto-enrichir" visible |
-| Cliquer le bouton | Même comportement que côté user |
-| Un utilisateur non-admin appelle `/api/admin/playlists/[id]/enrich` | Réponse 403 |
+| Action                                                              | Résultat attendu                  |
+| ------------------------------------------------------------------- | --------------------------------- |
+| Aller sur `/admin/playlists/[id]`                                   | Bouton "✨ Auto-enrichir" visible |
+| Cliquer le bouton                                                   | Même comportement que côté user   |
+| Un utilisateur non-admin appelle `/api/admin/playlists/[id]/enrich` | Réponse 403                       |
 
 ### 🔒 Sécurité
 
-| Action | Résultat attendu |
-|---|---|
-| Appeler `POST /api/playlists/[id]/enrich` sans token | Réponse 401 |
-| Appeler avec token d'un autre utilisateur sur une playlist qui ne lui appartient pas | Réponse 403 |
-| Appeler l'endpoint admin sans être super_admin | Réponse 403 |
+| Action                                                                               | Résultat attendu |
+| ------------------------------------------------------------------------------------ | ---------------- |
+| Appeler `POST /api/playlists/[id]/enrich` sans token                                 | Réponse 401      |
+| Appeler avec token d'un autre utilisateur sur une playlist qui ne lui appartient pas | Réponse 403      |
+| Appeler l'endpoint admin sans être super_admin                                       | Réponse 403      |
