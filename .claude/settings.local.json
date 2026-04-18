@@ -26,7 +26,15 @@
       "mcp__claude_ai_Supabase__get_logs",
       "Bash(bash:*)",
       "Bash(wc:*)",
-      "Bash(C:/Users/Teamr/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh:*)"
+      "Bash(C:/Users/Teamr/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh:*)",
+      "Bash(grep -l \"home\\\\.css\\\\|rooms\\\\.css\\\\|playlists\\\\.css\\\\|profile\\\\.css\\\\|settings\\\\.css\\\\|legal\\\\.css\" src/routes/**/*.svelte src/routes/**/**/*.svelte)",
+      "Bash(git merge feat/visual-refactor --no-ff -m ':*)",
+      "Bash(find src/routes -name \"+layout.svelte\" -path \"*admin*\" -exec npx prettier --write {} \\\\;)",
+      "Bash(grep -v \"^$\")",
+      "Bash(mkdir -p \"C:/Users/Teamr/Desktop/ZIK/src/routes/\\(site\\)/api/playlists/[id]/enrich\")",
+      "Bash(mkdir -p \"C:/Users/Teamr/Desktop/ZIK/src/routes/\\(site\\)/api/admin/playlists/[id]/enrich\")",
+      "Bash(sed -i 's/\"version\": \"2.0.1\"/\"version\": \"2.1.0\"/' package.json)",
+      "Bash(sed -i 's/v2\\\\.0\\\\.1/v2.1.0/' src/routes/\\\\\\(site\\\\\\)/+layout.svelte)"
     ]
   }
 }
