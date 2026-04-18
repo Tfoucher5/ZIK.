@@ -78,6 +78,7 @@
               if (e.data === 1 /* PLAYING */) {
                 if ('mediaSession' in navigator) {
                   navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
+                  navigator.mediaSession.playbackState = 'playing';
                 }
                 onMusicReady?.();
               }
