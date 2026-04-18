@@ -341,10 +341,12 @@
       summaryReason = data.reason;
       summaryFinder = data.totalFound > 0 ? `\u{1F3C6} 1er : ${data.firstFinder} \u2014 ${data.totalFound} joueur(s) ont tout trouv\u00e9` : '\u274C Personne n\u2019a trouv\u00e9';
       _roundActive = false; _waitingForSync = false; syncWaiting = false; guessDisabled = true; stopVideo(); timerPct = 0;
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
       history = [data, ...history];
     });
     socket.on('game_over', scores => {
       _roundActive = false; stopVideo();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
       guessDisabled = true; timerPct = 0; summaryShow = false;
       gameoverScores = scores;
       gameoverShow   = true;
@@ -421,8 +423,10 @@
               ytPlayer.setVolume(savedVol());
               ytPlayer.unMute();
               // Masquer le titre réel dans les contrôles système (iOS/Android)
+              // playbackState='playing' rend la session du parent frame "active" → priorité sur l'iframe YT
               if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
+                navigator.mediaSession.playbackState = 'playing';
               }
               if (_waitingForSync && socket) {
                 socket.emit('player_ready');
