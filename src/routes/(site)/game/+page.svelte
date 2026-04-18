@@ -83,6 +83,7 @@
   let _waitingForSync = false;
   let _syncPaused    = false;
   let _adminPaused   = false;
+  let _usingPreview  = false;
 
   // Chat
   let chatOpen     = $state(false);
@@ -288,8 +289,12 @@
       syncReady = 0; syncTotal = 0;
       _lastVideo = { videoId: data.videoId, startSeconds: data.startSeconds, startedAt: Date.now() };
       if (data.previewUrl) {
+        _usingPreview = true;
         loadPreview(data.previewUrl);
+        // Pas de sync YouTube — on émet player_ready immédiatement
+        if (socket) socket.emit('player_ready');
       } else {
+        _usingPreview = false;
         loadVideo(data.videoId, data.startSeconds);
       }
     });
@@ -298,9 +303,11 @@
       syncWaiting = false;
       guessDisabled = false;
       _syncPaused = false;
-      if (ytPlayer?.unMute) ytPlayer.unMute();
-      if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
-      if (ytPlayer?.playVideo) ytPlayer.playVideo();
+      if (!_usingPreview) {
+        if (ytPlayer?.unMute) ytPlayer.unMute();
+        if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
+        if (ytPlayer?.playVideo) ytPlayer.playVideo();
+      }
       tick().then(() => document.getElementById('guessInput')?.focus());
     });
     socket.on('ready_update', ({ ready, total }) => {
