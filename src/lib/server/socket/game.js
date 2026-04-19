@@ -12,6 +12,27 @@ import {
   buildTrack,
   calcSpeedBonus,
 } from "../services/playlist.js";
+import ytDlp from "yt-dlp-exec";
+import { ytdlAudioCache } from "../ytdlCache.js";
+
+const YTDL_TTL = 2 * 60 * 60 * 1000;
+
+async function getYtAudioUrl(videoId) {
+  const cached = ytdlAudioCache.get(videoId);
+  if (cached && Date.now() - cached.fetchedAt < YTDL_TTL) return cached;
+  const info = await ytDlp(`https://www.youtube.com/watch?v=${videoId}`, {
+    format: "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio",
+    dumpSingleJson: true,
+    noPlaylist: true,
+  });
+  const entry = {
+    url: info.url,
+    mimeType: `audio/${info.ext || "webm"}`,
+    fetchedAt: Date.now(),
+  };
+  ytdlAudioCache.set(videoId, entry);
+  return entry;
+}
 
 const DEFAULT_ROUND_DURATION = 30;
 const DEFAULT_BREAK_DURATION = 7;
@@ -251,9 +272,10 @@ async function startNextRound(roomId, io) {
   game.currentTrack = game.sessionPlaylist.pop();
 
   try {
-    const r = await yts(
-      `${game.currentTrack.mainArtist || game.currentTrack.artist} ${game.currentTrack.title} topic`,
-    );
+    const track = game.currentTrack;
+    const artist = track.mainArtist || track.artist;
+
+    const r = await yts(`${artist} ${track.title} topic`);
     if (!r.videos?.length) throw new Error("No video");
 
     const video = r.videos[0];
@@ -264,14 +286,22 @@ async function startNextRound(roomId, io) {
       ),
     );
 
+    // Extraction audio yt-dlp — chansons complètes, timestamp aléatoire, sans iframe YouTube
+    const ytAudio = await getYtAudioUrl(video.videoId).catch((err) => {
+      console.warn(`[ytdl] échec pour ${video.videoId}:`, err?.message || err);
+      return null;
+    });
+    if (ytAudio) ytdlAudioCache.set(video.videoId, ytAudio); // s'assurer que l'API proxy peut le lire
+
     game.lastRoundData = {
       videoId: video.videoId,
       startSeconds: safeStart,
       round: game.currentRound,
       total: game.maxRounds,
-      featCount: game.currentTrack.featArtists.length,
-      extraLabels: (game.currentTrack.extraAnswers || []).map((e) => e.label),
-      previewUrl: game.currentTrack.preview_url || null,
+      featCount: track.featArtists.length,
+      extraLabels: (track.extraAnswers || []).map((e) => e.label),
+      audioUrl: ytAudio ? `/api/game/audio?v=${video.videoId}` : null,
+      previewUrl: track.preview_url || null,
     };
 
     // Si l'admin a mis en pause pendant le fetch YTS, on abandonne
