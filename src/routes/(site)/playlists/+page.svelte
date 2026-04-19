@@ -136,6 +136,13 @@
   let rcOpen = $state(false);
   let rcCode = $state('');
 
+  // Enrichissement
+  let enrichOpen    = $state(false);
+  let enrichDone    = $state(false);
+  let enrichTotal   = $state(0);
+  let enrichCurrent = $state(0);
+  let enrichLogs    = $state([]);
+
   let toastMsg  = $state('');
   let toastType = $state('');
   let _tt = null;
@@ -504,6 +511,52 @@
     rsSaving = false;
   }
 
+  async function enrichPlaylist() {
+    enrichOpen = true;
+    enrichDone = false;
+    enrichTotal = 0;
+    enrichCurrent = 0;
+    enrichLogs = [];
+    let session;
+    try { session = await ensureSession(); } catch (e) { toast(e.message, 'error'); enrichOpen = false; return; }
+
+    try {
+      const response = await fetch(`/api/playlists/${editorPl.id}/enrich`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+        for (const part of parts) {
+          if (!part.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(part.slice(6));
+            if (evt.status === 'done') {
+              enrichDone = true;
+            } else {
+              enrichCurrent = evt.current;
+              enrichTotal = evt.total;
+              enrichLogs = [...enrichLogs, evt];
+            }
+          } catch { /* JSON parse error ignoré */ }
+        }
+      }
+    } catch (e) {
+      toast('Erreur enrichissement : ' + e.message, 'error');
+      enrichOpen = false;
+    }
+  }
+
   function joinRoomNow() {
     const username = user?.profile?.username || user?.email?.split('@')[0] || 'Joueur';
     const uid      = user?.id || '';
@@ -621,6 +674,7 @@
       </div>
       <div class="editor-header-actions">
         <button class="btn-ghost sm" onclick={() => openPlModal(editorPl)}>Modifier</button>
+        <button class="btn-enrich sm" onclick={enrichPlaylist} title="Enrichir automatiquement les tracks via MusicBrainz + Deezer">✨ Auto-enrichir</button>
         <button class="btn-accent sm" onclick={openRoomSettings}>Lancer une room &rarr;</button>
         <button class="btn-danger sm" onclick={deletePl}>Supprimer</button>
       </div>
@@ -915,6 +969,52 @@
       <button class="btn-ghost" onclick={() => answersModalOpen = false}>Annuler</button>
       <button class="btn-accent" onclick={saveAnswers} disabled={answersSaving}>
         {answersSaving ? 'Enregistrement…' : 'Enregistrer'}
+      </button>
+    </div>
+  </div>
+</div>
+{/if}
+
+<!-- Modale enrichissement -->
+{#if enrichOpen}
+<!-- svelte-ignore a11y_interactive_supports_focus -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="overlay" role="dialog" aria-modal="true">
+  <div class="modal modal-lg">
+    <h2>✨ Auto-enrichissement</h2>
+    <p class="mdesc">
+      {#if !enrichDone && enrichTotal === 0}
+        Démarrage&hellip;
+      {:else if !enrichDone}
+        {enrichCurrent} / {enrichTotal} tracks traités&hellip;
+      {:else}
+        Terminé ! {enrichLogs.filter(l => l.status === 'enriched').length} tracks enrichis.
+      {/if}
+    </p>
+
+    {#if enrichTotal > 0}
+      <div class="enrich-progress-bar">
+        <div class="enrich-progress-fill" style="width:{enrichTotal ? (enrichCurrent / enrichTotal * 100) : 0}%"></div>
+      </div>
+    {/if}
+
+    <div class="enrich-log">
+      {#each enrichLogs as log (log.current)}
+        <div class="enrich-log-row enrich-{log.status}">
+          <span class="enrich-icon">
+            {#if log.status === 'enriched'}✅{:else if log.status === 'error'}❌{:else}&mdash;{/if}
+          </span>
+          <span class="enrich-track">{log.track}</span>
+          {#if log.changes?.length}
+            <span class="enrich-changes">{log.changes.join(' · ')}</span>
+          {/if}
+        </div>
+      {/each}
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-accent" disabled={!enrichDone} onclick={() => { enrichOpen = false; loadEditorTracks(); }}>
+        {enrichDone ? 'Fermer' : 'En cours&hellip;'}
       </button>
     </div>
   </div>
@@ -1807,6 +1907,56 @@
   font-size: 0.83rem;
   flex: 1;
 }
+
+/* ── Enrichissement ─────────────────────────────────────────────────────────── */
+.btn-enrich {
+  background: rgb(var(--accent-rgb) / 0.08);
+  border: 1px solid rgb(var(--accent-rgb) / 0.25);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-enrich:hover { background: rgb(var(--accent-rgb) / 0.16); }
+
+.enrich-progress-bar {
+  height: 4px;
+  background: rgb(var(--c-glass) / 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.enrich-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.enrich-log {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+}
+.enrich-log-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgb(var(--c-glass) / 0.02);
+}
+.enrich-icon { flex-shrink: 0; font-size: 0.85rem; }
+.enrich-track { font-weight: 500; flex-shrink: 0; }
+.enrich-changes { color: var(--mid); font-size: 0.72rem; }
+.enrich-error .enrich-track { color: var(--danger); }
 
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {

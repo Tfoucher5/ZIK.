@@ -808,6 +808,32 @@ img {
 .field input::placeholder {
   color: var(--dim);
 }
+.pwd-wrap {
+  position: relative;
+}
+.pwd-wrap input {
+  padding-right: 42px;
+}
+.pwd-eye {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.pwd-eye:hover {
+  opacity: 1;
+}
+
 .alert-err {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.2);
