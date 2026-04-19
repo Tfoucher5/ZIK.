@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 function getAssetName() {
   if (process.platform === 'win32') return 'yt-dlp.exe';
@@ -17,7 +17,7 @@ const binDir = join(process.cwd(), 'bin');
 const binPath = join(binDir, binName);
 
 if (existsSync(binPath)) {
-  console.log('[yt-dlp] already present:', binPath);
+  console.log("[yt-dlp] already present:", binPath);
   process.exit(0);
 }
 
@@ -30,10 +30,10 @@ const [{ assets }] = await res.json();
 const asset = assets.find(a => a.name === assetName);
 if (!asset) throw new Error(`No release asset for ${assetName}`);
 
-console.log('[yt-dlp] downloading', asset.browser_download_url);
+console.log("[yt-dlp] downloading", asset.browser_download_url);
 const dl = await fetch(asset.browser_download_url);
 if (!dl.ok) throw new Error(`Download failed: ${dl.status}`);
 
 mkdirSync(binDir, { recursive: true });
 writeFileSync(binPath, Buffer.from(await dl.arrayBuffer()), { mode: 0o755 });
-console.log('[yt-dlp] installed at', binPath);
+console.log("[yt-dlp] installed at", binPath);
