@@ -92,7 +92,6 @@
         clearInterval(check);
         ytPlayer = new window.YT.Player('salon-yt-player', {
           height: '100%', width: '100%', videoId,
-          host: 'https://www.youtube-nocookie.com',
           playerVars: { autoplay: 1, controls: 1, enablejsapi: 1, start: startSeconds, rel: 0, modestbranding: 1 },
           events: {
             onReady: (e) => e.target.playVideo(),
