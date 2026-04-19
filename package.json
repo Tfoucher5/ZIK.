@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "node scripts/ensure-ytdlp.mjs && vite build",
     "start": "node server.js",
     "preview": "vite preview",
     "lint": "eslint . && prettier --check ."
@@ -22,7 +22,6 @@
     "socket.io-client": "^4.8.3",
     "string-similarity": "^4.0.4",
     "svelte": "^5.53.7",
-    "yt-dlp-exec": "^1.0.2",
     "yt-search": "^2.10.4"
   },
   "devDependencies": {

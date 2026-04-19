@@ -12,19 +12,33 @@ import {
   buildTrack,
   calcSpeedBonus,
 } from "../services/playlist.js";
-import ytDlp from "yt-dlp-exec";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { join } from "path";
 import { ytdlAudioCache } from "../ytdlCache.js";
 
+const execFileAsync = promisify(execFile);
+const YTDLP_BIN =
+  process.env.YOUTUBE_DL_PATH ||
+  join(
+    process.cwd(),
+    "bin",
+    process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp",
+  );
 const YTDL_TTL = 2 * 60 * 60 * 1000;
 
 async function getYtAudioUrl(videoId) {
   const cached = ytdlAudioCache.get(videoId);
   if (cached && Date.now() - cached.fetchedAt < YTDL_TTL) return cached;
-  const info = await ytDlp(`https://www.youtube.com/watch?v=${videoId}`, {
-    format: "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio",
-    dumpSingleJson: true,
-    noPlaylist: true,
-  });
+  const { stdout } = await execFileAsync(YTDLP_BIN, [
+    `https://www.youtube.com/watch?v=${videoId}`,
+    "--format",
+    "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio",
+    "-j",
+    "--no-playlist",
+    "--no-warnings",
+  ]);
+  const info = JSON.parse(stdout);
   const entry = {
     url: info.url,
     mimeType: `audio/${info.ext || "webm"}`,
