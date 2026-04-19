@@ -20,6 +20,7 @@ Retours terrain (entreprise SIB) : clavier mobile instable, son absent intermitt
 **Fix :** Remplacer les deux `setTimeout(() => el.focus(), 50)` par `tick().then(() => el.focus())`.
 
 Lignes concernées :
+
 - `submitGuess()` : ligne 203
 - Handler `round_start_sync` : ligne 302
 
@@ -42,6 +43,7 @@ Lignes concernées :
 **Problème :** Le bloc `{:else if !user}` (ligne 250) affiche un auth-wall qui bloque la totalité du contenu pour les visiteurs non connectés.
 
 **Fix :** Supprimer le `{:else if !user}` auth-wall. Le contenu rooms est visible directement. Masquer conditionnellement avec `{#if user}` :
+
 - Le bouton "+ Créer une room"
 - L'onglet "Mes rooms"
 
@@ -68,6 +70,7 @@ enrichTrack(rawTrack) → EnrichedTrack
 #### Étape 1 — String parsing
 
 Strips appliqués au **titre** (regex, case-insensitive) :
+
 - `(Remaster ...)` / `(Remastered ...)` / `- XXXX Remaster`
 - `[Live ...]` / `(Live ...)`
 - `(Radio Edit)` / `(Single Edit)` / `(Album Version)`
@@ -109,13 +112,13 @@ GET https://api.deezer.com/search?q=artist:"{main}" track:"{title}"&limit=3
 
 #### Étape 4 — Scoring et merge
 
-| Champ | Source prioritaire | Fallback |
-|---|---|---|
-| `custom_title` | MusicBrainz (score ≥ 85) | string parse |
-| `custom_artist` | MusicBrainz artist-credit[0] | string parse |
-| `custom_feats` | MusicBrainz artist-credit[1+] | string parse (merged) |
-| `cover_url` | Deezer (si absente ou par défaut) | existant en BDD |
-| `preview_url` | existant en BDD | Deezer search |
+| Champ           | Source prioritaire                | Fallback              |
+| --------------- | --------------------------------- | --------------------- |
+| `custom_title`  | MusicBrainz (score ≥ 85)          | string parse          |
+| `custom_artist` | MusicBrainz artist-credit[0]      | string parse          |
+| `custom_feats`  | MusicBrainz artist-credit[1+]     | string parse (merged) |
+| `cover_url`     | Deezer (si absente ou par défaut) | existant en BDD       |
+| `preview_url`   | existant en BDD                   | Deezer search         |
 
 **Les colonnes `artist` et `title` brutes ne sont jamais modifiées** (traçabilité).  
 `buildTrack()` dans `playlist.js` utilise déjà `custom_*` en priorité — aucune modification du runtime.
@@ -135,6 +138,7 @@ Authorization: Bearer {token}
 - Réponse : `ReadableStream` (Content-Type: `text/event-stream`)
 
 Format des events SSE :
+
 ```
 data: {"current":5,"total":50,"track":"Jay-Z — Numb/Encore","status":"enriched","changes":["feat: Linkin Park ajouté"]}\n\n
 data: {"current":6,"total":50,"track":"Queen — Bohemian Rhapsody","status":"cleaned","changes":["titre: suppression '(2011 Remaster)'"]}\n\n
@@ -158,6 +162,7 @@ Body: { playlistId }
 Dans `editor-header-actions`, nouveau bouton **"✨ Auto-enrichir"** à côté de "Lancer une room".
 
 Au clic :
+
 1. Ouvre une modale de progression (overlay au-dessus de l'éditeur)
 2. Démarre `fetch('/api/playlists/{id}/enrich', { method: 'POST' })` et lit le stream
 3. Affiche une barre de progression + log scrollable en temps réel :
@@ -175,15 +180,15 @@ Au clic :
 
 ## 5. Fichiers modifiés / créés
 
-| Fichier | Action |
-|---|---|
-| `src/routes/(site)/game/+page.svelte` | Fix tick() focus + unMute() sécurité |
-| `src/routes/(site)/rooms/+page.svelte` | Retrait auth-wall non-connectés |
-| `src/lib/server/services/trackEnricher.js` | **Nouveau** — pipeline complet |
-| `src/routes/(site)/api/playlists/[id]/enrich/+server.js` | **Nouveau** — endpoint SSE user |
-| `src/routes/(admin)/api/enrich-playlist/+server.js` | **Nouveau** — endpoint SSE admin |
-| `src/routes/(site)/playlists/+page.svelte` | Bouton + modale progression |
-| `src/routes/(admin)/admin/playlists/[id]/+page.svelte` | Bouton enrichissement admin |
+| Fichier                                                  | Action                               |
+| -------------------------------------------------------- | ------------------------------------ |
+| `src/routes/(site)/game/+page.svelte`                    | Fix tick() focus + unMute() sécurité |
+| `src/routes/(site)/rooms/+page.svelte`                   | Retrait auth-wall non-connectés      |
+| `src/lib/server/services/trackEnricher.js`               | **Nouveau** — pipeline complet       |
+| `src/routes/(site)/api/playlists/[id]/enrich/+server.js` | **Nouveau** — endpoint SSE user      |
+| `src/routes/(admin)/api/enrich-playlist/+server.js`      | **Nouveau** — endpoint SSE admin     |
+| `src/routes/(site)/playlists/+page.svelte`               | Bouton + modale progression          |
+| `src/routes/(admin)/admin/playlists/[id]/+page.svelte`   | Bouton enrichissement admin          |
 
 **Aucune migration BDD** — colonnes `custom_artist`, `custom_title`, `custom_feats` déjà présentes.
 
