@@ -287,7 +287,10 @@ async function startNextRound(roomId, io) {
     );
 
     // Extraction audio ytdl — chansons complètes, timestamp aléatoire, sans iframe YouTube
-    const ytAudio = await getYtAudioUrl(video.videoId).catch(() => null);
+    const ytAudio = await getYtAudioUrl(video.videoId).catch((err) => {
+      console.warn(`[ytdl] échec pour ${video.videoId}:`, err?.message || err);
+      return null;
+    });
     if (ytAudio) ytdlAudioCache.set(video.videoId, ytAudio); // s'assurer que l'API proxy peut le lire
 
     game.lastRoundData = {
