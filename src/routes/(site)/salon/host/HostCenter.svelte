@@ -51,6 +51,27 @@
   let ytReady = false;
   let ytPlayer;
   let currentStartSecs = 0;
+  let _metaGuardInterval = null;
+
+  const _FAKE_META = { title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test', artwork: [{ src: '/favicon/web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png' }] };
+
+  function startMediaGuard() {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata(_FAKE_META);
+    navigator.mediaSession.playbackState = 'playing';
+    clearInterval(_metaGuardInterval);
+    _metaGuardInterval = setInterval(() => {
+      if (!('mediaSession' in navigator)) return;
+      navigator.mediaSession.metadata = new MediaMetadata(_FAKE_META);
+      navigator.mediaSession.playbackState = 'playing';
+    }, 500);
+  }
+
+  function stopMediaGuard() {
+    clearInterval(_metaGuardInterval);
+    _metaGuardInterval = null;
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+  }
 
   function initYT() {
     if (window.YT?.Player) { ytReady = true; return; }
@@ -76,11 +97,11 @@
             onReady: (e) => e.target.playVideo(),
             onStateChange: (e) => {
               if (e.data === 1 /* PLAYING */) {
-                if ('mediaSession' in navigator) {
-                  navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
-                  navigator.mediaSession.playbackState = 'playing';
-                }
+                startMediaGuard();
                 onMusicReady?.();
+              }
+              if (e.data === 0 /* ENDED */ || e.data === 2 /* PAUSED */) {
+                stopMediaGuard();
               }
             },
           },
@@ -101,7 +122,7 @@
   }
 
   onMount(initYT);
-  onDestroy(() => { if (ytPlayer?.destroy) ytPlayer.destroy(); _revealTimers.forEach(clearTimeout); });
+  onDestroy(() => { if (ytPlayer?.destroy) ytPlayer.destroy(); stopMediaGuard(); _revealTimers.forEach(clearTimeout); });
 </script>
 
 <div class="salon-host-center" class:phase-summary={phase === 'summary' || phase === 'gameover'}>

@@ -84,6 +84,7 @@
   let _syncPaused    = false;
   let _adminPaused   = false;
   let _usingPreview  = false;
+  let _metaGuardInterval = null;
 
   // Chat
   let chatOpen     = $state(false);
@@ -109,10 +110,24 @@
     ytPlayer.mute();
     ytPlayer.loadVideoById({ videoId, startSeconds });
   }
+  const _FAKE_META = { title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test', artwork: [{ src: '/favicon/web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png' }] };
+
   function setFakeMediaSession() {
     if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
+    navigator.mediaSession.metadata = new MediaMetadata(_FAKE_META);
     navigator.mediaSession.playbackState = 'playing';
+  }
+
+  function startMediaGuard() {
+    setFakeMediaSession();
+    clearInterval(_metaGuardInterval);
+    _metaGuardInterval = setInterval(setFakeMediaSession, 500);
+  }
+
+  function stopMediaGuard() {
+    clearInterval(_metaGuardInterval);
+    _metaGuardInterval = null;
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
   function loadPreview(previewUrl) {
@@ -121,19 +136,15 @@
     if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
     audio.pause();
     audio.onloadedmetadata = null;
-    // Écraser les métadonnées avant que Chrome ne lise les tags ID3 du MP3
-    setFakeMediaSession();
+    startMediaGuard();
     audio.src = previewUrl;
     audio.volume = savedVol() / 100;
     audio.onloadedmetadata = () => {
       const maxSeek = Math.max(0, Math.min((audio.duration || 30) - 10, 20));
       audio.currentTime = Math.random() * maxSeek;
-      audio.play().then(() => {
-        // Réaffirmer après play() car Chrome peut réécrire depuis les tags ID3
-        setFakeMediaSession();
-      }).catch(() => {
+      audio.play().catch(() => {
         const resume = () => {
-          audio.play().then(() => setFakeMediaSession()).catch(() => {});
+          audio.play().catch(() => {});
           document.removeEventListener('pointerdown', resume, true);
           document.removeEventListener('keydown',     resume, true);
         };
@@ -358,12 +369,12 @@
       summaryReason = data.reason;
       summaryFinder = data.totalFound > 0 ? `\u{1F3C6} 1er : ${data.firstFinder} \u2014 ${data.totalFound} joueur(s) ont tout trouv\u00e9` : '\u274C Personne n\u2019a trouv\u00e9';
       _roundActive = false; _waitingForSync = false; syncWaiting = false; guessDisabled = true; stopVideo(); timerPct = 0;
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+      stopMediaGuard();
       history = [data, ...history];
     });
     socket.on('game_over', scores => {
       _roundActive = false; stopVideo();
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
+      stopMediaGuard();
       guessDisabled = true; timerPct = 0; summaryShow = false;
       gameoverScores = scores;
       gameoverShow   = true;
@@ -439,9 +450,7 @@
             if (e.data === window.YT.PlayerState.PLAYING) {
               ytPlayer.setVolume(savedVol());
               ytPlayer.unMute();
-              // Masquer le titre réel dans les contrôles système (iOS/Android)
-              // playbackState='playing' rend la session du parent frame "active" → priorité sur l'iframe YT
-              setFakeMediaSession();
+              startMediaGuard();
               if (_waitingForSync && socket) {
                 socket.emit('player_ready');
                 _syncPaused = true;
@@ -467,6 +476,7 @@
 
   onDestroy(() => {
     if (socket) socket.disconnect();
+    stopMediaGuard();
     clearTimeout(feedTimer);
     clearInterval(countdownInterval);
     _revealTimers.forEach(clearTimeout);
