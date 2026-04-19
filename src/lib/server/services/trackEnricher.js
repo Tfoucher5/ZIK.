@@ -6,11 +6,21 @@ const MB_DELAY_MS = 1100;
 
 // ─── Patterns de bruit à supprimer du titre ───────────────────────────────────
 
-// Supprime tout tiret + suffixe en fin de titre (ex: "- Remaster", "- Club Mix")
-const DASH_SUFFIX_RE = /\s+-\s+.+$/i;
+const NOISE_RES = [
+  /\s*[([]\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+[^)\]]+)?[)\]]\s*/gi,
+  /\s*-\s*(?:\d{4}\s+)?remaster(?:ed)?\s*$/gi,
+  /\s*[([]\s*live(?:\s+[^)\]]+)?[)\]]\s*/gi,
+  /\s*[([]\s*(?:radio|single|album)\s+edit[)\]]\s*/gi,
+  /\s*[([]\s*(?:acoustic|instrumental|extended|demo|karaoke)(?:\s+[^)\]]*)?[)\]]\s*/gi,
+  /\s*[([]\s*official\s+(?:video|audio|music\s+video)[)\]]\s*/gi,
+  /\s*[([]\s*(?:original|club)\s+mix[)\]]\s*/gi,
+  /\s*[([]\s*deluxe(?:\s+[^)\]]+)?[)\]]\s*/gi,
+  /\s*[([]\s*\d{4}\s*[)\]]\s*/g,
+  /\s*[([]\s*[)\]]\s*/g,
+];
 
 const FEAT_IN_TITLE_RE =
-  /\s*[([]\s*(?:feat\.?|ft\.?|featuring|with|avec)\s+([^)[\]]+)[)\]]\s*/i;
+  /\s*[([]\s*(?:feat\.?|ft\.?|featuring|with|avec)\s+([^)\]]+)[)\]]\s*/i;
 
 // ─── Parse un titre brut → titre propre + feats extraits ─────────────────────
 
@@ -29,12 +39,9 @@ export function parseTitle(rawTitle) {
     title = title.replace(FEAT_IN_TITLE_RE, "");
   }
 
-  // 2. Supprimer tout ce qui reste entre parenthèses ou crochets
-  title = title.replace(/\s*[([][^)[\]]*[)\]]\s*/g, " ");
-
-  // 3. Supprimer les suffixes après tiret (- Remaster, - Club Mix, etc.)
-  title = title.replace(DASH_SUFFIX_RE, "");
-
+  for (const re of NOISE_RES) {
+    title = title.replace(re, " ");
+  }
   title = title.replace(/\s+/g, " ").trim();
   return { title, feats };
 }

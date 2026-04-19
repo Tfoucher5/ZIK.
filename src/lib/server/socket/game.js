@@ -271,7 +271,7 @@ async function startNextRound(roomId, io) {
       total: game.maxRounds,
       featCount: game.currentTrack.featArtists.length,
       extraLabels: (game.currentTrack.extraAnswers || []).map((e) => e.label),
-      previewUrl: null,
+      previewUrl: game.currentTrack.preview_url || null,
     };
 
     // Si l'admin a mis en pause pendant le fetch YTS, on abandonne

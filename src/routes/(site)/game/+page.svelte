@@ -83,6 +83,7 @@
   let _waitingForSync = false;
   let _syncPaused    = false;
   let _adminPaused   = false;
+  let _usingPreview  = false;
 
   // Chat
   let chatOpen     = $state(false);
@@ -108,21 +109,31 @@
     ytPlayer.mute();
     ytPlayer.loadVideoById({ videoId, startSeconds });
   }
+  function setFakeMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
+    navigator.mediaSession.playbackState = 'playing';
+  }
+
   function loadPreview(previewUrl) {
     const audio = document.getElementById('previewAudio');
     if (!audio) return;
     if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
     audio.pause();
     audio.onloadedmetadata = null;
+    // Écraser les métadonnées avant que Chrome ne lise les tags ID3 du MP3
+    setFakeMediaSession();
     audio.src = previewUrl;
     audio.volume = savedVol() / 100;
     audio.onloadedmetadata = () => {
       const maxSeek = Math.max(0, Math.min((audio.duration || 30) - 10, 20));
       audio.currentTime = Math.random() * maxSeek;
-      audio.play().catch(() => {
-        // Autoplay blocked (focus on input, etc.) → retry on next user gesture
+      audio.play().then(() => {
+        // Réaffirmer après play() car Chrome peut réécrire depuis les tags ID3
+        setFakeMediaSession();
+      }).catch(() => {
         const resume = () => {
-          audio.play().catch(() => {});
+          audio.play().then(() => setFakeMediaSession()).catch(() => {});
           document.removeEventListener('pointerdown', resume, true);
           document.removeEventListener('keydown',     resume, true);
         };
@@ -288,8 +299,12 @@
       syncReady = 0; syncTotal = 0;
       _lastVideo = { videoId: data.videoId, startSeconds: data.startSeconds, startedAt: Date.now() };
       if (data.previewUrl) {
+        _usingPreview = true;
         loadPreview(data.previewUrl);
+        // Pas de sync YouTube — on émet player_ready immédiatement
+        if (socket) socket.emit('player_ready');
       } else {
+        _usingPreview = false;
         loadVideo(data.videoId, data.startSeconds);
       }
     });
@@ -298,9 +313,11 @@
       syncWaiting = false;
       guessDisabled = false;
       _syncPaused = false;
-      if (ytPlayer?.unMute) ytPlayer.unMute();
-      if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
-      if (ytPlayer?.playVideo) ytPlayer.playVideo();
+      if (!_usingPreview) {
+        if (ytPlayer?.unMute) ytPlayer.unMute();
+        if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
+        if (ytPlayer?.playVideo) ytPlayer.playVideo();
+      }
       tick().then(() => document.getElementById('guessInput')?.focus());
     });
     socket.on('ready_update', ({ ready, total }) => {
@@ -424,10 +441,7 @@
               ytPlayer.unMute();
               // Masquer le titre réel dans les contrôles système (iOS/Android)
               // playbackState='playing' rend la session du parent frame "active" → priorité sur l'iframe YT
-              if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({ title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test' });
-                navigator.mediaSession.playbackState = 'playing';
-              }
+              setFakeMediaSession();
               if (_waitingForSync && socket) {
                 socket.emit('player_ready');
                 _syncPaused = true;
