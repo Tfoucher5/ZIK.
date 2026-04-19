@@ -130,6 +130,30 @@
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
+  function loadAudio(audioUrl, startSeconds) {
+    const audio = document.getElementById('previewAudio');
+    if (!audio) return;
+    if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
+    audio.pause();
+    audio.onloadedmetadata = null;
+    startMediaGuard();
+    audio.src = audioUrl;
+    audio.volume = savedVol() / 100;
+    audio.onloadedmetadata = () => {
+      audio.currentTime = startSeconds;
+      audio.play().catch(() => {
+        const resume = () => {
+          audio.play().catch(() => {});
+          document.removeEventListener('pointerdown', resume, true);
+          document.removeEventListener('keydown',     resume, true);
+        };
+        document.addEventListener('pointerdown', resume, true);
+        document.addEventListener('keydown',     resume, true);
+      });
+    };
+    audio.load();
+  }
+
   function loadPreview(previewUrl) {
     const audio = document.getElementById('previewAudio');
     if (!audio) return;
@@ -309,10 +333,13 @@
       syncWaiting = true;
       syncReady = 0; syncTotal = 0;
       _lastVideo = { videoId: data.videoId, startSeconds: data.startSeconds, startedAt: Date.now() };
-      if (data.previewUrl) {
+      if (data.audioUrl) {
+        _usingPreview = true;
+        loadAudio(data.audioUrl, data.startSeconds);
+        if (socket) socket.emit('player_ready');
+      } else if (data.previewUrl) {
         _usingPreview = true;
         loadPreview(data.previewUrl);
-        // Pas de sync YouTube — on émet player_ready immédiatement
         if (socket) socket.emit('player_ready');
       } else {
         _usingPreview = false;

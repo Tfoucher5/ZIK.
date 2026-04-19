@@ -12,7 +12,27 @@ import {
   buildTrack,
   calcSpeedBonus,
 } from "../services/playlist.js";
-import { deezerSearch } from "../services/trackEnricher.js";
+const ytdl = require("@distube/ytdl-core");
+import { ytdlAudioCache } from "../ytdlCache.js";
+
+const YTDL_TTL = 2 * 60 * 60 * 1000;
+
+async function getYtAudioUrl(videoId) {
+  const cached = ytdlAudioCache.get(videoId);
+  if (cached && Date.now() - cached.fetchedAt < YTDL_TTL) return cached;
+  const info = await ytdl.getInfo(videoId);
+  const format = ytdl.chooseFormat(info.formats, {
+    filter: "audioonly",
+    quality: "highestaudio",
+  });
+  const entry = {
+    url: format.url,
+    mimeType: format.mimeType || "audio/webm",
+    fetchedAt: Date.now(),
+  };
+  ytdlAudioCache.set(videoId, entry);
+  return entry;
+}
 
 const DEFAULT_ROUND_DURATION = 30;
 const DEFAULT_BREAK_DURATION = 7;
@@ -255,12 +275,7 @@ async function startNextRound(roomId, io) {
     const track = game.currentTrack;
     const artist = track.mainArtist || track.artist;
 
-    const [r, dzResult] = await Promise.all([
-      yts(`${artist} ${track.title} topic`),
-      track.preview_url
-        ? Promise.resolve(null)
-        : deezerSearch(artist, track.title).catch(() => null),
-    ]);
+    const r = await yts(`${artist} ${track.title} topic`);
     if (!r.videos?.length) throw new Error("No video");
 
     const video = r.videos[0];
@@ -271,7 +286,9 @@ async function startNextRound(roomId, io) {
       ),
     );
 
-    const previewUrl = track.preview_url || dzResult?.previewUrl || null;
+    // Extraction audio ytdl — chansons complètes, timestamp aléatoire, sans iframe YouTube
+    const ytAudio = await getYtAudioUrl(video.videoId).catch(() => null);
+    if (ytAudio) ytdlAudioCache.set(video.videoId, ytAudio); // s'assurer que l'API proxy peut le lire
 
     game.lastRoundData = {
       videoId: video.videoId,
@@ -280,7 +297,8 @@ async function startNextRound(roomId, io) {
       total: game.maxRounds,
       featCount: track.featArtists.length,
       extraLabels: (track.extraAnswers || []).map((e) => e.label),
-      previewUrl,
+      audioUrl: ytAudio ? `/api/game/audio?v=${video.videoId}` : null,
+      previewUrl: track.preview_url || null,
     };
 
     // Si l'admin a mis en pause pendant le fetch YTS, on abandonne
