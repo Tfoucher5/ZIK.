@@ -12,7 +12,6 @@ import {
   buildTrack,
   calcSpeedBonus,
 } from "../services/playlist.js";
-import { deezerSearch } from "../services/trackEnricher.js";
 
 const DEFAULT_ROUND_DURATION = 30;
 const DEFAULT_BREAK_DURATION = 7;
@@ -255,15 +254,7 @@ async function startNextRound(roomId, io) {
     const track = game.currentTrack;
     const artist = track.mainArtist || track.artist;
 
-    // Recherche YouTube + Deezer en parallèle
-    // Deezer preview = source audio prioritaire (évite la notification Chrome Android)
-    const [r, dzResult] = await Promise.all([
-      yts(`${artist} ${track.title} topic`),
-      track.preview_url
-        ? Promise.resolve(null)
-        : deezerSearch(artist, track.title).catch(() => null),
-    ]);
-
+    const r = await yts(`${artist} ${track.title} topic`);
     if (!r.videos?.length) throw new Error("No video");
 
     const video = r.videos[0];
@@ -274,7 +265,7 @@ async function startNextRound(roomId, io) {
       ),
     );
 
-    const previewUrl = track.preview_url || dzResult?.previewUrl || null;
+    const previewUrl = track.preview_url || null;
 
     game.lastRoundData = {
       videoId: video.videoId,
