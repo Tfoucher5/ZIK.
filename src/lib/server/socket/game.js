@@ -12,7 +12,7 @@ import {
   buildTrack,
   calcSpeedBonus,
 } from "../services/playlist.js";
-const ytdl = require("@distube/ytdl-core");
+import ytDlp from "yt-dlp-exec";
 import { ytdlAudioCache } from "../ytdlCache.js";
 
 const YTDL_TTL = 2 * 60 * 60 * 1000;
@@ -20,14 +20,14 @@ const YTDL_TTL = 2 * 60 * 60 * 1000;
 async function getYtAudioUrl(videoId) {
   const cached = ytdlAudioCache.get(videoId);
   if (cached && Date.now() - cached.fetchedAt < YTDL_TTL) return cached;
-  const info = await ytdl.getInfo(videoId);
-  const format = ytdl.chooseFormat(info.formats, {
-    filter: "audioonly",
-    quality: "highestaudio",
+  const info = await ytDlp(`https://www.youtube.com/watch?v=${videoId}`, {
+    format: "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio",
+    dumpSingleJson: true,
+    noPlaylist: true,
   });
   const entry = {
-    url: format.url,
-    mimeType: format.mimeType || "audio/webm",
+    url: info.url,
+    mimeType: `audio/${info.ext || "webm"}`,
     fetchedAt: Date.now(),
   };
   ytdlAudioCache.set(videoId, entry);
@@ -286,7 +286,7 @@ async function startNextRound(roomId, io) {
       ),
     );
 
-    // Extraction audio ytdl — chansons complètes, timestamp aléatoire, sans iframe YouTube
+    // Extraction audio yt-dlp — chansons complètes, timestamp aléatoire, sans iframe YouTube
     const ytAudio = await getYtAudioUrl(video.videoId).catch((err) => {
       console.warn(`[ytdl] échec pour ${video.videoId}:`, err?.message || err);
       return null;

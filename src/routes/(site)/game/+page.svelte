@@ -231,7 +231,11 @@
     audio.load();
   }
 
-  function stopVideo() { if (ytReady && ytPlayer) ytPlayer.stopVideo(); }
+  function stopVideo() {
+    if (ytReady && ytPlayer) ytPlayer.stopVideo();
+    const audio = document.getElementById('previewAudio');
+    if (audio) { audio.pause(); audio.src = ''; }
+  }
 
   function showFeedback(msg, cls) {
     clearTimeout(feedTimer);
@@ -478,11 +482,15 @@
     socket.on('admin_pause', () => {
       _adminPaused = true;
       try { ytPlayer?.pauseVideo(); } catch { /* ignore */ }
+      const _a = document.getElementById('previewAudio');
+      if (_a) _a.pause();
     });
 
     socket.on('admin_resume', () => {
       _adminPaused = false;
       try { ytPlayer?.playVideo(); } catch { /* ignore */ }
+      const _a = document.getElementById('previewAudio');
+      if (_a) _a.play().catch(() => {});
     });
 
     socket.on('admin_announce', ({ message }) => {
