@@ -72,7 +72,7 @@ export async function musicBrainzLookup(artist, title) {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    const best = (data.recordings || []).find((r) => (r.score || 0) >= 85);
+    const best = (data.recordings || []).find((r) => (r.score || 0) >= 90);
     if (!best) return null;
 
     const credits = best["artist-credit"] || [];
@@ -126,6 +126,23 @@ export async function deezerSearch(artist, title) {
   }
 }
 
+// ─── Vérifie que deux noms d'artiste désignent la même personne ──────────────
+
+function normalizeStr(s) {
+  return String(s)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function artistMatch(original, mbArtist) {
+  if (!original || !mbArtist) return false;
+  const no = normalizeStr(original);
+  const nm = normalizeStr(mbArtist);
+  return no === nm || no.includes(nm) || nm.includes(no);
+}
+
 // ─── Pipeline principal ───────────────────────────────────────────────────────
 
 export async function enrichTrack(track) {
@@ -154,22 +171,27 @@ export async function enrichTrack(track) {
   const updates = {};
   const changes = [];
 
-  // Titre
-  const finalTitle = mb?.title || parsedTitle;
+  // MB est fiable uniquement si l'artiste retourné correspond à l'artiste original
+  const mbTrusted = mb
+    ? artistMatch(parsedMain || rawArtist, mb.mainArtist)
+    : false;
+
+  // Titre — uniquement si MB est fiable
+  const finalTitle = mbTrusted && mb?.title ? mb.title : parsedTitle;
   if (finalTitle && finalTitle !== rawTitle) {
     updates.custom_title = finalTitle;
     changes.push(`titre: "${rawTitle}" → "${finalTitle}"`);
   }
 
-  // Artiste principal
-  const finalArtist = mb?.mainArtist || parsedMain;
+  // Artiste principal — uniquement si MB est fiable
+  const finalArtist = mbTrusted && mb?.mainArtist ? mb.mainArtist : parsedMain;
   if (finalArtist && finalArtist !== rawArtist) {
     updates.custom_artist = finalArtist;
     changes.push(`artiste: "${rawArtist}" → "${finalArtist}"`);
   }
 
-  // Feats
-  const finalFeats = mb?.feats?.length ? mb.feats : mergedFeats;
+  // Feats — uniquement si MB est fiable
+  const finalFeats = mbTrusted && mb?.feats?.length ? mb.feats : mergedFeats;
   const currentFeats = Array.isArray(track.custom_feats)
     ? track.custom_feats
     : [];
