@@ -151,6 +151,12 @@ Les joueurs rejoignent une room, écoutent des extraits musicaux et tentent de t
 
 ## 📋 Changelog
 
+### v2.0.4 — Enrichissement multi-sources & correctifs
+
+- **Enrichissement tracks** : 3 sources parallèles (MusicBrainz, Deezer, iTunes) avec vote majoritaire — un champ n'est mis à jour que si ≥2 sources s'accordent
+- **Protection artiste** : correspondance par mots entiers, évite les remplacements par un artiste différent (ex: Hatik → The Beatles)
+- **Seuil MusicBrainz** relevé de 85 à 90 pour réduire les faux positifs
+
 ### v2.0.0 — Aurora Glass — Refonte visuelle complète
 
 - **Design system Aurora Glass** : nouvelle identité visuelle unifiée — aurora blobs animés, glassmorphism, backdrop-filter, dot grid, glow effects, gradient text animé
