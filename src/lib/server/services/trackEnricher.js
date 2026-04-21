@@ -56,11 +56,29 @@ function normalizeStr(s) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function toWords(s) {
+  return String(s)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+}
+
 function artistMatch(original, candidate) {
   if (!original || !candidate) return false;
-  const no = normalizeStr(original);
-  const nc = normalizeStr(candidate);
-  return no === nc || no.includes(nc) || nc.includes(no);
+  const wo = toWords(original);
+  const wc = toWords(candidate);
+  // Noms sans mot utile (ex: "M", "A") → égalité stricte uniquement
+  if (!wo.length || !wc.length)
+    return normalizeStr(original) === normalizeStr(candidate);
+  if (wo.join(" ") === wc.join(" ")) return true;
+  // Nombre de mots différent → artistes différents ("Aya" ≠ "Aya Nakamura", "Drake" ≠ "Drake Bell")
+  if (wo.length !== wc.length) return false;
+  // Même nombre de mots : chaque mot doit matcher (ex: "Jay-Z" == "Jay Z" après filtrage)
+  return wo.every((w) => wc.includes(w));
 }
 
 // ─── Vote majoritaire entre plusieurs sources ─────────────────────────────────
