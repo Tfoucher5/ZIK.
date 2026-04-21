@@ -171,7 +171,7 @@ RETURNS TABLE (
   FROM public.game_players gp
   JOIN public.games g ON g.id = gp.game_id
   JOIN public.profiles p ON p.id = gp.user_id
-  WHERE g.ended_at >= NOW() - INTERVAL '7 days'
+  WHERE g.ended_at >= date_trunc('week', NOW() AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
     AND gp.is_guest = FALSE
   GROUP BY p.username, p.avatar_url
   ORDER BY weekly_score DESC

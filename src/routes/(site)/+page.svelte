@@ -412,9 +412,9 @@
           <div class="official-card-desc">{room.description}</div>
         {/if}
         <div class="official-card-footer">
-          <span class="official-card-online" class:official-online-live={room.playerCount > 0}>
-            <span class="official-online-dot" class:live={room.playerCount > 0}></span>
-            {room.playerCount > 0 ? `${room.playerCount} en ligne` : 'Disponible'}
+          <span class="official-card-online" class:official-online-live={room.online > 0}>
+            <span class="official-online-dot" class:live={room.online > 0}></span>
+            {room.online > 0 ? `${room.online} en ligne` : 'Disponible'}
           </span>
           <button class="official-card-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id); }}>
             Rejoindre →
