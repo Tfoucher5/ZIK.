@@ -20,6 +20,7 @@
 
   let weeklyLb = $state([]);
   let eloLb = $state([]);
+  let lbLoaded = $state(false);
 
   let guestOpen = $state(false);
   let guestUsername = $state("");
@@ -127,6 +128,8 @@
       eloLb = Array.isArray(eRes) ? eRes : [];
     } catch (e) {
       roomCodeErr = e.message;
+    } finally {
+      lbLoaded = true;
     }
   }
 
@@ -588,7 +591,7 @@
 
       <div class="lb-scroll">
         {#if weeklyLb.length === 0}
-          <p class="lb-empty">Chargement…</p>
+          <p class="lb-empty">{lbLoaded ? 'Aucune partie cette semaine… pour l\'instant !' : 'Chargement…'}</p>
         {:else}
           {#each weeklyLb.slice(weeklyLb.length >= 3 ? 3 : 0) as p, i}
             {@const rank = (weeklyLb.length >= 3 ? 3 : 0) + i}
@@ -663,7 +666,7 @@
 
       <div class="lb-scroll">
         {#if eloLb.length === 0}
-          <p class="lb-empty">Chargement…</p>
+          <p class="lb-empty">{lbLoaded ? 'Aucun joueur classé pour l\'instant.' : 'Chargement…'}</p>
         {:else}
           {#each eloLb.slice(eloLb.length >= 3 ? 3 : 0) as p, i}
             {@const rank = (eloLb.length >= 3 ? 3 : 0) + i}
