@@ -20,6 +20,7 @@
 
   let weeklyLb = $state([]);
   let eloLb = $state([]);
+  let lbLoaded = $state(false);
 
   let guestOpen = $state(false);
   let guestUsername = $state("");
@@ -127,6 +128,8 @@
       eloLb = Array.isArray(eRes) ? eRes : [];
     } catch (e) {
       roomCodeErr = e.message;
+    } finally {
+      lbLoaded = true;
     }
   }
 
@@ -412,9 +415,9 @@
           <div class="official-card-desc">{room.description}</div>
         {/if}
         <div class="official-card-footer">
-          <span class="official-card-online" class:official-online-live={room.playerCount > 0}>
-            <span class="official-online-dot" class:live={room.playerCount > 0}></span>
-            {room.playerCount > 0 ? `${room.playerCount} en ligne` : 'Disponible'}
+          <span class="official-card-online" class:official-online-live={room.online > 0}>
+            <span class="official-online-dot" class:live={room.online > 0}></span>
+            {room.online > 0 ? `${room.online} en ligne` : 'Disponible'}
           </span>
           <button class="official-card-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id); }}>
             Rejoindre →
@@ -588,7 +591,7 @@
 
       <div class="lb-scroll">
         {#if weeklyLb.length === 0}
-          <p class="lb-empty">Chargement…</p>
+          <p class="lb-empty">{lbLoaded ? 'Aucune partie cette semaine… pour l\'instant !' : 'Chargement…'}</p>
         {:else}
           {#each weeklyLb.slice(weeklyLb.length >= 3 ? 3 : 0) as p, i}
             {@const rank = (weeklyLb.length >= 3 ? 3 : 0) + i}
@@ -663,7 +666,7 @@
 
       <div class="lb-scroll">
         {#if eloLb.length === 0}
-          <p class="lb-empty">Chargement…</p>
+          <p class="lb-empty">{lbLoaded ? 'Aucun joueur classé pour l\'instant.' : 'Chargement…'}</p>
         {:else}
           {#each eloLb.slice(eloLb.length >= 3 ? 3 : 0) as p, i}
             {@const rank = (eloLb.length >= 3 ? 3 : 0) + i}

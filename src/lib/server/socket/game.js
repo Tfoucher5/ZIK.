@@ -262,6 +262,49 @@ function triggerRoundStart(roomId, io) {
   startTimer(roomId, io);
 }
 
+// Précharge la manche suivante en arrière-plan pendant que la manche courante tourne.
+// Résultat stocké dans game.prefetchedRound — consommé par startNextRound si valide.
+async function prefetchNextRound(roomId) {
+  const room = roomGames[roomId];
+  if (!room) return;
+  const game = room.game;
+  if (game.sessionPlaylist.length === 0) return;
+
+  const nextTrack = game.sessionPlaylist[game.sessionPlaylist.length - 1];
+  if (!nextTrack) return;
+
+  try {
+    const artist = nextTrack.mainArtist || nextTrack.artist;
+    const r = await yts(`${artist} ${nextTrack.title} topic`);
+    if (!r.videos?.length) return;
+
+    const video = r.videos[0];
+    const startSeconds = Math.max(
+      0,
+      Math.floor(
+        Math.random() * Math.max(1, video.seconds - game.roundDuration - 10),
+      ),
+    );
+    const ytAudio = await getYtAudioUrl(video.videoId).catch(() => null);
+    if (ytAudio) ytdlAudioCache.set(video.videoId, ytAudio);
+
+    // Vérifier que la room/game n'a pas changé et que le track est toujours le prochain
+    const room2 = roomGames[roomId];
+    if (!room2 || room2.game !== game) return;
+    if (game.sessionPlaylist[game.sessionPlaylist.length - 1] !== nextTrack)
+      return;
+
+    game.prefetchedRound = {
+      track: nextTrack,
+      videoId: video.videoId,
+      startSeconds,
+      ytAudio,
+    };
+  } catch {
+    // Échec silencieux — startNextRound fera le fetch normalement
+  }
+}
+
 async function startNextRound(roomId, io) {
   const room = getOrCreateRoom(roomId);
   const game = room.game;
@@ -287,38 +330,43 @@ async function startNextRound(roomId, io) {
 
   try {
     const track = game.currentTrack;
-    const artist = track.mainArtist || track.artist;
 
-    const r = await yts(`${artist} ${track.title} topic`);
-    if (!r.videos?.length) throw new Error("No video");
+    let videoId, startSeconds, ytAudio;
 
-    const video = r.videos[0];
-    const safeStart = Math.max(
-      0,
-      Math.floor(
-        Math.random() * Math.max(1, video.seconds - game.roundDuration - 10),
-      ),
-    );
-
-    // Extraction audio yt-dlp — chansons complètes, timestamp aléatoire, sans iframe YouTube
-    const ytAudio = await getYtAudioUrl(video.videoId).catch((err) => {
-      console.warn(`[ytdl] échec pour ${video.videoId}:`, err?.message || err);
-      return null;
-    });
-    if (ytAudio) ytdlAudioCache.set(video.videoId, ytAudio); // s'assurer que l'API proxy peut le lire
+    // Utiliser le préchargement si disponible et correspondant au bon track
+    if (game.prefetchedRound?.track === track) {
+      ({ videoId, startSeconds, ytAudio } = game.prefetchedRound);
+      game.prefetchedRound = null;
+    } else {
+      const artist = track.mainArtist || track.artist;
+      const r = await yts(`${artist} ${track.title} topic`);
+      if (!r.videos?.length) throw new Error("No video");
+      const video = r.videos[0];
+      videoId = video.videoId;
+      startSeconds = Math.max(
+        0,
+        Math.floor(
+          Math.random() * Math.max(1, video.seconds - game.roundDuration - 10),
+        ),
+      );
+      ytAudio = await getYtAudioUrl(videoId).catch((err) => {
+        console.warn(`[ytdl] échec pour ${videoId}:`, err?.message || err);
+        return null;
+      });
+      if (ytAudio) ytdlAudioCache.set(videoId, ytAudio);
+    }
 
     game.lastRoundData = {
-      videoId: video.videoId,
-      startSeconds: safeStart,
+      videoId,
+      startSeconds,
       round: game.currentRound,
       total: game.maxRounds,
       featCount: track.featArtists.length,
       extraLabels: (track.extraAnswers || []).map((e) => e.label),
-      audioUrl: ytAudio ? `/api/game/audio?v=${video.videoId}` : null,
+      audioUrl: ytAudio ? `/api/game/audio?v=${videoId}` : null,
       previewUrl: track.preview_url || null,
     };
 
-    // Si l'admin a mis en pause pendant le fetch YTS, on abandonne
     if (game.isPaused) return;
 
     game.isSyncWaiting = true;
@@ -327,14 +375,18 @@ async function startNextRound(roomId, io) {
 
     io.to(`room:${roomId}`).emit("start_round", game.lastRoundData);
 
-    // Démarre le round dès que 75% des joueurs sont prêts, ou après 6s max
     const activePlayers = Object.values(room.players).filter(
       (p) => !p._dcTimer,
     ).length;
     game.readyThreshold = Math.max(1, Math.round(activePlayers * 0.75));
     game.readyTimer = setTimeout(() => triggerRoundStart(roomId, io), 6000);
+
+    // Précharger la manche suivante pendant que celle-ci tourne
+    if (game.sessionPlaylist.length > 0) {
+      prefetchNextRound(roomId).catch(() => {});
+    }
   } catch (err) {
-    console.error(`Skip "${game.currentTrack.title}":`, err.message);
+    console.error(`Skip "${game.currentTrack?.title}":`, err.message);
     startNextRound(roomId, io);
   }
 }
