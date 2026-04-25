@@ -1,7 +1,8 @@
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const stringSimilarity = require("string-similarity");
-const yts = require("yt-search");
+
+import { YouTube } from "youtube-sr";
 
 import { supabase } from "../config.js";
 import { playlistCache, customRooms, dbRooms, roomGames } from "../state.js";
@@ -27,17 +28,72 @@ const YTDLP_BIN =
   );
 const YTDL_TTL = 2 * 60 * 60 * 1000;
 
+// ─── QCM helpers ─────────────────────────────────────────────────────────────
+
+function makeChoices(correct, allTracks) {
+  const label = (t) =>
+    `${displayString(t.mainArtist || t.artist)} — ${displayString(t.title)}`;
+  const correctLabel = label(correct);
+  const correctArtistKey = (correct.mainArtist || correct.artist || "")
+    .toLowerCase()
+    .trim();
+  const pool = allTracks.filter((t) => label(t) !== correctLabel);
+  const sameArtistPool = pool.filter(
+    (t) =>
+      (t.mainArtist || t.artist || "").toLowerCase().trim() ===
+      correctArtistKey,
+  );
+  const diffArtistPool = pool.filter(
+    (t) =>
+      (t.mainArtist || t.artist || "").toLowerCase().trim() !==
+      correctArtistKey,
+  );
+  let wrongTracks;
+  if (sameArtistPool.length >= 1 && Math.random() < 0.4) {
+    const decoy =
+      sameArtistPool[Math.floor(Math.random() * sameArtistPool.length)];
+    const remaining = diffArtistPool
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+    wrongTracks = [decoy, ...remaining].sort(() => Math.random() - 0.5);
+  } else {
+    wrongTracks = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+  }
+  const choices = [correctLabel, ...wrongTracks.map(label)].sort(
+    () => Math.random() - 0.5,
+  );
+  return { choices, correctChoiceIndex: choices.indexOf(correctLabel) };
+}
+
+function calcQcmPoints(timeTaken, roundDuration) {
+  const MAX_PTS = 1000;
+  const MIN_PTS = 200;
+  const ratio = Math.min(
+    1,
+    Math.max(0, timeTaken / Math.max(1, roundDuration)),
+  );
+  return Math.round(MAX_PTS - (MAX_PTS - MIN_PTS) * ratio);
+}
+
 async function getYtAudioUrl(videoId) {
   const cached = ytdlAudioCache.get(videoId);
   if (cached && Date.now() - cached.fetchedAt < YTDL_TTL) return cached;
-  const { stdout } = await execFileAsync(YTDLP_BIN, [
-    `https://www.youtube.com/watch?v=${videoId}`,
-    "--format",
-    "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio",
-    "-j",
-    "--no-playlist",
-    "--no-warnings",
-  ]);
+  const { stdout } = await execFileAsync(
+    YTDLP_BIN,
+    [
+      `https://www.youtube.com/watch?v=${videoId}`,
+      "--format",
+      "bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio",
+      "-j",
+      "--no-playlist",
+      "--no-warnings",
+      "--socket-timeout",
+      "8",
+      "--retries",
+      "0",
+    ],
+    { timeout: 10000, maxBuffer: 20 * 1024 * 1024 },
+  );
   const info = JSON.parse(stdout);
   const entry = {
     url: info.url,
@@ -107,6 +163,7 @@ function getOrCreateRoom(roomId) {
   const cust = customRooms[roomId] || dbRooms[roomId];
   roomGames[roomId] = {
     roomId,
+    game_mode: cust?.game_mode || "classic",
     players: {},
     socketToName: {},
     nameToSocket: {},
@@ -124,6 +181,7 @@ function getOrCreateRoom(roomId) {
       currentTrack: null,
       startTime: 0,
       sessionPlaylist: [],
+      fullPlaylist: [],
       history: [],
       firstFullFinder: null,
       totalFullFound: 0,
@@ -133,6 +191,8 @@ function getOrCreateRoom(roomId) {
       readyPlayers: new Set(),
       readyTimer: null,
       readyRound: 0,
+      choices: null,
+      correctChoiceIndex: null,
     },
   };
   return roomGames[roomId];
@@ -158,6 +218,7 @@ function resetRoundFlags(room) {
     room.players[n].foundFeats = [];
     room.players[n].foundExtras = [];
     room.players[n]._fullFoundCounted = false;
+    room.players[n]._qcmAnswered = false;
   });
 }
 
@@ -173,8 +234,17 @@ function resetScores(room, io) {
 
 function checkEveryoneFound(roomId, io) {
   const room = getOrCreateRoom(roomId);
-  const track = room.game.currentTrack;
   const activePlayers = Object.values(room.players);
+  if (activePlayers.length === 0 || !room.game.isActive) return;
+
+  if (room.game_mode === "qcm") {
+    if (activePlayers.every((p) => p._qcmAnswered)) {
+      endRound(roomId, "Tout le monde a répondu !", io);
+    }
+    return;
+  }
+
+  const track = room.game.currentTrack;
   const allDone = (p) => {
     const allFeats = (track?.cleanFeatArtists || []).every(
       (_, i) => p.foundFeats[i],
@@ -184,12 +254,8 @@ function checkEveryoneFound(roomId, io) {
     );
     return p.foundArtist && p.foundTitle && allFeats && allExtras;
   };
-  if (
-    activePlayers.length > 0 &&
-    activePlayers.every(allDone) &&
-    room.game.isActive
-  ) {
-    endRound(roomId, "Tout le monde a trouve !", io);
+  if (activePlayers.every(allDone)) {
+    endRound(roomId, "Tout le monde a trouvé !", io);
   }
 }
 
@@ -225,6 +291,8 @@ function endRound(roomId, reason, io) {
         foundTitle: p.foundTitle,
         foundFeats: p.foundFeats || [],
         foundExtras: p.foundExtras || [],
+        correctChoiceIndex:
+          room.game_mode === "qcm" ? game.correctChoiceIndex : undefined,
       });
     }
   });
@@ -262,6 +330,41 @@ function triggerRoundStart(roomId, io) {
   startTimer(roomId, io);
 }
 
+async function ytsSearch(artist, title) {
+  const results = await YouTube.search(`${artist} - ${title}`, {
+    type: "video",
+    limit: 5,
+  });
+  if (!results.length) return null;
+  const topic = results.find((v) => v.channel?.name?.endsWith("- Topic"));
+  return topic || results[0];
+}
+
+function previewCacheKey(track) {
+  return `prev_${(track.cleanArtist + track.cleanTitle).replace(/\W/g, "").slice(0, 32)}`;
+}
+
+async function getDeezerPreview(artist, title) {
+  const q = encodeURIComponent(`${artist} ${title}`);
+  const res = await fetch(`https://api.deezer.com/search?q=${q}&limit=5`, {
+    signal: AbortSignal.timeout(5000),
+  });
+  const data = await res.json();
+  return data.data?.[0]?.preview || null;
+}
+
+async function getItunesPreview(artist, title) {
+  const q = encodeURIComponent(`${artist} ${title}`);
+  const res = await fetch(
+    `https://itunes.apple.com/search?term=${q}&entity=song&limit=5`,
+    {
+      signal: AbortSignal.timeout(5000),
+    },
+  );
+  const data = await res.json();
+  return data.results?.[0]?.previewUrl || null;
+}
+
 // Précharge la manche suivante en arrière-plan pendant que la manche courante tourne.
 // Résultat stocké dans game.prefetchedRound — consommé par startNextRound si valide.
 async function prefetchNextRound(roomId) {
@@ -275,31 +378,54 @@ async function prefetchNextRound(roomId) {
 
   try {
     const artist = nextTrack.mainArtist || nextTrack.artist;
-    const r = await yts(`${artist} ${nextTrack.title} topic`);
-    if (!r.videos?.length) return;
+    const video = await ytsSearch(artist, nextTrack.title);
 
-    const video = r.videos[0];
-    const startSeconds = Math.max(
-      0,
-      Math.floor(
-        Math.random() * Math.max(1, video.seconds - game.roundDuration - 10),
-      ),
-    );
-    const ytAudio = await getYtAudioUrl(video.videoId).catch(() => null);
-    if (ytAudio) ytdlAudioCache.set(video.videoId, ytAudio);
+    let videoId = null,
+      startSeconds = 0,
+      ytAudio = null;
 
-    // Vérifier que la room/game n'a pas changé et que le track est toujours le prochain
+    if (video) {
+      videoId = video.id;
+      const durationSec = Math.round((video.duration || 0) / 1000);
+      startSeconds = Math.max(
+        0,
+        Math.floor(
+          Math.random() * Math.max(1, durationSec - game.roundDuration - 10),
+        ),
+      );
+      ytAudio = await Promise.race([
+        getYtAudioUrl(videoId).catch(() => null),
+        new Promise((resolve) => setTimeout(() => resolve(null), 12000)),
+      ]);
+      if (ytAudio) ytdlAudioCache.set(videoId, ytAudio);
+    }
+
+    // Preview seulement si pas de videoId du tout
+    if (!ytAudio && !videoId) {
+      const artist = nextTrack.mainArtist || nextTrack.artist;
+      const previewUrl =
+        nextTrack.preview_url ||
+        (await getDeezerPreview(artist, nextTrack.title).catch(() => null)) ||
+        (await getItunesPreview(artist, nextTrack.title).catch(() => null));
+      if (previewUrl) {
+        const pKey = previewCacheKey(nextTrack);
+        ytdlAudioCache.set(pKey, {
+          url: previewUrl,
+          mimeType: "audio/mpeg",
+          fetchedAt: Date.now(),
+        });
+        videoId = pKey;
+        startSeconds = 0;
+        ytAudio = { url: previewUrl };
+      }
+    }
+
     const room2 = roomGames[roomId];
     if (!room2 || room2.game !== game) return;
     if (game.sessionPlaylist[game.sessionPlaylist.length - 1] !== nextTrack)
       return;
 
-    game.prefetchedRound = {
-      track: nextTrack,
-      videoId: video.videoId,
-      startSeconds,
-      ytAudio,
-    };
+    game.prefetchedRound = { track: nextTrack, videoId, startSeconds, ytAudio };
   } catch {
     // Échec silencieux — startNextRound fera le fetch normalement
   }
@@ -331,29 +457,80 @@ async function startNextRound(roomId, io) {
   try {
     const track = game.currentTrack;
 
-    let videoId, startSeconds, ytAudio;
+    let videoId = null,
+      startSeconds = 0,
+      ytAudio = null;
 
-    // Utiliser le préchargement si disponible et correspondant au bon track
     if (game.prefetchedRound?.track === track) {
       ({ videoId, startSeconds, ytAudio } = game.prefetchedRound);
       game.prefetchedRound = null;
-    } else {
+    }
+
+    if (!videoId) {
       const artist = track.mainArtist || track.artist;
-      const r = await yts(`${artist} ${track.title} topic`);
-      if (!r.videos?.length) throw new Error("No video");
-      const video = r.videos[0];
-      videoId = video.videoId;
-      startSeconds = Math.max(
-        0,
-        Math.floor(
-          Math.random() * Math.max(1, video.seconds - game.roundDuration - 10),
-        ),
-      );
-      ytAudio = await getYtAudioUrl(videoId).catch((err) => {
-        console.warn(`[ytdl] échec pour ${videoId}:`, err?.message || err);
-        return null;
-      });
+      const video = await ytsSearch(artist, track.title);
+      if (video) {
+        videoId = video.id;
+        const durationSec = Math.round((video.duration || 0) / 1000);
+        startSeconds = Math.max(
+          0,
+          Math.floor(
+            Math.random() * Math.max(1, durationSec - game.roundDuration - 10),
+          ),
+        );
+      }
+    }
+
+    // Premier round ou prefetch raté : on tente yt-dlp avec 8s.
+    // Si yt-dlp timeout, l'IFrame YouTube prend le relai (videoId suffit côté client).
+    if (videoId && !ytAudio) {
+      ytAudio = await Promise.race([
+        getYtAudioUrl(videoId).catch(() => null),
+        new Promise((resolve) => setTimeout(() => resolve(null), 8000)),
+      ]);
       if (ytAudio) ytdlAudioCache.set(videoId, ytAudio);
+      else console.warn(`[ytdl] timeout ${videoId} — fallback IFrame`);
+    }
+
+    // Dernier recours : previews Deezer/iTunes (seulement si même le videoId manque)
+    if (!ytAudio && !videoId) {
+      const pKey = previewCacheKey(track);
+      const cachedPreview = ytdlAudioCache.get(pKey);
+      if (cachedPreview && Date.now() - cachedPreview.fetchedAt < YTDL_TTL) {
+        videoId = pKey;
+        startSeconds = 0;
+        ytAudio = cachedPreview;
+      } else {
+        const artist = track.mainArtist || track.artist;
+        const previewUrl =
+          track.preview_url ||
+          (await getDeezerPreview(artist, track.title).catch(() => null)) ||
+          (await getItunesPreview(artist, track.title).catch(() => null));
+        if (previewUrl) {
+          ytdlAudioCache.set(pKey, {
+            url: previewUrl,
+            mimeType: "audio/mpeg",
+            fetchedAt: Date.now(),
+          });
+          videoId = pKey;
+          startSeconds = 0;
+          ytAudio = { url: previewUrl };
+        }
+      }
+    }
+
+    // Skip uniquement si ni ytAudio ni videoId (yt-search a aussi échoué)
+    if (!ytAudio && !videoId) throw new Error("No audio source");
+
+    let choices = undefined;
+    if (room.game_mode === "qcm" && game.fullPlaylist.length >= 2) {
+      const qcm = makeChoices(track, game.fullPlaylist);
+      game.choices = qcm.choices;
+      game.correctChoiceIndex = qcm.correctChoiceIndex;
+      choices = qcm.choices;
+    } else {
+      game.choices = null;
+      game.correctChoiceIndex = null;
     }
 
     game.lastRoundData = {
@@ -364,7 +541,7 @@ async function startNextRound(roomId, io) {
       featCount: track.featArtists.length,
       extraLabels: (track.extraAnswers || []).map((e) => e.label),
       audioUrl: ytAudio ? `/api/game/audio?v=${videoId}` : null,
-      previewUrl: track.preview_url || null,
+      choices,
     };
 
     if (game.isPaused) return;
@@ -412,7 +589,11 @@ async function saveGameResults(roomId, finalScores) {
     }));
     await supabase.from("game_players").insert(players);
 
-    const eloEligible = !!dbRooms[roomId]?.is_public && finalScores.length >= 3;
+    const room = getOrCreateRoom(roomId);
+    const eloEligible =
+      !!dbRooms[roomId]?.is_public &&
+      finalScores.length >= 3 &&
+      room.game_mode !== "qcm";
     const rankedPlayers = finalScores.map((p, i) => ({ ...p, rank: i + 1 }));
     const eloChanges = {};
 
@@ -457,16 +638,18 @@ async function saveGameResults(roomId, finalScores) {
       }
     }
 
-    for (let i = 0; i < finalScores.length; i++) {
-      const p = finalScores[i];
-      if (p.userId && !p.isGuest) {
-        await supabase.rpc("update_player_stats", {
-          p_user_id: p.userId,
-          p_score: p.score,
-          p_rank: i + 1,
-          p_total_players: finalScores.length,
-          p_elo_change: eloChanges[p.userId] ?? 0,
-        });
+    if (room.game_mode !== "qcm") {
+      for (let i = 0; i < finalScores.length; i++) {
+        const p = finalScores[i];
+        if (p.userId && !p.isGuest) {
+          await supabase.rpc("update_player_stats", {
+            p_user_id: p.userId,
+            p_score: p.score,
+            p_rank: i + 1,
+            p_total_players: finalScores.length,
+            p_elo_change: eloChanges[p.userId] ?? 0,
+          });
+        }
       }
     }
     console.log(`Game ${dbGameId} sauvegardee.`);
@@ -556,6 +739,7 @@ async function startAutoCountdown(roomId, io) {
       }
       room.game.history = [];
       room.game.currentRound = 0;
+      room.game.fullPlaylist = [...playlist];
       room.game.sessionPlaylist = [...playlist]
         .sort(() => Math.random() - 0.5)
         .slice(0, room.game.maxRounds);
@@ -641,7 +825,7 @@ export function register(io) {
         const { data: freshRoom } = await supabase
           .from("rooms")
           .select(
-            "id, code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id, is_public",
+            "id, code, name, emoji, max_rounds, round_duration, break_duration, playlist_id, auto_start, owner_id, is_public, game_mode",
           )
           .eq("code", roomId)
           .single();
@@ -723,6 +907,7 @@ export function register(io) {
           isAdmin,
           hasOwner: !!ownerId,
           adminBlocked: room.game.adminBlocked ?? false,
+          gameMode: room.game_mode || "classic",
         },
       });
       socket.emit("init_history", room.game.history);
@@ -798,6 +983,7 @@ export function register(io) {
 
       room.game.history = [];
       room.game.currentRound = 0;
+      room.game.fullPlaylist = [...playlist];
       room.game.sessionPlaylist = [...playlist]
         .sort(() => Math.random() - 0.5)
         .slice(0, room.game.maxRounds);
@@ -953,6 +1139,55 @@ export function register(io) {
         socket.emit("reveal_cover", { cover: room.game.currentTrack.cover });
       }
 
+      checkEveryoneFound(roomId, io);
+    });
+
+    socket.on("submit_choice", ({ choiceIndex }) => {
+      const roomId = socket.currentRoom;
+      if (!roomId) return;
+      const room = getOrCreateRoom(roomId);
+      const name = room.socketToName[socket.id];
+      if (!room.game.isActive || !room.game.currentTrack || !room.players[name])
+        return;
+      if (room.game_mode !== "qcm") return;
+
+      const user = room.players[name];
+      if (user._qcmAnswered) return;
+
+      user._qcmAnswered = true;
+      const isCorrect = choiceIndex === room.game.correctChoiceIndex;
+      const timeTaken = (Date.now() - room.game.startTime) / 1000;
+      let pts = 0;
+
+      if (isCorrect) {
+        pts = calcQcmPoints(timeTaken, room.game.roundDuration);
+        user.score += pts;
+        user.foundArtist = true;
+        user.foundTitle = true;
+        user._fullFoundCounted = true;
+        if (!room.game.firstFullFinder) room.game.firstFullFinder = user.name;
+        room.game.totalFullFound++;
+        socket.emit("feedback", {
+          type: "qcm_correct",
+          msg: `Bonne réponse ! +${pts} pts`,
+        });
+        socket.emit("reveal_cover", { cover: room.game.currentTrack.cover });
+      } else {
+        socket.emit("feedback", { type: "qcm_wrong", msg: "Raté !" });
+      }
+      socket.emit("choice_result", { correct: isCorrect, pts });
+
+      io.to(`room:${roomId}`).emit(
+        "update_players",
+        Object.values(room.players).map(sanitizePlayer),
+      );
+      const activePlayers = Object.values(room.players).filter(
+        (p) => !p._disconnected,
+      );
+      io.to(`room:${roomId}`).emit("qcm_answered_update", {
+        answered: activePlayers.filter((p) => p._qcmAnswered).length,
+        total: activePlayers.length,
+      });
       checkEveryoneFound(roomId, io);
     });
 
