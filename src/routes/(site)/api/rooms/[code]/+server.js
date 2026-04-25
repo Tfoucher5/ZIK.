@@ -18,7 +18,7 @@ export async function GET({ params }) {
   const { data, error } = await supabase
     .from("rooms")
     .select(
-      "id, code, name, emoji, description, is_public, auto_start, max_rounds, round_duration, break_duration, playlist_id, profiles!owner_id(username), room_playlists(playlist_id, position)",
+      "id, code, name, emoji, description, is_public, auto_start, game_mode, max_rounds, round_duration, break_duration, playlist_id, profiles!owner_id(username), room_playlists(playlist_id, position)",
     )
     .eq("code", code)
     .single();
@@ -46,6 +46,7 @@ export async function PATCH({ params, request }) {
     "description",
     "is_public",
     "auto_start",
+    "game_mode",
     "max_rounds",
     "round_duration",
     "break_duration",
@@ -55,6 +56,8 @@ export async function PATCH({ params, request }) {
     if (body[k] !== undefined) updates[k] = body[k];
   }
   if (updates.name) updates.name = String(updates.name).trim().slice(0, 60);
+  if (updates.game_mode)
+    updates.game_mode = updates.game_mode === "qcm" ? "qcm" : "classic";
 
   // Gérer playlist_ids si fourni
   const playlist_ids = body.playlist_ids;

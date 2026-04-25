@@ -7,7 +7,7 @@ export async function load({ params }) {
   const { data: room } = await supabase
     .from("rooms")
     .select(
-      "code, name, emoji, description, is_public, is_official, last_active_at, profiles!owner_id(username)",
+      "code, name, emoji, description, is_public, is_official, game_mode, last_active_at, profiles!owner_id(username)",
     )
     .eq("code", code)
     .eq("is_public", true)

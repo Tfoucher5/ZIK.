@@ -9,6 +9,7 @@
     { id: 'jouer', label: 'Comment jouer' },
     { id: 'points', label: 'Système de points' },
     { id: 'salon', label: 'Mode Salon' },
+    { id: 'qcm', label: 'Mode QCM multijoueur' },
     { id: 'playlists', label: 'Playlists' },
     { id: 'rooms', label: 'Rooms' },
     { id: 'compte', label: 'Compte & Profil' },
@@ -530,6 +531,109 @@
         <span class="doc-tip-icon">💡</span>
         <div>
           <strong>Astuce soirée :</strong> Utilisez le mode QCM avec des manches de 20 secondes pour un rythme dynamique. Activez l'avance automatique avec 5 secondes de révélation pour garder le public en haleine. Projetez l'écran hôte sur un grand écran et laissez chaque joueur utiliser son propre smartphone.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── QCM MULTIJOUEUR ── -->
+    <section>
+      <h2 id="qcm">Mode QCM multijoueur</h2>
+
+      <h3>Qu'est-ce que le mode QCM ?</h3>
+      <p>
+        Le <strong>Mode QCM (Choix Multiple)</strong> est une variante des rooms multijoueur classiques. Au lieu de taper librement votre réponse, 4 propositions vous sont affichées — une seule est correcte. Idéal pour les débutants ou pour des parties plus accessibles en groupe.
+      </p>
+
+      <h3>Créer une room QCM</h3>
+      <p>Lors de la création d'une room (compte requis, page <a href="/rooms">Rooms</a>) :</p>
+      <ol class="doc-list">
+        <li>Cliquez sur <strong>"Créer une room"</strong></li>
+        <li>Choisissez le <strong>mode de jeu</strong> : Classique ou QCM</li>
+        <li>Configurez le reste (nom, emoji, playlist…) et créez la room</li>
+      </ol>
+      <p>Les rooms QCM sont clairement identifiées par un badge <strong>🎯 Mode QCM</strong> dans la liste des rooms et sur la page de la room.</p>
+
+      <h3>Jouer en mode QCM</h3>
+      <p>
+        Dès que la manche commence, 4 boutons colorés apparaissent à la place du champ de saisie. Cliquez sur la bonne réponse (artiste + titre) avant la fin du temps imparti. Un seul clic suffit pour valider — pas d'Entrée à appuyer.
+      </p>
+      <p>
+        La bonne réponse est révélée à la fin de la manche (temps écoulé ou tous les joueurs ont répondu). Les boutons passent au vert (correct) ou au rouge (incorrect) pour chaque joueur.
+      </p>
+
+      <h3>Scoring QCM</h3>
+      <p>
+        En mode QCM, le scoring est <strong>Kahoot-style</strong> : plus vous répondez vite, plus vous gagnez de points. La manche se termine automatiquement dès que tous les joueurs ont répondu.
+      </p>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Moment de réponse</th>
+            <th>Points gagnés (si correct)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Immédiatement (t = 0s)</td>
+            <td>1 000 pts</td>
+          </tr>
+          <tr>
+            <td>À mi-temps</td>
+            <td>~600 pts</td>
+          </tr>
+          <tr>
+            <td>Dernière seconde</td>
+            <td>200 pts</td>
+          </tr>
+          <tr>
+            <td>Pas de réponse / réponse incorrecte</td>
+            <td>0 pt</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Différences avec le mode Classique</h3>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>Fonctionnalité</th>
+            <th>Classique</th>
+            <th>QCM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mode de réponse</td>
+            <td>Saisie texte libre</td>
+            <td>4 boutons colorés</td>
+          </tr>
+          <tr>
+            <td>Scoring</td>
+            <td>Pts de base + bonus vitesse</td>
+            <td>200 – 1 000 pts selon vitesse</td>
+          </tr>
+          <tr>
+            <td>ELO</td>
+            <td>✅ Oui (rooms publiques, 3+ joueurs)</td>
+            <td>❌ Non</td>
+          </tr>
+          <tr>
+            <td>Points hebdomadaires</td>
+            <td>✅ Oui</td>
+            <td>✅ Oui</td>
+          </tr>
+          <tr>
+            <td>Feats / artistes secondaires</td>
+            <td>✅ Points séparés</td>
+            <td>❌ Une seule réponse</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="doc-tip">
+        <span class="doc-tip-icon">💡</span>
+        <div>
+          <strong>Attention aux leurres :</strong> Les 3 mauvaises réponses sont tirées d'autres titres de la même playlist. Parfois, plusieurs chansons du même artiste peuvent apparaître — il faut vraiment reconnaître le titre, pas seulement l'artiste !
         </div>
       </div>
     </section>

@@ -1,7 +1,8 @@
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const stringSimilarity = require("string-similarity");
-const yts = require("yt-search");
+
+import { YouTube } from "youtube-sr";
 
 import { supabase } from "../config.js";
 import { salonRooms } from "../state.js";
@@ -436,16 +437,20 @@ async function startNextRound(code, io) {
   const track = game.currentTrack;
 
   try {
-    const r = await yts(
-      `${track.mainArtist || track.artist} ${track.title} topic`,
-    );
-    if (!r.videos?.length) throw new Error("No video");
+    const artist = track.mainArtist || track.artist;
+    const results = await YouTube.search(`${artist} - ${track.title}`, {
+      type: "video",
+      limit: 5,
+    });
+    if (!results.length) throw new Error("No video");
 
-    const video = r.videos[0];
+    const video =
+      results.find((v) => v.channel?.name?.endsWith("- Topic")) || results[0];
     const duration = salon.settings.roundDuration;
+    const durationSec = Math.round((video.duration || 0) / 1000);
     const safeStart = Math.max(
       0,
-      Math.floor(Math.random() * Math.max(1, video.seconds - duration - 10)),
+      Math.floor(Math.random() * Math.max(1, durationSec - duration - 10)),
     );
 
     game.phase = "round";
@@ -465,7 +470,7 @@ async function startNextRound(code, io) {
     }
 
     const roundData = {
-      videoId: video.videoId,
+      videoId: video.id,
       startSeconds: safeStart,
       round: game.currentRound,
       total: salon.settings.maxRounds,

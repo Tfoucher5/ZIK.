@@ -27,7 +27,7 @@ export async function GET({ request }) {
   let query = supabase
     .from("rooms")
     .select(
-      "id, code, name, emoji, description, is_public, is_official, auto_start, max_rounds, round_duration, break_duration, last_active_at, owner_id, playlist_id, profiles!owner_id(username, avatar_url), custom_playlists!playlist_id(track_count), room_playlists(playlist_id, position, custom_playlists(id, name, emoji, track_count))",
+      "id, code, name, emoji, description, is_public, is_official, auto_start, game_mode, max_rounds, round_duration, break_duration, last_active_at, owner_id, playlist_id, profiles!owner_id(username, avatar_url), custom_playlists!playlist_id(track_count), room_playlists(playlist_id, position, custom_playlists(id, name, emoji, track_count))",
     )
     .order("last_active_at", { ascending: false })
     .limit(50);
@@ -81,6 +81,7 @@ export async function GET({ request }) {
       is_public: r.is_public,
       is_official: r.is_official,
       auto_start: r.auto_start,
+      game_mode: r.game_mode || "classic",
       max_rounds: r.max_rounds,
       round_duration: r.round_duration,
       break_duration: r.break_duration,
@@ -113,6 +114,7 @@ export async function POST({ request }) {
     round_duration,
     break_duration,
     auto_start,
+    game_mode,
   } = body || {};
   if (!name?.trim()) return json({ error: "name requis" }, { status: 400 });
   if (!playlist_ids?.length)
@@ -128,6 +130,7 @@ export async function POST({ request }) {
       playlist_id: playlist_ids[0] || null,
       is_public: is_public !== false,
       auto_start: auto_start === true,
+      game_mode: game_mode === "qcm" ? "qcm" : "classic",
       max_rounds: Math.min(Math.max(parseInt(max_rounds) || 10, 3), 50),
       round_duration: Math.min(
         Math.max(parseInt(round_duration) || 30, 10),

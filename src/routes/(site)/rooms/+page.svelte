@@ -13,6 +13,8 @@
   let filterAutoStart  = $state(false);
   let filterActive     = $state(false);
 
+  let filterQcm        = $state(false);
+
   const filteredPublic = $derived.by(() => {
     let list = publicRooms;
     if (pubSearch.trim()) {
@@ -24,8 +26,12 @@
     }
     if (filterAutoStart) list = list.filter(r => r.auto_start);
     if (filterActive)    list = list.filter(r => r.last_active_at && (Date.now() - new Date(r.last_active_at).getTime()) < 3_600_000);
+    if (filterQcm)       list = list.filter(r => r.game_mode === 'qcm');
     return list;
   });
+
+  const qcmRooms      = $derived(publicRooms.filter(r => r.game_mode === 'qcm'));
+  const classicRooms  = $derived(publicRooms.filter(r => r.game_mode !== 'qcm'));
   let publicRooms  = $state([]);
   let myRooms      = $state([]);
   let pubLoading  = $state(true);
@@ -44,6 +50,7 @@
   let roomBreak       = $state(7);
   let roomPublic      = $state(true);
   let roomAutoStart   = $state(false);
+  let roomGameMode    = $state('classic');
   let roomError       = $state('');
   let roomSaving      = $state(false);
 
@@ -139,11 +146,11 @@
     }
   }
 
-  function joinRoom(code) {
+  function joinRoom(code, gameMode = 'classic') {
     const username = user?.profile?.username || user?.email?.split('@')[0] || 'Joueur';
     const userId   = user?.id || '';
     const isGuest  = user ? '0' : '1';
-    const p = new URLSearchParams({ roomId: code, username, userId, isGuest });
+    const p = new URLSearchParams({ roomId: code, username, userId, isGuest, gameMode });
     window.location.href = `/game?${p}`;
   }
 
@@ -153,7 +160,7 @@
     editingRoomId = null; editingCode = null;
     roomName = ''; roomEmoji = '🎵'; roomDesc = '';
     roomPlaylistIds = []; plSearch = '';
-    roomMaxRounds = 10; roomDuration = 30; roomBreak = 7; roomPublic = true; roomAutoStart = false;
+    roomMaxRounds = 10; roomDuration = 30; roomBreak = 7; roomPublic = true; roomAutoStart = false; roomGameMode = 'classic';
     roomError = '';
     roomModalOpen = true;
   }
@@ -174,6 +181,7 @@
       roomDuration = room.round_duration || 30; roomBreak = room.break_duration || 7;
       roomPublic = room.is_public !== false;
       roomAutoStart = room.auto_start || false;
+      roomGameMode = room.game_mode || 'classic';
       roomError = '';
       roomModalOpen = true;
     } catch (e) { toast('Impossible de charger la room : ' + e.message, 'error'); }
@@ -190,7 +198,7 @@
         name: roomName, emoji: roomEmoji || '🎵', description: roomDesc,
         playlist_ids: roomPlaylistIds, is_public: roomPublic,
         max_rounds: roomMaxRounds, round_duration: roomDuration, break_duration: roomBreak,
-        auto_start: roomAutoStart,
+        auto_start: roomAutoStart, game_mode: roomGameMode,
       };
       const r = editingRoomId
         ? await fetch(`/api/rooms/${editingRoomId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })
@@ -275,8 +283,13 @@
           class:active={filterActive}
           onclick={() => filterActive = !filterActive}
         >🔴 Joueurs actifs</button>
-        {#if filterAutoStart || filterActive}
-          <button class="filter-chip filter-chip-reset" onclick={() => { filterAutoStart = false; filterActive = false; }}>
+        <button
+          class="filter-chip"
+          class:active={filterQcm}
+          onclick={() => filterQcm = !filterQcm}
+        >🎯 Mode QCM</button>
+        {#if filterAutoStart || filterActive || filterQcm}
+          <button class="filter-chip filter-chip-reset" onclick={() => { filterAutoStart = false; filterActive = false; filterQcm = false; }}>
             ✕ Réinitialiser
           </button>
         {/if}
@@ -286,15 +299,58 @@
       {:else if !publicRooms.length}
         <div class="rooms-empty"><span>&#x1F30E;</span><p>Aucune room publique pour l&apos;instant.<br>Sois le premier &agrave; en cr&eacute;er une !</p></div>
       {:else}
+        {#if !filterAutoStart && !filterActive && !filterQcm && !pubSearch.trim() && qcmRooms.length > 0}
+          <div class="rooms-section-head">
+            <span class="rooms-section-badge rooms-section-qcm">🎯 Rooms QCM — Casual</span>
+            <span class="rooms-section-hint">Choix multiple · Accessible à tous · Pas d'ELO</span>
+          </div>
+          <div class="rooms-grid" style="margin-bottom:28px">
+            {#each qcmRooms.slice(0, 6) as r (r.id)}
+              <div class="room-card room-card-qcm {r.is_official ? 'room-card-official' : ''}">
+                <div class="room-card-head">
+                  <span class="room-card-emoji">{r.emoji}</span>
+                  <div style="flex:1;min-width:0">
+                    <div class="room-card-name">
+                      {r.name}
+                      {#if r.is_official}<span class="room-badge-official">✓ Officielle</span>{/if}
+                      <span class="room-badge-qcm">🎯 QCM</span>
+                    </div>
+                    {#if r.profiles?.username}<div class="room-card-owner">par {r.profiles.username}</div>{/if}
+                  </div>
+                </div>
+                {#if r.description}<p class="room-card-desc">{r.description}</p>{/if}
+                <div class="room-card-meta">
+                  <span class="room-card-tag">{r.max_rounds} manches</span>
+                  <span class="room-card-tag">{r.round_duration}s/manche</span>
+                  {#if r.track_count > 0}<span class="room-card-tag">🎵 {r.track_count} titres</span>{/if}
+                  {#if r.online > 0}<span class="room-card-tag room-card-online">🟢 {r.online} en ligne</span>{/if}
+                  {#if r.auto_start}<span class="room-card-tag room-card-auto">⚡ Auto</span>{/if}
+                  <span class="room-card-tag">Code&nbsp;<strong>{r.code}</strong></span>
+                </div>
+                <div class="room-card-footer">
+                  <button class="btn-accent sm" onclick={() => joinRoom(r.code, 'qcm')}>Rejoindre</button>
+                </div>
+              </div>
+            {/each}
+          </div>
+          {#if classicRooms.length > 0}
+            <div class="rooms-section-head">
+              <span class="rooms-section-badge">⌨️ Rooms Classiques — Compétition</span>
+              <span class="rooms-section-hint">Saisie libre · Classement ELO</span>
+            </div>
+          {/if}
+        {/if}
+
         <div class="rooms-grid">
-          {#each filteredPublic as r (r.id)}
-            <div class="room-card {r.is_official ? 'room-card-official' : ''}">
+          {#each ((!filterAutoStart && !filterActive && !filterQcm && !pubSearch.trim()) ? classicRooms : filteredPublic).slice(0, 30) as r (r.id)}
+            <div class="room-card {r.is_official ? 'room-card-official' : ''} {r.game_mode === 'qcm' ? 'room-card-qcm' : ''}">
               <div class="room-card-head">
                 <span class="room-card-emoji">{r.emoji}</span>
                 <div style="flex:1;min-width:0">
                   <div class="room-card-name">
                     {r.name}
                     {#if r.is_official}<span class="room-badge-official">✓ Officielle</span>{/if}
+                    {#if r.game_mode === 'qcm'}<span class="room-badge-qcm">🎯 QCM</span>{/if}
                   </div>
                   {#if r.profiles?.username}<div class="room-card-owner">par {r.profiles.username}</div>{/if}
                 </div>
@@ -310,7 +366,7 @@
                 {#if !r.is_public}<span class="room-card-tag room-card-private">Priv&eacute;e</span>{/if}
               </div>
               <div class="room-card-footer">
-                <button class="btn-accent sm" onclick={() => joinRoom(r.code)}>Rejoindre</button>
+                <button class="btn-accent sm" onclick={() => joinRoom(r.code, r.game_mode || 'classic')}>Rejoindre</button>
               </div>
             </div>
           {/each}
@@ -428,6 +484,34 @@
       <div class="field" style="flex:1"><label for="manches">Manches</label><input type="number" bind:value={roomMaxRounds} min="3" max="50"></div>
       <div class="field" style="flex:1"><label for="dureeManche">Dur&eacute;e/manche (s)</label><input type="number" bind:value={roomDuration} min="10" max="60"></div>
       <div class="field" style="flex:1"><label for="pauseManche">Pause (s)</label><input type="number" bind:value={roomBreak} min="3" max="15"></div>
+    </div>
+
+    <div class="field">
+      <label>Mode de jeu</label>
+      <div class="mode-picker">
+        <button
+          class="mode-btn {roomGameMode === 'classic' ? 'mode-btn-active' : ''}"
+          onclick={() => roomGameMode = 'classic'}
+          type="button"
+        >
+          <span class="mode-btn-icon">⌨️</span>
+          <div>
+            <strong>Classique</strong>
+            <span>Saisie libre · Classement ELO</span>
+          </div>
+        </button>
+        <button
+          class="mode-btn mode-btn-qcm {roomGameMode === 'qcm' ? 'mode-btn-active mode-btn-qcm-active' : ''}"
+          onclick={() => roomGameMode = 'qcm'}
+          type="button"
+        >
+          <span class="mode-btn-icon">🎯</span>
+          <div>
+            <strong>QCM Casual</strong>
+            <span>Choix multiple · Pas d'ELO</span>
+          </div>
+        </button>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:.875rem">
@@ -600,6 +684,83 @@
   }
   .room-card-official:hover {
     border-color: rgba(167,139,250, 0.45);
+  }
+  .room-card-qcm {
+    border-color: rgba(74,222,128, 0.2);
+    background: rgba(74,222,128, 0.025);
+  }
+  .room-card-qcm:hover {
+    border-color: rgba(74,222,128, 0.35);
+  }
+  .room-badge-qcm {
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: #4ade80;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .rooms-section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .rooms-section-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: rgb(var(--c-glass) / 0.06);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .rooms-section-qcm {
+    background: rgba(74,222,128,0.08);
+    border-color: rgba(74,222,128,0.25);
+    color: #4ade80;
+  }
+  .rooms-section-hint {
+    font-size: 0.72rem;
+    color: var(--dim);
+  }
+  /* mode picker dans modal */
+  .mode-picker {
+    display: flex;
+    gap: 8px;
+  }
+  .mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: rgb(var(--c-glass) / 0.04);
+    color: var(--mid);
+    font-family: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .mode-btn strong { display: block; color: var(--text); font-size: 0.82rem; }
+  .mode-btn span:last-child { display: block; font-size: 0.7rem; color: var(--dim); }
+  .mode-btn-icon { font-size: 1.2rem; flex-shrink: 0; }
+  .mode-btn:hover { background: rgb(var(--c-glass) / 0.08); }
+  .mode-btn-active {
+    border-color: rgb(var(--accent-rgb) / 0.4);
+    background: rgb(var(--accent-rgb) / 0.06);
+    color: var(--text);
+    box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.15);
+  }
+  .mode-btn-qcm-active {
+    border-color: rgba(74,222,128,0.4);
+    background: rgba(74,222,128,0.06);
+    box-shadow: 0 0 0 2px rgba(74,222,128,0.12);
   }
   .room-card-head {
     display: flex;
