@@ -16,6 +16,7 @@
     if (path.startsWith('/rooms')) return 'rooms';
     if (path.startsWith('/playlists')) return 'playlists';
     if (path.startsWith('/salon')) return 'salon';
+    if (path.startsWith('/docs')) return 'docs';
     if (path.startsWith('/profile') || path.startsWith('/user')) return 'profile';
     return '';
   });
@@ -34,7 +35,7 @@
   <div class="nav-links">
     <a href="/rooms"     class="nav-link" class:active={activeSection === 'rooms'}>Rooms</a>
     <a href="/playlists" class="nav-link" class:active={activeSection === 'playlists'}>Playlists</a>
-    <a href="/docs"      class="nav-link">Docs</a>
+    <a href="/docs"      class="nav-link" class:active={activeSection === 'docs'}>Docs</a>
   </div>
 
   <div class="nav-right">
@@ -81,6 +82,9 @@
   <a href="/playlists" class="bottom-nav-item" class:active={activeSection === 'playlists'}>
     <span class="bn-icon">🎵</span>
     Playlists
+  </a>
+  <a href="/" class="bottom-nav-item bn-home" class:active={activeSection === 'home'} aria-label="Accueil">
+    <span class="bn-home-icon">🏠</span>
   </a>
   <a href="/salon" class="bottom-nav-item" class:active={activeSection === 'salon'}>
     <span class="bn-icon">📺</span>
