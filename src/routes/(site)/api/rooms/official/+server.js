@@ -23,7 +23,7 @@ export async function GET() {
     if (!base) {
       const { data, error } = await supabase
         .from("rooms")
-        .select("code, name, emoji, description, is_official")
+        .select("code, name, emoji, description, game_mode, is_official")
         .eq("is_official", true)
         .order("created_at");
       if (error) throw error;
@@ -32,6 +32,7 @@ export async function GET() {
         name: r.name,
         emoji: r.emoji,
         description: r.description || "",
+        game_mode: r.game_mode || "classic",
         color: "var(--accent)",
         gradient: "linear-gradient(135deg,rgba(62,207,255,.12),transparent)",
       }));

@@ -448,6 +448,8 @@ async function startNextRound(roomId, io) {
     return;
   }
 
+  io.to(`room:${roomId}`).emit("round_loading");
+
   game.currentRound++;
   game.firstFullFinder = null;
   game.totalFullFound = 0;
@@ -461,13 +463,16 @@ async function startNextRound(roomId, io) {
       startSeconds = 0,
       ytAudio = null;
 
+    let prefetchYtdlFailed = false;
+
     if (game.prefetchedRound?.track === track) {
       ({ videoId, startSeconds, ytAudio } = game.prefetchedRound);
+      prefetchYtdlFailed = !!videoId && !ytAudio;
       game.prefetchedRound = null;
     }
 
     // Prefetch en cours mais pas encore terminé → on l'attend (max 13s)
-    if (!ytAudio && game._prefetchPromise) {
+    if (!ytAudio && !prefetchYtdlFailed && game._prefetchPromise) {
       await Promise.race([
         game._prefetchPromise.catch(() => {}),
         new Promise((r) => setTimeout(r, 13000)),
@@ -475,6 +480,7 @@ async function startNextRound(roomId, io) {
       game._prefetchPromise = null;
       if (game.prefetchedRound?.track === track) {
         ({ videoId, startSeconds, ytAudio } = game.prefetchedRound);
+        prefetchYtdlFailed = !!videoId && !ytAudio;
         game.prefetchedRound = null;
       }
     }
@@ -498,7 +504,8 @@ async function startNextRound(roomId, io) {
     // que si prefetch KO ou manche 1 dont le prefetch n'a pas eu le temps.
     // Timeout 15s : joueur est sur l'écran de chargement, pas de pression.
     // Pas d'IFrame en fallback : videoId visible dans devtools = triche facile.
-    if (videoId && !ytAudio) {
+    // prefetchYtdlFailed : yt-dlp a déjà échoué pendant le prefetch, inutile de retenter.
+    if (videoId && !ytAudio && !prefetchYtdlFailed) {
       ytAudio = await Promise.race([
         getYtAudioUrl(videoId).catch(() => null),
         new Promise((resolve) => setTimeout(() => resolve(null), 15000)),

@@ -38,6 +38,13 @@
   let gameoverScores = $state([]);
   let guessVal    = $state('');
   let guessDisabled = $state(true);
+  let gameMode    = $state('classic');
+  let qcmChoices       = $state([]);
+  let qcmChosen        = $state(null);
+  let qcmReveal        = $state(null);
+  let qcmChoiceResult  = $state(null);   // { correct, pts } after submitting
+  let qcmAnsweredCount = $state(0);
+  let qcmTotalPlayers  = $state(0);
   let showDcBanner = $state(false);
   let volValue    = $state(50);
 
@@ -80,10 +87,12 @@
   let syncWaiting  = $state(false);
   let syncReady    = $state(0);
   let syncTotal    = $state(0);
+  let roundLoading = $state(false);
+  let _roundLoadingTimer = null;
   let _waitingForSync = false;
   let _syncPaused    = false;
   let _adminPaused   = false;
-  let _usingPreview  = false;
+  let _usingIframe   = false;
   let _metaGuardInterval = null;
 
   // Chat
@@ -164,21 +173,35 @@
   }
   const _FAKE_META = { title: '♪ ♪ ♪', artist: '???', album: 'ZIK — Blind Test', artwork: [{ src: '/favicon/web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png' }] };
 
-  function setFakeMediaSession() {
+  function lockMediaSession() {
     if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata(_FAKE_META);
+    try {
+      const fake = new MediaMetadata(_FAKE_META);
+      Object.defineProperty(navigator.mediaSession, 'metadata', {
+        get: () => fake,
+        set: () => {},
+        configurable: true,
+      });
+    } catch {}
     navigator.mediaSession.playbackState = 'playing';
   }
 
   function startMediaGuard() {
-    setFakeMediaSession();
+    lockMediaSession();
     clearInterval(_metaGuardInterval);
-    _metaGuardInterval = setInterval(setFakeMediaSession, 500);
+    _metaGuardInterval = setInterval(lockMediaSession, 200);
   }
 
   function stopMediaGuard() {
     clearInterval(_metaGuardInterval);
     _metaGuardInterval = null;
+    try {
+      Object.defineProperty(navigator.mediaSession, 'metadata', {
+        get: () => null,
+        set: (v) => {},
+        configurable: true,
+      });
+    } catch {}
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
   }
 
@@ -188,6 +211,7 @@
     if (ytPlayer?.stopVideo) ytPlayer.stopVideo();
     audio.pause();
     audio.onloadedmetadata = null;
+    audio.onended = null;
     startMediaGuard();
     audio.src = audioUrl;
     audio.volume = savedVol() / 100;
@@ -202,6 +226,9 @@
         document.addEventListener('pointerdown', resume, true);
         document.addEventListener('keydown',     resume, true);
       });
+    };
+    audio.onended = () => {
+      if (_roundActive) { audio.currentTime = 0; audio.play().catch(() => {}); }
     };
     audio.load();
   }
@@ -234,7 +261,7 @@
   function stopVideo() {
     if (ytReady && ytPlayer) ytPlayer.stopVideo();
     const audio = document.getElementById('previewAudio');
-    if (audio) { audio.pause(); audio.src = ''; }
+    if (audio) { audio.onended = null; audio.pause(); audio.src = ''; }
   }
 
   function showFeedback(msg, cls) {
@@ -306,6 +333,12 @@
     }
   }
 
+  function submitChoice(index) {
+    if (qcmChosen !== null || guessDisabled || !socket) return;
+    qcmChosen = index;
+    socket.emit('submit_choice', { choiceIndex: index });
+  }
+
   function sendChat() {
     const text = chatInput.trim();
     if (!text || !socket) return;
@@ -322,11 +355,13 @@
   }
 
   onMount(async () => {
+    lockMediaSession();
     const P  = new URLSearchParams(location.search);
     ROOM_ID  = P.get('roomId')   || 'pop';
     USERNAME = P.get('username') || sessionStorage.getItem('zik_uname') || 'Joueur';
     USER_ID  = P.get('userId')   || sessionStorage.getItem('zik_uid')   || null;
     IS_GUEST = P.get('isGuest') === '1' || !USER_ID;
+    gameMode = P.get('gameMode') || 'classic';
 
     volValue = savedVol();
     setTimeout(() => document.getElementById('volSlider')?.style.setProperty('--vol', volValue + '%'), 50);
@@ -353,6 +388,7 @@
         hasOwner    = roomConfig.hasOwner     || false;
         adminLocked = roomConfig.adminBlocked || false;
         if (adminLocked) startDisabled = true;
+        if (roomConfig.gameMode) gameMode = roomConfig.gameMode;
       }
     });
     socket.on('game_countdown', ({ seconds }) => { startCountdownUI(seconds); });
@@ -371,8 +407,14 @@
       ps.forEach(p => { _prevScores[p.name] = p.score; });
     });
     socket.on('init_history', h => { history = Array.isArray(h) ? [...h].reverse() : []; });
-    socket.on('game_starting', () => { gameoverShow = false; showStart = false; stopCountdownUI(); revealStep = 0; _revealTimers.forEach(clearTimeout); _revealTimers = []; });
+    socket.on('game_starting', () => { gameoverShow = false; showStart = false; stopCountdownUI(); revealStep = 0; _revealTimers.forEach(clearTimeout); _revealTimers = []; clearTimeout(_roundLoadingTimer); roundLoading = false; });
+    socket.on('round_loading', () => {
+      clearTimeout(_roundLoadingTimer);
+      _roundLoadingTimer = setTimeout(() => { roundLoading = true; }, 1500);
+    });
     socket.on('start_round', data => {
+      clearTimeout(_roundLoadingTimer);
+      roundLoading = false;
       roundInfo = `Manche ${data.round} / ${data.total}`;
       coverSrc = ''; showCover = false;
       summaryShow = false; gameoverShow = false; feedback = { msg: '', cls: '' };
@@ -383,6 +425,12 @@
       slotTitle  = { val: '???', state: null };
       timerPct = 100; timerColor = 'var(--accent)';
       guessDisabled = true; guessVal = '';
+      qcmChoices = data.choices || [];
+      qcmChosen = null;
+      qcmReveal = null;
+      qcmChoiceResult = null;
+      qcmAnsweredCount = 0;
+      qcmTotalPlayers = 0;
       showStart = false; startDisabled = false; startLabel = '\u{1F3AE} Lancer la partie';
       _roundActive = true;
       _waitingForSync = true;
@@ -390,15 +438,11 @@
       syncReady = 0; syncTotal = 0;
       _lastVideo = { videoId: data.videoId, startSeconds: data.startSeconds, startedAt: Date.now() };
       if (data.audioUrl) {
-        _usingPreview = true;
+        _usingIframe = false;
         loadAudio(data.audioUrl, data.startSeconds);
         if (socket) socket.emit('player_ready');
-      } else if (data.previewUrl) {
-        _usingPreview = true;
-        loadPreview(data.previewUrl);
-        if (socket) socket.emit('player_ready');
       } else {
-        _usingPreview = false;
+        _usingIframe = true;
         loadVideo(data.videoId, data.startSeconds);
       }
     });
@@ -407,7 +451,7 @@
       syncWaiting = false;
       guessDisabled = false;
       _syncPaused = false;
-      if (!_usingPreview) {
+      if (_usingIframe) {
         if (ytPlayer?.unMute) ytPlayer.unMute();
         if (ytPlayer?.setVolume) ytPlayer.setVolume(savedVol());
         if (ytPlayer?.playVideo) ytPlayer.playVideo();
@@ -437,7 +481,21 @@
       showFeedback(data.msg, cls);
     });
     socket.on('reveal_cover', ({ cover }) => { if (cover) { coverSrc = cover; showCover = true; } });
+    socket.on('qcm_reveal', ({ correctChoiceIndex }) => {
+      qcmReveal = correctChoiceIndex;
+    });
+    socket.on('choice_result', (result) => {
+      qcmChoiceResult = result;
+    });
+    socket.on('qcm_answered_update', ({ answered, total }) => {
+      qcmAnsweredCount = answered;
+      qcmTotalPlayers = total;
+    });
+
     socket.on('round_end', data => {
+      if (gameMode === 'qcm' && data.correctChoiceIndex !== undefined) {
+        qcmReveal = data.correctChoiceIndex;
+      }
       const dashIdx    = data.answer.indexOf(' - ');
       const fullArtist = dashIdx > -1 ? data.answer.slice(0, dashIdx) : data.answer;
       const title      = dashIdx > -1 ? data.answer.slice(dashIdx + 3) : '\u2014';
@@ -519,6 +577,7 @@
     if (socket) socket.disconnect();
     stopMediaGuard();
     clearTimeout(feedTimer);
+    clearTimeout(_roundLoadingTimer);
     clearInterval(countdownInterval);
     _revealTimers.forEach(clearTimeout);
   });
@@ -626,18 +685,20 @@
             <span class="g-slot-label">Artiste</span>
             <div class="g-slot-val">{slotArtist.val}</div>
           </div>
-          {#each featSlots as fs, i}
-            <div class="g-slot g-slot-feat {fs.state || ''}">
-              <span class="g-slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
-              <div class="g-slot-val">{fs.val}</div>
-            </div>
-          {/each}
-          {#each extraSlots as es}
-            <div class="g-slot {es.state || ''}">
-              <span class="g-slot-label">{es.label}</span>
-              <div class="g-slot-val">{es.val}</div>
-            </div>
-          {/each}
+          {#if gameMode !== 'qcm'}
+            {#each featSlots as fs, i}
+              <div class="g-slot g-slot-feat {fs.state || ''}">
+                <span class="g-slot-label">{featSlots.length > 1 ? `Feat. ${i+1}` : 'Feat.'}</span>
+                <div class="g-slot-val">{fs.val}</div>
+              </div>
+            {/each}
+            {#each extraSlots as es}
+              <div class="g-slot {es.state || ''}">
+                <span class="g-slot-label">{es.label}</span>
+                <div class="g-slot-val">{es.val}</div>
+              </div>
+            {/each}
+          {/if}
           <div class="g-slot {slotTitle.state || ''}">
             <span class="g-slot-label">Titre</span>
             <div class="g-slot-val">{slotTitle.val}</div>
@@ -653,6 +714,11 @@
             <p class="g-summary-reason">{summaryReason}</p>
             <p class="g-summary-finder">{summaryFinder}</p>
           </div>
+        {/if}
+
+        <!-- Chargement imprévu (yt-dlp lent, prefetch KO) -->
+        {#if roundLoading}
+          <div class="g-waiting">&#x23F3; Chargement de la prochaine manche&hellip;</div>
         {/if}
 
         <!-- Erreur -->
@@ -694,26 +760,68 @@
 
       <!-- Input bar (dans la colonne centrale) -->
 
-      <div class="g-input-bar">
+      <div class="g-input-bar" class:g-input-bar-qcm={gameMode === 'qcm' && qcmChoices.length > 0}>
         {#if syncWaiting}
           <div class="g-sync-waiting">
             &#x23F3; Chargement de la musique&hellip;
             {#if syncTotal > 1}<span class="g-sync-count">{syncReady}/{syncTotal}</span>{/if}
           </div>
         {/if}
-        <div class="g-input-wrap">
-          <input
-            type="text"
-            id="guessInput"
-            class="g-input"
-            placeholder="Artiste ou titre&hellip;"
-            disabled={guessDisabled}
-            bind:value={guessVal}
-            autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" maxlength="100"
-            onkeydown={e => { if (e.key === 'Enter') submitGuess(); }}
-          >
-          <button class="g-submit-btn" disabled={guessDisabled} onclick={submitGuess} aria-label="Valider">&#x2192;</button>
-        </div>
+        {#if gameMode === 'qcm' && qcmChoices.length > 0}
+          <div class="g-qcm-grid">
+            {#each qcmChoices as choice, i}
+              {@const isChosen = qcmChosen === i}
+              {@const isRevealing = qcmReveal !== null}
+              {@const isCorrect = isRevealing && i === qcmReveal}
+              {@const isWrong = isRevealing && isChosen && !isCorrect}
+              {@const isNeutral = isRevealing && !isChosen && !isCorrect}
+              <button
+                class="g-qcm-btn g-qcm-{i}"
+                class:g-qcm-selected={isChosen && !isRevealing}
+                class:g-qcm-correct={isCorrect}
+                class:g-qcm-wrong={isWrong}
+                class:g-qcm-neutral={isNeutral}
+                onclick={() => submitChoice(i)}
+                disabled={guessDisabled || qcmChosen !== null}
+              >
+                <span class="g-qcm-shape"></span>
+                <span class="g-qcm-text">{choice}</span>
+              </button>
+            {/each}
+          </div>
+          {#if qcmReveal === null}
+            <div class="g-qcm-status-bar">
+              {#if qcmChosen !== null && qcmChoiceResult !== null}
+                {#if qcmChoiceResult.correct}
+                  <span class="g-qcm-pts-correct">+{qcmChoiceResult.pts} pts ✓</span>
+                {:else}
+                  <span class="g-qcm-pts-wrong">+0 pt ✗</span>
+                {/if}
+              {:else if qcmChosen !== null}
+                <span class="g-qcm-locked">Réponse verrouillée…</span>
+              {:else}
+                <span class="g-qcm-hint">Choisis ta réponse !</span>
+              {/if}
+              {#if qcmTotalPlayers > 1}
+                <span class="g-qcm-count">{qcmAnsweredCount}/{qcmTotalPlayers} répondu{qcmAnsweredCount > 1 ? 's' : ''}</span>
+              {/if}
+            </div>
+          {/if}
+        {:else if gameMode !== 'qcm'}
+          <div class="g-input-wrap">
+            <input
+              type="text"
+              id="guessInput"
+              class="g-input"
+              placeholder="Artiste ou titre&hellip;"
+              disabled={guessDisabled}
+              bind:value={guessVal}
+              autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" maxlength="100"
+              onkeydown={e => { if (e.key === 'Enter') submitGuess(); }}
+            >
+            <button class="g-submit-btn" disabled={guessDisabled} onclick={submitGuess} aria-label="Valider">&#x2192;</button>
+          </div>
+        {/if}
       </div>
     </div>
 

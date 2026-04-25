@@ -33,7 +33,7 @@
   function joinAsLogged() {
     if (!loggedUser) return;
     joining = true;
-    const p = new URLSearchParams({ roomId: room.code, username: loggedUser.uname, userId: loggedUser.uid, isGuest: '0' });
+    const p = new URLSearchParams({ roomId: room.code, username: loggedUser.uname, userId: loggedUser.uid, isGuest: '0', gameMode: room.game_mode || 'classic' });
     window.location.href = `/game?${p}`;
   }
 
@@ -47,7 +47,7 @@
     const uid = 'guest_' + Date.now();
     sessionStorage.setItem('zik_uid', uid);
     sessionStorage.setItem('zik_uname', name);
-    const p = new URLSearchParams({ roomId: room.code, username: name, userId: uid, isGuest: '1' });
+    const p = new URLSearchParams({ roomId: room.code, username: name, userId: uid, isGuest: '1', gameMode: room.game_mode || 'classic' });
     window.location.href = `/game?${p}`;
   }
 </script>
@@ -81,9 +81,14 @@
       <div class="orb o2"></div>
     </div>
     <div class="room-hero-content">
-      {#if room.is_official}
-        <span class="room-badge-official">⭐ Room officielle</span>
-      {/if}
+      <div class="room-badges">
+        {#if room.is_official}
+          <span class="room-badge-official">⭐ Room officielle</span>
+        {/if}
+        {#if room.game_mode === 'qcm'}
+          <span class="room-badge-qcm">🎯 Mode QCM</span>
+        {/if}
+      </div>
       <div class="room-emoji">{room.emoji}</div>
       <h1 class="room-title">{room.name}</h1>
       {#if room.description}
@@ -93,6 +98,11 @@
         <span class="room-meta-chip">🎵 Blind Test</span>
         <span class="room-meta-chip">🌐 Multijoueur</span>
         <span class="room-meta-chip">⚡ Gratuit</span>
+        {#if room.game_mode === 'qcm'}
+          <span class="room-meta-chip room-meta-chip-qcm">🎯 QCM — Choix multiple</span>
+        {:else}
+          <span class="room-meta-chip">⌨️ Mode Classique</span>
+        {/if}
       </div>
     </div>
   </div>
@@ -172,6 +182,13 @@
     inset: 0;
     pointer-events: none;
   }
+  .room-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
   .room-badge-official {
     display: inline-block;
     background: rgba(250, 204, 21, 0.12);
@@ -182,7 +199,22 @@
     padding: 4px 12px;
     border-radius: 50px;
     letter-spacing: 0.3px;
-    margin-bottom: 20px;
+  }
+  .room-badge-qcm {
+    display: inline-block;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 50px;
+    letter-spacing: 0.3px;
+  }
+  .room-meta-chip-qcm {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.08);
+    border-color: rgba(34, 197, 94, 0.2);
   }
   .room-emoji {
     font-size: 3.5rem;

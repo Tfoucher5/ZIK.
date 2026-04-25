@@ -17,6 +17,8 @@
 
   let pubRooms = $state([]);
   let pubLoading = $state(true);
+  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm'));
+  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm'));
 
   let weeklyLb = $state([]);
   let eloLb = $state([]);
@@ -155,17 +157,20 @@
     }
   }
 
-  function joinRoom(roomId) {
+  function joinRoom(roomId, gameMode = 'classic') {
     pendingRoom = roomId;
+    pendingGameMode = gameMode;
     const userId = sessionStorage.getItem("zik_uid");
     const name = sessionStorage.getItem("zik_uname");
-    if (userId && name) navigateToGame(roomId, name, userId, false);
-    else openGuestModal(roomId);
+    if (userId && name) navigateToGame(roomId, name, userId, false, gameMode);
+    else openGuestModal(roomId, gameMode);
   }
 
-  function navigateToGame(roomId, username, userId, isGuest) {
+  let pendingGameMode = $state('classic');
+
+  function navigateToGame(roomId, username, userId, isGuest, gameMode = 'classic') {
     if (!username) {
-      openGuestModal(roomId);
+      openGuestModal(roomId, gameMode);
       return;
     }
     const p = new URLSearchParams({
@@ -173,12 +178,14 @@
       username,
       userId: userId || "",
       isGuest: isGuest ? "1" : "0",
+      gameMode,
     });
     window.location.href = `/game?${p}`;
   }
 
-  function openGuestModal(roomId) {
+  function openGuestModal(roomId, gameMode = 'classic') {
     pendingRoom = roomId;
+    pendingGameMode = gameMode;
     const saved = localStorage.getItem("zik_guest");
     if (saved) guestUsername = saved;
     guestOpen = true;
@@ -193,7 +200,7 @@
     if (!u) return;
     localStorage.setItem("zik_guest", u);
     guestOpen = false;
-    navigateToGame(pendingRoom, u, null, true);
+    navigateToGame(pendingRoom, u, null, true, pendingGameMode);
   }
 
   const jsonLd = JSON.stringify([
@@ -402,8 +409,8 @@
     {#each rooms as room, i}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
       <div class="official-card" role="button" tabindex="0"
-        onclick={() => joinRoom(room.id)}
-        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && joinRoom(room.id)}
+        onclick={() => joinRoom(room.id, room.game_mode || 'classic')}
+        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && joinRoom(room.id, room.game_mode || 'classic')}
         use:reveal={i * 40}>
         <div class="official-card-stripe"></div>
         <div class="official-card-header">
@@ -419,7 +426,10 @@
             <span class="official-online-dot" class:live={room.online > 0}></span>
             {room.online > 0 ? `${room.online} en ligne` : 'Disponible'}
           </span>
-          <button class="official-card-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id); }}>
+          {#if room.game_mode === 'qcm'}
+            <span class="official-card-badge-qcm">🎯 QCM</span>
+          {/if}
+          <button class="official-card-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id, room.game_mode || 'classic'); }}>
             Rejoindre →
           </button>
         </div>
@@ -427,6 +437,27 @@
     {/each}
   </div>
 </section>
+
+<!-- ══════════════════════════════ QCM CTA ══════════════════════════════ -->
+<div class="qcm-cta" use:reveal>
+  <div class="qcm-cta-inner">
+    <div class="qcm-cta-left">
+      <span class="qcm-cta-tag">✦ Nouveau · Mode Casual</span>
+      <h2 class="qcm-cta-title">Mode QCM</h2>
+      <p class="qcm-cta-desc">4 propositions, 1 bonne réponse. Idéal pour jouer sans pression ou initier des amis au blind test. Pas d'ELO, que du plaisir.</p>
+      <div class="qcm-cta-actions">
+        <a href="/rooms?mode=qcm" class="btn-accent">Voir les rooms QCM →</a>
+        <a href="/docs#qcm" class="btn-ghost sm">En savoir plus</a>
+      </div>
+    </div>
+    <div class="qcm-choices-preview" aria-hidden="true">
+      <div class="qcm-choice qcm-c0">● Daft Punk — Get Lucky</div>
+      <div class="qcm-choice qcm-c1">◆ Pharrell Williams — Happy</div>
+      <div class="qcm-choice qcm-c2">▲ Michael Jackson — Thriller</div>
+      <div class="qcm-choice qcm-c3">■ The Weeknd — Blinding Lights</div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════ ROOMS PUBLIQUES ══════════════════════════════ -->
 {#if pubLoading || pubRooms.length > 0}
@@ -458,39 +489,90 @@
   {:else if pubRooms.length === 0}
     <p class="pub-empty">Aucune room publique en ce moment. <a href="/rooms">Crée la première →</a></p>
   {:else}
-    <div class="pub-grid">
-      {#each pubRooms as room, i (room.id)}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
-        <div
-          class="pub-card"
-          class:pub-hot={room.online >= 2}
-          class:pub-fire={room.online >= 5}
-          style="--i:{i}"
-          onclick={() => joinRoom(room.id)}
-          role="button"
-          tabindex="0"
-        >
-          <div class="pub-card-top">
-            <span class="pub-emoji">{room.emoji}</span>
-            {#if room.online >= 5}
-              <span class="pub-popular">🔥 Populaire</span>
-            {/if}
-          </div>
-          <div class="pub-name">{room.name}</div>
-          {#if room.host}<div class="pub-host">par <strong>{room.host}</strong></div>{/if}
-          {#if room.description}<div class="pub-desc">{room.description}</div>{/if}
-          <div class="pub-footer">
-            <span class="pub-online" class:pub-online-live={room.online > 0}>
-              <span class="pub-dot" class:pub-dot-live={room.online > 0}></span>
-              {room.online > 0 ? `${room.online} en ligne` : 'Vide'}
-            </span>
-            <button class="pub-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id); }}>
-              Jouer →
-            </button>
-          </div>
+    {#if pubQcmRooms.length > 0}
+      {#if pubClassicRooms.length > 0}
+        <div class="pub-section-head">
+          <span class="pub-section-badge pub-section-qcm">🎯 QCM — Casual</span>
+          <span class="pub-section-hint">Choix multiple · Pas d'ELO</span>
         </div>
-      {/each}
-    </div>
+      {/if}
+      <div class="pub-grid" style={pubClassicRooms.length > 0 ? 'margin-bottom:24px' : ''}>
+        {#each pubQcmRooms as room, i (room.id)}
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+          <div
+            class="pub-card pub-card-qcm"
+            class:pub-hot={room.online >= 2}
+            class:pub-fire={room.online >= 5}
+            style="--i:{i}"
+            onclick={() => joinRoom(room.id, 'qcm')}
+            role="button"
+            tabindex="0"
+          >
+            <div class="pub-card-top">
+              <span class="pub-emoji">{room.emoji}</span>
+              <div class="pub-badges">
+                <span class="pub-badge-qcm">🎯 QCM</span>
+                {#if room.online >= 5}<span class="pub-popular">🔥</span>{/if}
+              </div>
+            </div>
+            <div class="pub-name">{room.name}</div>
+            {#if room.host}<div class="pub-host">par <strong>{room.host}</strong></div>{/if}
+            {#if room.description}<div class="pub-desc">{room.description}</div>{/if}
+            <div class="pub-footer">
+              <span class="pub-online" class:pub-online-live={room.online > 0}>
+                <span class="pub-dot" class:pub-dot-live={room.online > 0}></span>
+                {room.online > 0 ? `${room.online} en ligne` : 'Vide'}
+              </span>
+              <button class="pub-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id, 'qcm'); }}>
+                Jouer →
+              </button>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if pubClassicRooms.length > 0}
+      {#if pubQcmRooms.length > 0}
+        <div class="pub-section-head">
+          <span class="pub-section-badge">⌨️ Classique</span>
+          <span class="pub-section-hint">Saisie libre · Classement ELO</span>
+        </div>
+      {/if}
+      <div class="pub-grid">
+        {#each pubClassicRooms as room, i (room.id)}
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+          <div
+            class="pub-card"
+            class:pub-hot={room.online >= 2}
+            class:pub-fire={room.online >= 5}
+            style="--i:{i}"
+            onclick={() => joinRoom(room.id, 'classic')}
+            role="button"
+            tabindex="0"
+          >
+            <div class="pub-card-top">
+              <span class="pub-emoji">{room.emoji}</span>
+              {#if room.online >= 5}
+                <span class="pub-popular">🔥 Populaire</span>
+              {/if}
+            </div>
+            <div class="pub-name">{room.name}</div>
+            {#if room.host}<div class="pub-host">par <strong>{room.host}</strong></div>{/if}
+            {#if room.description}<div class="pub-desc">{room.description}</div>{/if}
+            <div class="pub-footer">
+              <span class="pub-online" class:pub-online-live={room.online > 0}>
+                <span class="pub-dot" class:pub-dot-live={room.online > 0}></span>
+                {room.online > 0 ? `${room.online} en ligne` : 'Vide'}
+              </span>
+              <button class="pub-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id, 'classic'); }}>
+                Jouer →
+              </button>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
   {/if}
 </section>
 {/if}
@@ -954,6 +1036,31 @@
   .pub-btn:hover { background: rgb(var(--accent-rgb) / 0.16); }
   .pub-empty { font-size: 0.85rem; color: var(--dim); }
   .pub-empty a { color: var(--accent); }
+  .pub-section-head {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .pub-section-badge {
+    font-size: 0.75rem; font-weight: 700;
+    background: rgb(var(--c-glass) / 0.06);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 3px 11px; border-radius: 20px;
+  }
+  .pub-section-qcm {
+    background: rgba(74,222,128,0.08);
+    border-color: rgba(74,222,128,0.25);
+    color: #4ade80;
+  }
+  .pub-section-hint { font-size: 0.7rem; color: var(--dim); }
+  .pub-card-qcm { border-color: rgba(74,222,128,0.2); background: rgba(74,222,128,0.025); }
+  .pub-card-qcm:hover { border-color: rgba(74,222,128,0.35); }
+  .pub-badges { display: flex; align-items: center; gap: 4px; }
+  .pub-badge-qcm {
+    font-size: 0.58rem; font-weight: 700;
+    background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+    color: #4ade80; padding: 2px 7px; border-radius: 20px;
+  }
 
   /* ════════════════════════════ MODE SALON CTA ════════════════════════════ */
   .salon-cta {
@@ -1032,6 +1139,93 @@
     display: flex; align-items: center; justify-content: center;
   }
   .sphone-shape { font-size: 1.5rem; }
+
+  /* ════════════════════════════ QCM CTA ════════════════════════════ */
+  .official-card-badge-qcm {
+    font-size: 0.58rem;
+    font-weight: 700;
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: #4ade80;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-right: auto;
+  }
+  .qcm-cta {
+    margin: 0 clamp(20px, 5vw, 72px) 8px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, rgba(62,207,255,0.06) 100%);
+    border: 1px solid rgba(74,222,128,0.2);
+    padding: 48px clamp(24px, 5vw, 64px);
+    position: relative;
+    overflow: hidden;
+  }
+  .qcm-cta::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 75% 50%, rgba(74,222,128,0.08) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .qcm-cta-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .qcm-cta-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .qcm-cta-tag {
+    display: inline-flex; width: fit-content;
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #4ade80;
+    background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+    padding: 4px 12px; border-radius: 50px;
+  }
+  .qcm-cta-title {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    color: var(--text);
+  }
+  .qcm-cta-desc {
+    font-size: 0.9rem;
+    color: var(--mid);
+    line-height: 1.65;
+    max-width: 420px;
+  }
+  .qcm-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .qcm-choices-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    width: 260px;
+  }
+  .qcm-choice {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .qcm-c0 { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); color: #fca5a5; }
+  .qcm-c1 { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3); color: #93c5fd; }
+  .qcm-c2 { background: rgba(234,179,8,.12); border-color: rgba(234,179,8,.3); color: #fde68a; }
+  .qcm-c3 { background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.4); color: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,.15); }
+  @media (max-width: 900px) {
+    .qcm-choices-preview { display: none; }
+  }
+  @media (max-width: 600px) {
+    .qcm-cta { margin: 0 16px 8px; padding: 36px 20px; }
+  }
 
   /* ════════════════════════════ LEADERBOARDS ════════════════════════════ */
   .lb-grid {

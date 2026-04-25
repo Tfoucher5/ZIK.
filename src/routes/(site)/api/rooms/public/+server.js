@@ -24,7 +24,7 @@ export async function GET() {
       const { data, error } = await supabase
         .from("rooms")
         .select(
-          "code, name, emoji, description, last_active_at, profiles!owner_id(username)",
+          "code, name, emoji, description, game_mode, last_active_at, profiles!owner_id(username)",
         )
         .eq("is_public", true)
         .eq("is_official", false)
@@ -37,6 +37,7 @@ export async function GET() {
         name: r.name,
         emoji: r.emoji || "🎵",
         description: r.description || "",
+        game_mode: r.game_mode || "classic",
         host: r.profiles?.username || null,
       }));
       _cache.set(base);
