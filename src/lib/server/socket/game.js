@@ -5,7 +5,7 @@ const stringSimilarity = require("string-similarity");
 import { YouTube } from "youtube-sr";
 
 import { supabase } from "../config.js";
-import { playlistCache, customRooms, dbRooms, roomGames } from "../state.js";
+import { playlistCache, customRooms, dbRooms, roomGames, chatHistories } from "../state.js";
 import {
   loadPlaylist,
   cleanString,
@@ -113,8 +113,6 @@ const AUTO_START_DELAY = 5; // seconds
 const autoStartCountdowns = {};
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
-// Map: roomId -> { messages: [], clearTimer: null }
-const chatHistories = {};
 const CHAT_MAX_MESSAGES = 50;
 const CHAT_CLEAR_DELAY = 30 * 60 * 1000; // 30 min après room vide
 
@@ -1436,6 +1434,24 @@ export function adminCloseRoom(roomId) {
   });
   io?.socketsLeave(`room:${roomId}`);
   delete roomGames[roomId];
+  return true;
+}
+
+export function adminGetChatHistory(roomId) {
+  return chatHistories[roomId]?.messages ?? [];
+}
+
+export function adminSendChat(roomId, text, adminName) {
+  const io = globalThis.__zik_io;
+  if (!io) return false;
+  const msg = String(text || "").trim().slice(0, 120);
+  if (!msg) return false;
+  const name = `${adminName || "Admin"} - admin`;
+  const message = { name, text: msg, ts: Date.now() };
+  const history = getChatHistory(roomId);
+  history.messages.push(message);
+  if (history.messages.length > CHAT_MAX_MESSAGES) history.messages.shift();
+  io.to(`room:${roomId}`).emit("chat_message", message);
   return true;
 }
 

@@ -1,5 +1,5 @@
 <script>
-  import { getContext, onDestroy } from 'svelte';
+  import { getContext, onDestroy, tick } from 'svelte';
 
   const adminCtx = getContext('adminToken');
   const token = $derived(adminCtx?.token ?? '');
@@ -12,8 +12,29 @@
   let actionMsgTimer = null;
   let announceText = $state('');
   let confirmClose = $state(false);
+  let chatBoxEl = null;
+  let chatInput = $state('');
+  let _prevChatLen = 0;
 
   const selectedRoom = $derived(rooms.find(r => r.roomId === selected) ?? null);
+
+  function fmtTime(ts) {
+    return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  $effect(() => {
+    const len = selectedRoom?.chatMessages?.length ?? 0;
+    if (len !== _prevChatLen) {
+      _prevChatLen = len;
+      tick().then(() => { if (chatBoxEl) chatBoxEl.scrollTop = chatBoxEl.scrollHeight; });
+    }
+  });
+
+  function sendAdminChat() {
+    if (!chatInput.trim() || !selectedRoom) return;
+    doAction(selectedRoom.roomId, 'chat', null, chatInput.trim());
+    chatInput = '';
+  }
 
   function connectSSE(tok) {
     if (es) { es.close(); es = null; }
@@ -222,6 +243,39 @@
             </tbody>
           </table>
         {/if}
+        <!-- Chat en direct -->
+        <div class="chat-zone">
+          <div class="section-title">// CHAT ({selectedRoom.chatMessages?.length ?? 0})</div>
+          <div class="chat-box" bind:this={chatBoxEl}>
+            {#if !selectedRoom.chatMessages?.length}
+              <div class="empty" style="padding:0">Aucun message pour l'instant.</div>
+            {:else}
+              {#each selectedRoom.chatMessages as m (m.ts + m.name)}
+                <div class="chat-msg" class:chat-admin={m.name.endsWith(' - admin')}>
+                  <span class="chat-ts">{fmtTime(m.ts)}</span>
+                  <span class="chat-name">{m.name}</span>
+                  <span class="chat-sep">›</span>
+                  <span class="chat-text">{m.text}</span>
+                </div>
+              {/each}
+            {/if}
+          </div>
+          <div class="announce-row">
+            <input
+              class="announce-input"
+              type="text"
+              maxlength="120"
+              placeholder="> Message dans le chat de la room..."
+              bind:value={chatInput}
+              onkeydown={(e) => { if (e.key === 'Enter') sendAdminChat(); }}
+            />
+            <button
+              class="act-btn act-chat"
+              disabled={!chatInput.trim()}
+              onclick={sendAdminChat}
+            >SEND</button>
+          </div>
+        </div>
       {/if}
     </div>
   </div>
@@ -414,4 +468,29 @@
   transition: all 0.1s;
 }
 .btn-kick:hover { color: #ff4444; border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.06); }
+
+.chat-box {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid rgba(0,255,65,0.08);
+  border-radius: 3px;
+  padding: 8px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,255,65,0.2) transparent;
+}
+.chat-msg { display: flex; align-items: baseline; gap: 8px; font-size: 0.75rem; line-height: 1.6; }
+.chat-ts { color: rgba(0,255,65,0.25); flex-shrink: 0; font-size: 0.62rem; font-variant-numeric: tabular-nums; }
+.chat-name { color: rgba(0,255,65,0.65); font-weight: 700; flex-shrink: 0; }
+.chat-sep { color: rgba(0,255,65,0.2); flex-shrink: 0; }
+.chat-text { color: rgba(0,255,65,0.85); word-break: break-word; }
+.chat-admin .chat-name { color: #ffb300; }
+.chat-admin .chat-text { color: rgba(255,179,0,0.7); }
+
+.chat-zone { display: flex; flex-direction: column; gap: 8px; }
+.act-chat { border-color: rgba(0,255,65,0.4); color: rgba(0,255,65,0.7); flex-shrink: 0; }
+.act-chat:hover { background: rgba(0,255,65,0.08); color: #00ff41; }
+.act-chat:disabled { opacity: 0.25; cursor: not-allowed; }
 </style>

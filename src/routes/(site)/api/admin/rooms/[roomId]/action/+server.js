@@ -11,6 +11,7 @@ import {
   adminUnblockRoom,
   adminAnnounce,
   adminCloseRoom,
+  adminSendChat,
 } from "$lib/server/socket/game.js";
 
 const ALLOWED_ACTIONS = [
@@ -23,6 +24,7 @@ const ALLOWED_ACTIONS = [
   "unblock",
   "announce",
   "close_room",
+  "chat",
 ];
 
 export async function POST({ request, params }) {
@@ -36,7 +38,7 @@ export async function POST({ request, params }) {
   const sb = getAdminClient();
   const { data: profile } = await sb
     .from("profiles")
-    .select("role")
+    .select("role, username")
     .eq("id", user.id)
     .single();
 
@@ -76,6 +78,9 @@ export async function POST({ request, params }) {
       break;
     case "close_room":
       ok = adminCloseRoom(roomId);
+      break;
+    case "chat":
+      ok = adminSendChat(roomId, body.message, profile?.username);
       break;
   }
 

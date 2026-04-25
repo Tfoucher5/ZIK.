@@ -954,7 +954,7 @@
         <div class="g-chat-empty">Aucun message pour l&apos;instant&hellip;</div>
       {/if}
       {#each chatMessages as m (m.ts + m.name)}
-        <div class="g-chat-msg" class:g-chat-mine={m.name === USERNAME}>
+        <div class="g-chat-msg" class:g-chat-mine={m.name === USERNAME} class:g-chat-admin={m.name.endsWith(' - admin')}>
           <span class="g-chat-author">{m.name}</span>
           <span class="g-chat-text">{m.text}</span>
         </div>
