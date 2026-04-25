@@ -466,6 +466,19 @@ async function startNextRound(roomId, io) {
       game.prefetchedRound = null;
     }
 
+    // Prefetch en cours mais pas encore terminé → on l'attend (max 13s)
+    if (!ytAudio && game._prefetchPromise) {
+      await Promise.race([
+        game._prefetchPromise.catch(() => {}),
+        new Promise((r) => setTimeout(r, 13000)),
+      ]);
+      game._prefetchPromise = null;
+      if (game.prefetchedRound?.track === track) {
+        ({ videoId, startSeconds, ytAudio } = game.prefetchedRound);
+        game.prefetchedRound = null;
+      }
+    }
+
     if (!videoId) {
       const artist = track.mainArtist || track.artist;
       const video = await ytsSearch(artist, track.title);
@@ -561,7 +574,8 @@ async function startNextRound(roomId, io) {
 
     // Précharger la manche suivante pendant que celle-ci tourne
     if (game.sessionPlaylist.length > 0) {
-      prefetchNextRound(roomId).catch(() => {});
+      game._prefetchPromise = prefetchNextRound(roomId);
+      game._prefetchPromise.catch(() => {});
     }
   } catch (err) {
     console.error(`Skip "${game.currentTrack?.title}":`, err.message);
@@ -747,9 +761,10 @@ async function startAutoCountdown(roomId, io) {
       resetScores(room, io);
       io.to(`room:${roomId}`).emit("init_history", []);
       io.to(`room:${roomId}`).emit("game_starting");
-      // Précharger le premier titre pendant le countdown afin que la manche 1
-      // consomme le résultat en cache (zéro attente yt-dlp en chemin critique).
-      prefetchNextRound(roomId).catch(() => {});
+      // Précharger le premier titre pendant le countdown — startNextRound
+      // attendra cette promesse si yt-dlp n'a pas fini quand le timer sonne.
+      room.game._prefetchPromise = prefetchNextRound(roomId);
+      room.game._prefetchPromise.catch(() => {});
       try {
         const { data } = await supabase
           .from("games")
@@ -995,8 +1010,10 @@ export function register(io) {
       resetScores(room, io);
       io.to(`room:${roomId}`).emit("init_history", []);
       io.to(`room:${roomId}`).emit("game_starting");
-      // Précharger le premier titre immédiatement
-      prefetchNextRound(roomId).catch(() => {});
+      // Précharger le premier titre immédiatement — startNextRound attendra
+      // cette promesse si yt-dlp n'a pas fini avant l'appel.
+      room.game._prefetchPromise = prefetchNextRound(roomId);
+      room.game._prefetchPromise.catch(() => {});
 
       try {
         const { data } = await supabase
