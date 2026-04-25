@@ -883,15 +883,6 @@ export function register(io) {
           foundExtras: [],
           _fullFoundCounted: false,
         };
-        if (userId && !isGuest) {
-          supabase.from("profiles").select("role").eq("id", userId).single()
-            .then(({ data }) => {
-              if (data?.role === "super_admin" && room.players[username]) {
-                room.players[username].isSuperAdmin = true;
-              }
-            })
-            .catch(() => {});
-        }
       } else {
         clearTimeout(room.players[username]._dcTimer);
         delete room.players[username]._dcTimer;
@@ -1252,8 +1243,7 @@ export function register(io) {
         return;
       if (room.players[name]) room.players[name]._lastChat = now;
 
-      const displayName = room.players[name]?.isSuperAdmin ? `${name} - admin` : name;
-      const message = { name: displayName, text, ts: now };
+      const message = { name, text, ts: now };
       const history = getChatHistory(roomId);
       history.messages.push(message);
       if (history.messages.length > CHAT_MAX_MESSAGES) history.messages.shift();
@@ -1451,6 +1441,20 @@ export function adminCloseRoom(roomId) {
 
 export function adminGetChatHistory(roomId) {
   return chatHistories[roomId]?.messages ?? [];
+}
+
+export function adminSendChat(roomId, text, adminName) {
+  const io = globalThis.__zik_io;
+  if (!io) return false;
+  const msg = String(text || "").trim().slice(0, 120);
+  if (!msg) return false;
+  const name = `${adminName || "Admin"} - admin`;
+  const message = { name, text: msg, ts: Date.now() };
+  const history = getChatHistory(roomId);
+  history.messages.push(message);
+  if (history.messages.length > CHAT_MAX_MESSAGES) history.messages.shift();
+  io.to(`room:${roomId}`).emit("chat_message", message);
+  return true;
 }
 
 export function adminKickPlayer(roomId, username) {

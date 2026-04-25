@@ -13,6 +13,8 @@
   let announceText = $state('');
   let confirmClose = $state(false);
   let chatBoxEl = null;
+  let chatInput = $state('');
+  let _prevChatLen = 0;
 
   const selectedRoom = $derived(rooms.find(r => r.roomId === selected) ?? null);
 
@@ -21,10 +23,18 @@
   }
 
   $effect(() => {
-    if (selectedRoom?.chatMessages?.length) {
+    const len = selectedRoom?.chatMessages?.length ?? 0;
+    if (len !== _prevChatLen) {
+      _prevChatLen = len;
       tick().then(() => { if (chatBoxEl) chatBoxEl.scrollTop = chatBoxEl.scrollHeight; });
     }
   });
+
+  function sendAdminChat() {
+    if (!chatInput.trim() || !selectedRoom) return;
+    doAction(selectedRoom.roomId, 'chat', null, chatInput.trim());
+    chatInput = '';
+  }
 
   function connectSSE(tok) {
     if (es) { es.close(); es = null; }
@@ -234,21 +244,38 @@
           </table>
         {/if}
         <!-- Chat en direct -->
-        <div class="section-title">// CHAT ({selectedRoom.chatMessages?.length ?? 0} messages)</div>
-        {#if !selectedRoom.chatMessages?.length}
-          <div class="empty">Aucun message pour l'instant.</div>
-        {:else}
+        <div class="chat-zone">
+          <div class="section-title">// CHAT ({selectedRoom.chatMessages?.length ?? 0})</div>
           <div class="chat-box" bind:this={chatBoxEl}>
-            {#each selectedRoom.chatMessages as m (m.ts + m.name)}
-              <div class="chat-msg" class:chat-admin={m.name.endsWith(' - admin')}>
-                <span class="chat-ts">{fmtTime(m.ts)}</span>
-                <span class="chat-name">{m.name}</span>
-                <span class="chat-sep">›</span>
-                <span class="chat-text">{m.text}</span>
-              </div>
-            {/each}
+            {#if !selectedRoom.chatMessages?.length}
+              <div class="empty" style="padding:0">Aucun message pour l'instant.</div>
+            {:else}
+              {#each selectedRoom.chatMessages as m (m.ts + m.name)}
+                <div class="chat-msg" class:chat-admin={m.name.endsWith(' - admin')}>
+                  <span class="chat-ts">{fmtTime(m.ts)}</span>
+                  <span class="chat-name">{m.name}</span>
+                  <span class="chat-sep">›</span>
+                  <span class="chat-text">{m.text}</span>
+                </div>
+              {/each}
+            {/if}
           </div>
-        {/if}
+          <div class="announce-row">
+            <input
+              class="announce-input"
+              type="text"
+              maxlength="120"
+              placeholder="> Message dans le chat de la room..."
+              bind:value={chatInput}
+              onkeydown={(e) => { if (e.key === 'Enter') sendAdminChat(); }}
+            />
+            <button
+              class="act-btn act-chat"
+              disabled={!chatInput.trim()}
+              onclick={sendAdminChat}
+            >SEND</button>
+          </div>
+        </div>
       {/if}
     </div>
   </div>
@@ -461,4 +488,9 @@
 .chat-text { color: rgba(0,255,65,0.85); word-break: break-word; }
 .chat-admin .chat-name { color: #ffb300; }
 .chat-admin .chat-text { color: rgba(255,179,0,0.7); }
+
+.chat-zone { display: flex; flex-direction: column; gap: 8px; }
+.act-chat { border-color: rgba(0,255,65,0.4); color: rgba(0,255,65,0.7); flex-shrink: 0; }
+.act-chat:hover { background: rgba(0,255,65,0.08); color: #00ff41; }
+.act-chat:disabled { opacity: 0.25; cursor: not-allowed; }
 </style>
