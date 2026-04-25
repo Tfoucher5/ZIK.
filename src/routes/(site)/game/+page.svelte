@@ -483,6 +483,13 @@
     socket.on('reveal_cover', ({ cover }) => { if (cover) { coverSrc = cover; showCover = true; } });
     socket.on('qcm_reveal', ({ correctChoiceIndex }) => {
       qcmReveal = correctChoiceIndex;
+      const correct = qcmChoices[correctChoiceIndex];
+      if (correct) {
+        const sep = correct.indexOf(' — ');
+        const won = qcmChosen === correctChoiceIndex;
+        slotArtist = { val: sep > -1 ? correct.slice(0, sep) : correct, state: won ? 'found' : 'missed' };
+        slotTitle  = { val: sep > -1 ? correct.slice(sep + 3) : '—', state: won ? 'found' : 'missed' };
+      }
     });
     socket.on('choice_result', (result) => {
       qcmChoiceResult = result;
@@ -789,24 +796,22 @@
               </button>
             {/each}
           </div>
-          {#if qcmReveal === null}
-            <div class="g-qcm-status-bar">
-              {#if qcmChosen !== null && qcmChoiceResult !== null}
-                {#if qcmChoiceResult.correct}
-                  <span class="g-qcm-pts-correct">+{qcmChoiceResult.pts} pts ✓</span>
-                {:else}
-                  <span class="g-qcm-pts-wrong">+0 pt ✗</span>
-                {/if}
-              {:else if qcmChosen !== null}
-                <span class="g-qcm-locked">Réponse verrouillée…</span>
+          <div class="g-qcm-status-bar">
+            {#if qcmChosen !== null && qcmChoiceResult !== null}
+              {#if qcmChoiceResult.correct}
+                <span class="g-qcm-pts-correct">+{qcmChoiceResult.pts} pts ✓</span>
               {:else}
-                <span class="g-qcm-hint">Choisis ta réponse !</span>
+                <span class="g-qcm-pts-wrong">+0 pt ✗</span>
               {/if}
-              {#if qcmTotalPlayers > 1}
-                <span class="g-qcm-count">{qcmAnsweredCount}/{qcmTotalPlayers} répondu{qcmAnsweredCount > 1 ? 's' : ''}</span>
-              {/if}
-            </div>
-          {/if}
+            {:else if qcmChosen !== null}
+              <span class="g-qcm-locked">Réponse verrouillée…</span>
+            {:else if qcmReveal === null}
+              <span class="g-qcm-hint">Choisis ta réponse !</span>
+            {/if}
+            {#if qcmReveal === null && qcmTotalPlayers > 1}
+              <span class="g-qcm-count">{qcmAnsweredCount}/{qcmTotalPlayers} répondu{qcmAnsweredCount > 1 ? 's' : ''}</span>
+            {/if}
+          </div>
         {:else if gameMode !== 'qcm'}
           <div class="g-input-wrap">
             <input
