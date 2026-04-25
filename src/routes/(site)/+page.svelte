@@ -17,8 +17,8 @@
 
   let pubRooms = $state([]);
   let pubLoading = $state(true);
-  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm').slice(0, 5));
-  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm').slice(0, 5));
+  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm').slice(0, 7));
+  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm').slice(0, 7));
 
   let officialQcmRooms = $derived(rooms.filter(r => r.game_mode === 'qcm'));
   let officialClassicRooms = $derived(rooms.filter(r => r.game_mode !== 'qcm'));
