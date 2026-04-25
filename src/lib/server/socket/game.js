@@ -5,7 +5,13 @@ const stringSimilarity = require("string-similarity");
 import { YouTube } from "youtube-sr";
 
 import { supabase } from "../config.js";
-import { playlistCache, customRooms, dbRooms, roomGames, chatHistories } from "../state.js";
+import {
+  playlistCache,
+  customRooms,
+  dbRooms,
+  roomGames,
+  chatHistories,
+} from "../state.js";
 import {
   loadPlaylist,
   cleanString,
@@ -1444,7 +1450,9 @@ export function adminGetChatHistory(roomId) {
 export function adminSendChat(roomId, text, adminName) {
   const io = globalThis.__zik_io;
   if (!io) return false;
-  const msg = String(text || "").trim().slice(0, 120);
+  const msg = String(text || "")
+    .trim()
+    .slice(0, 120);
   if (!msg) return false;
   const name = `${adminName || "Admin"} - admin`;
   const message = { name, text: msg, ts: Date.now() };
