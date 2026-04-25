@@ -481,19 +481,21 @@ async function startNextRound(roomId, io) {
       }
     }
 
-    // Premier round ou prefetch raté : on tente yt-dlp avec 8s.
-    // Si yt-dlp timeout, l'IFrame YouTube prend le relai (videoId suffit côté client).
+    // Normalement le prefetch a déjà rempli ytAudio — ce bloc ne tourne
+    // que si prefetch KO ou manche 1 dont le prefetch n'a pas eu le temps.
+    // Timeout 15s : joueur est sur l'écran de chargement, pas de pression.
+    // Pas d'IFrame en fallback : videoId visible dans devtools = triche facile.
     if (videoId && !ytAudio) {
       ytAudio = await Promise.race([
         getYtAudioUrl(videoId).catch(() => null),
-        new Promise((resolve) => setTimeout(() => resolve(null), 8000)),
+        new Promise((resolve) => setTimeout(() => resolve(null), 15000)),
       ]);
       if (ytAudio) ytdlAudioCache.set(videoId, ytAudio);
-      else console.warn(`[ytdl] timeout ${videoId} — fallback IFrame`);
+      else console.warn(`[ytdl] KO pour ${videoId} — tentative preview`);
     }
 
-    // Dernier recours : previews Deezer/iTunes (seulement si même le videoId manque)
-    if (!ytAudio && !videoId) {
+    // Fallback preview Deezer/iTunes si yt-dlp KO (30s clip, sans leak)
+    if (!ytAudio) {
       const pKey = previewCacheKey(track);
       const cachedPreview = ytdlAudioCache.get(pKey);
       if (cachedPreview && Date.now() - cachedPreview.fetchedAt < YTDL_TTL) {
@@ -519,8 +521,7 @@ async function startNextRound(roomId, io) {
       }
     }
 
-    // Skip uniquement si ni ytAudio ni videoId (yt-search a aussi échoué)
-    if (!ytAudio && !videoId) throw new Error("No audio source");
+    if (!ytAudio) throw new Error("No audio source");
 
     let choices = undefined;
     if (room.game_mode === "qcm" && game.fullPlaylist.length >= 2) {
@@ -746,6 +747,9 @@ async function startAutoCountdown(roomId, io) {
       resetScores(room, io);
       io.to(`room:${roomId}`).emit("init_history", []);
       io.to(`room:${roomId}`).emit("game_starting");
+      // Précharger le premier titre pendant le countdown afin que la manche 1
+      // consomme le résultat en cache (zéro attente yt-dlp en chemin critique).
+      prefetchNextRound(roomId).catch(() => {});
       try {
         const { data } = await supabase
           .from("games")
@@ -991,6 +995,8 @@ export function register(io) {
       resetScores(room, io);
       io.to(`room:${roomId}`).emit("init_history", []);
       io.to(`room:${roomId}`).emit("game_starting");
+      // Précharger le premier titre immédiatement
+      prefetchNextRound(roomId).catch(() => {});
 
       try {
         const { data } = await supabase
