@@ -593,7 +593,7 @@
 <svelte:head>
   <title>ZIK — En jeu</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="/css/game.css">
+  <link rel="stylesheet" href="/css/game.css?v=2.1.1">
 </svelte:head>
 
 {#if showDcBanner}
