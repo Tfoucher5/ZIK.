@@ -17,8 +17,11 @@
 
   let pubRooms = $state([]);
   let pubLoading = $state(true);
-  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm'));
-  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm'));
+  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm').slice(0, 4));
+  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm').slice(0, 4));
+
+  let officialQcmRooms = $derived(rooms.filter(r => r.game_mode === 'qcm'));
+  let officialClassicRooms = $derived(rooms.filter(r => r.game_mode !== 'qcm'));
 
   let weeklyLb = $state([]);
   let eloLb = $state([]);
@@ -405,37 +408,80 @@
     {#if roomCodeErr}<p class="code-join-err">{roomCodeErr}</p>{/if}
   </div>
 
-  <div class="official-rooms-grid">
-    {#each rooms as room, i}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
-      <div class="official-card" role="button" tabindex="0"
-        onclick={() => joinRoom(room.id, room.game_mode || 'classic')}
-        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && joinRoom(room.id, room.game_mode || 'classic')}
-        use:reveal={i * 40}>
-        <div class="official-card-stripe"></div>
-        <div class="official-card-header">
-          <span class="official-card-emoji">{room.emoji}</span>
-          <span class="official-card-badge">⭐ Officielle</span>
-        </div>
-        <div class="official-card-name">{room.name}</div>
-        {#if room.description}
-          <div class="official-card-desc">{room.description}</div>
-        {/if}
-        <div class="official-card-footer">
-          <span class="official-card-online" class:official-online-live={room.online > 0}>
-            <span class="official-online-dot" class:live={room.online > 0}></span>
-            {room.online > 0 ? `${room.online} en ligne` : 'Disponible'}
-          </span>
-          {#if room.game_mode === 'qcm'}
-            <span class="official-card-badge-qcm">🎯 QCM</span>
-          {/if}
-          <button class="official-card-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id, room.game_mode || 'classic'); }}>
-            Rejoindre →
-          </button>
-        </div>
+  {#if officialClassicRooms.length > 0}
+    {#if officialQcmRooms.length > 0}
+      <div class="pub-section-head" style="margin-bottom:12px">
+        <span class="pub-section-badge">⌨️ Classique — Saisie libre</span>
+        <span class="pub-section-hint">Classement ELO</span>
       </div>
-    {/each}
-  </div>
+    {/if}
+    <div class="official-rooms-grid" style={officialQcmRooms.length > 0 ? 'margin-bottom:28px' : ''}>
+      {#each officialClassicRooms.slice(0, 4) as room, i}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+        <div class="official-card" role="button" tabindex="0"
+          onclick={() => joinRoom(room.id, 'classic')}
+          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && joinRoom(room.id, 'classic')}
+          use:reveal={i * 40}>
+          <div class="official-card-stripe"></div>
+          <div class="official-card-header">
+            <span class="official-card-emoji">{room.emoji}</span>
+            <span class="official-card-badge">⭐ Officielle</span>
+          </div>
+          <div class="official-card-name">{room.name}</div>
+          {#if room.description}
+            <div class="official-card-desc">{room.description}</div>
+          {/if}
+          <div class="official-card-footer">
+            <span class="official-card-online" class:official-online-live={room.online > 0}>
+              <span class="official-online-dot" class:live={room.online > 0}></span>
+              {room.online > 0 ? `${room.online} en ligne` : 'Disponible'}
+            </span>
+            <button class="official-card-btn" onclick={(e) => { e.stopPropagation(); joinRoom(room.id, 'classic'); }}>
+              Rejoindre →
+            </button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if officialQcmRooms.length > 0}
+    <div class="pub-section-head" style="margin-bottom:12px">
+      <span class="pub-section-badge pub-section-qcm">🎯 QCM — Casual</span>
+      <span class="pub-section-hint">Choix multiple · Pas d'ELO</span>
+    </div>
+    <div class="official-rooms-grid">
+      {#each officialQcmRooms.slice(0, 4) as room, i}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+        <div class="official-card official-card-qcm" role="button" tabindex="0"
+          onclick={() => joinRoom(room.id, 'qcm')}
+          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && joinRoom(room.id, 'qcm')}
+          use:reveal={i * 40}>
+          <div class="official-card-stripe official-card-stripe-qcm"></div>
+          <div class="official-card-header">
+            <span class="official-card-emoji">{room.emoji}</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="official-card-badge">⭐ Officielle</span>
+              <span class="official-card-badge-qcm">🎯 QCM</span>
+            </div>
+          </div>
+          <div class="official-card-name">{room.name}</div>
+          {#if room.description}
+            <div class="official-card-desc">{room.description}</div>
+          {/if}
+          <div class="official-card-footer">
+            <span class="official-card-online" class:official-online-live={room.online > 0}>
+              <span class="official-online-dot" class:live={room.online > 0}></span>
+              {room.online > 0 ? `${room.online} en ligne` : 'Disponible'}
+            </span>
+            <button class="official-card-btn official-card-btn-qcm" onclick={(e) => { e.stopPropagation(); joinRoom(room.id, 'qcm'); }}>
+              Rejoindre →
+            </button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </section>
 
 <!-- ══════════════════════════════ QCM CTA ══════════════════════════════ -->
@@ -1409,6 +1455,18 @@
     transition: background 0.15s, border-color 0.15s;
   }
   .official-card-btn:hover { background: rgba(167,139,250,0.18); border-color: rgba(167,139,250,0.4); }
+  .official-card-qcm {
+    border-color: rgba(74,222,128,0.25);
+    background: linear-gradient(135deg, rgb(var(--c-glass) / 0.06) 0%, rgba(74,222,128,0.04) 100%);
+  }
+  .official-card-qcm:hover { border-color: rgba(74,222,128,0.4); }
+  .official-card-stripe-qcm { background: linear-gradient(180deg, #4ade80, #22c55e); }
+  .official-card-btn-qcm {
+    color: #4ade80;
+    background: rgba(74,222,128,0.08);
+    border-color: rgba(74,222,128,0.25);
+  }
+  .official-card-btn-qcm:hover { background: rgba(74,222,128,0.16); border-color: rgba(74,222,128,0.4); }
 
   /* Scrollable list */
   .lb-scroll {
