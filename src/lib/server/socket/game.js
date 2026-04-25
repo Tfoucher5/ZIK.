@@ -883,6 +883,15 @@ export function register(io) {
           foundExtras: [],
           _fullFoundCounted: false,
         };
+        if (userId && !isGuest) {
+          supabase.from("profiles").select("role").eq("id", userId).single()
+            .then(({ data }) => {
+              if (data?.role === "super_admin" && room.players[username]) {
+                room.players[username].isSuperAdmin = true;
+              }
+            })
+            .catch(() => {});
+        }
       } else {
         clearTimeout(room.players[username]._dcTimer);
         delete room.players[username]._dcTimer;
@@ -1243,7 +1252,8 @@ export function register(io) {
         return;
       if (room.players[name]) room.players[name]._lastChat = now;
 
-      const message = { name, text, ts: now };
+      const displayName = room.players[name]?.isSuperAdmin ? `${name} - admin` : name;
+      const message = { name: displayName, text, ts: now };
       const history = getChatHistory(roomId);
       history.messages.push(message);
       if (history.messages.length > CHAT_MAX_MESSAGES) history.messages.shift();
@@ -1437,6 +1447,10 @@ export function adminCloseRoom(roomId) {
   io?.socketsLeave(`room:${roomId}`);
   delete roomGames[roomId];
   return true;
+}
+
+export function adminGetChatHistory(roomId) {
+  return chatHistories[roomId]?.messages ?? [];
 }
 
 export function adminKickPlayer(roomId, username) {
