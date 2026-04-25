@@ -325,7 +325,9 @@ img {
   font-size: 1.15rem;
   margin-top: -14px;
   box-shadow: 0 4px 16px rgb(var(--accent-rgb) / 0.4);
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 .bn-home:hover .bn-home-icon,
 .bn-home.active .bn-home-icon {
@@ -343,6 +345,10 @@ img {
 }
 
 /* ── Boutons partagés ── */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+}
 .btn-accent {
   background: var(--accent);
   color: #000;
