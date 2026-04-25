@@ -17,8 +17,8 @@
 
   let pubRooms = $state([]);
   let pubLoading = $state(true);
-  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm').slice(0, 4));
-  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm').slice(0, 4));
+  let pubQcmRooms = $derived(pubRooms.filter(r => r.game_mode === 'qcm').slice(0, 5));
+  let pubClassicRooms = $derived(pubRooms.filter(r => r.game_mode !== 'qcm').slice(0, 5));
 
   let officialQcmRooms = $derived(rooms.filter(r => r.game_mode === 'qcm'));
   let officialClassicRooms = $derived(rooms.filter(r => r.game_mode !== 'qcm'));
@@ -416,7 +416,7 @@
       </div>
     {/if}
     <div class="official-rooms-grid" style={officialQcmRooms.length > 0 ? 'margin-bottom:28px' : ''}>
-      {#each officialClassicRooms.slice(0, 4) as room, i}
+      {#each officialClassicRooms.slice(0, 5) as room, i}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
         <div class="official-card" role="button" tabindex="0"
           onclick={() => joinRoom(room.id, 'classic')}
@@ -442,6 +442,11 @@
           </div>
         </div>
       {/each}
+      <a href="/rooms" class="official-card official-card-more" use:reveal={5 * 40}>
+        <span class="card-more-icon">🎮</span>
+        <span class="card-more-label">Voir toutes les rooms</span>
+        <span class="card-more-arrow">→</span>
+      </a>
     </div>
   {/if}
 
@@ -451,7 +456,7 @@
       <span class="pub-section-hint">Choix multiple · Pas d'ELO</span>
     </div>
     <div class="official-rooms-grid">
-      {#each officialQcmRooms.slice(0, 4) as room, i}
+      {#each officialQcmRooms.slice(0, 5) as room, i}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
         <div class="official-card official-card-qcm" role="button" tabindex="0"
           onclick={() => joinRoom(room.id, 'qcm')}
@@ -480,6 +485,11 @@
           </div>
         </div>
       {/each}
+      <a href="/rooms" class="official-card official-card-more official-card-more-qcm" use:reveal={5 * 40}>
+        <span class="card-more-icon">🎯</span>
+        <span class="card-more-label">Voir toutes les rooms QCM</span>
+        <span class="card-more-arrow">→</span>
+      </a>
     </div>
   {/if}
 </section>
@@ -575,6 +585,11 @@
             </div>
           </div>
         {/each}
+        <a href="/rooms" class="pub-card pub-card-more">
+          <span class="card-more-icon">🎯</span>
+          <span class="card-more-label">Voir plus de rooms</span>
+          <span class="card-more-arrow">→</span>
+        </a>
       </div>
     {/if}
 
@@ -617,6 +632,11 @@
             </div>
           </div>
         {/each}
+        <a href="/rooms" class="pub-card pub-card-more">
+          <span class="card-more-icon">🎮</span>
+          <span class="card-more-label">Voir plus de rooms</span>
+          <span class="card-more-arrow">→</span>
+        </a>
       </div>
     {/if}
   {/if}
@@ -1467,6 +1487,59 @@
     border-color: rgba(74,222,128,0.25);
   }
   .official-card-btn-qcm:hover { background: rgba(74,222,128,0.16); border-color: rgba(74,222,128,0.4); }
+
+  /* ════════════════════════════ FAKE "VOIR PLUS" CARDS ════════════════════════════ */
+  .official-card-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    border-style: dashed;
+    border-color: rgba(167,139,250,0.2);
+    background: transparent;
+    color: var(--mid);
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+    min-height: 120px;
+  }
+  .official-card-more:hover {
+    background: rgba(167,139,250,0.06);
+    border-color: rgba(167,139,250,0.45);
+    color: var(--accent2);
+    transform: translateY(-2px);
+  }
+  .official-card-more-qcm {
+    border-color: rgba(74,222,128,0.2);
+  }
+  .official-card-more-qcm:hover {
+    background: rgba(74,222,128,0.05);
+    border-color: rgba(74,222,128,0.4);
+    color: #4ade80;
+  }
+  .pub-card-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    border-style: dashed;
+    border-color: rgba(255,255,255,0.1);
+    background: transparent;
+    color: var(--mid);
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+    min-height: 80px;
+  }
+  .pub-card-more:hover {
+    background: rgb(var(--c-glass) / 0.06);
+    border-color: var(--border2);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .card-more-icon { font-size: 1.4rem; }
+  .card-more-label { font-size: 0.8rem; font-weight: 700; }
+  .card-more-arrow { font-size: 1rem; }
 
   /* Scrollable list */
   .lb-scroll {
