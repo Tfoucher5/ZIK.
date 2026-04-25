@@ -5,7 +5,7 @@ const stringSimilarity = require("string-similarity");
 import { YouTube } from "youtube-sr";
 
 import { supabase } from "../config.js";
-import { playlistCache, customRooms, dbRooms, roomGames } from "../state.js";
+import { playlistCache, customRooms, dbRooms, roomGames, chatHistories } from "../state.js";
 import {
   loadPlaylist,
   cleanString,
@@ -113,8 +113,6 @@ const AUTO_START_DELAY = 5; // seconds
 const autoStartCountdowns = {};
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
-// Map: roomId -> { messages: [], clearTimer: null }
-const chatHistories = {};
 const CHAT_MAX_MESSAGES = 50;
 const CHAT_CLEAR_DELAY = 30 * 60 * 1000; // 30 min après room vide
 

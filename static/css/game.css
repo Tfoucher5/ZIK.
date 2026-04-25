@@ -1539,6 +1539,14 @@ a {
 .g-chat-mine .g-chat-author {
   color: #a78bfa;
 }
+.g-chat-admin .g-chat-author {
+  color: #f59e0b;
+  opacity: 1;
+}
+.g-chat-admin .g-chat-text {
+  background: rgba(245, 158, 11, 0.12);
+  border-left: 2px solid rgba(245, 158, 11, 0.5);
+}
 .g-chat-text {
   font-size: 0.82rem;
   background: rgb(var(--c-glass) / 0.07);
