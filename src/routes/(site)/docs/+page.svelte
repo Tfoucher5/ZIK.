@@ -620,7 +620,7 @@
           <tr>
             <td>Points hebdomadaires</td>
             <td>✅ Oui</td>
-            <td>✅ Oui</td>
+            <td>❌ Non</td>
           </tr>
           <tr>
             <td>Feats / artistes secondaires</td>

@@ -14,6 +14,8 @@
   let filterActive     = $state(false);
 
   let filterQcm        = $state(false);
+  let filterClassic    = $state(false);
+  let filterOfficial   = $state(false);
 
   const filteredPublic = $derived.by(() => {
     let list = publicRooms;
@@ -27,6 +29,8 @@
     if (filterAutoStart) list = list.filter(r => r.auto_start);
     if (filterActive)    list = list.filter(r => r.last_active_at && (Date.now() - new Date(r.last_active_at).getTime()) < 3_600_000);
     if (filterQcm)       list = list.filter(r => r.game_mode === 'qcm');
+    if (filterClassic)   list = list.filter(r => r.game_mode !== 'qcm');
+    if (filterOfficial)  list = list.filter(r => r.is_official);
     return list;
   });
 
@@ -286,10 +290,20 @@
         <button
           class="filter-chip"
           class:active={filterQcm}
-          onclick={() => filterQcm = !filterQcm}
+          onclick={() => { filterQcm = !filterQcm; if (filterQcm) filterClassic = false; }}
         >🎯 Mode QCM</button>
-        {#if filterAutoStart || filterActive || filterQcm}
-          <button class="filter-chip filter-chip-reset" onclick={() => { filterAutoStart = false; filterActive = false; filterQcm = false; }}>
+        <button
+          class="filter-chip"
+          class:active={filterClassic}
+          onclick={() => { filterClassic = !filterClassic; if (filterClassic) filterQcm = false; }}
+        >⌨️ Classique</button>
+        <button
+          class="filter-chip"
+          class:active={filterOfficial}
+          onclick={() => filterOfficial = !filterOfficial}
+        >⭐ Officielles</button>
+        {#if filterAutoStart || filterActive || filterQcm || filterClassic || filterOfficial}
+          <button class="filter-chip filter-chip-reset" onclick={() => { filterAutoStart = false; filterActive = false; filterQcm = false; filterClassic = false; filterOfficial = false; }}>
             ✕ Réinitialiser
           </button>
         {/if}
@@ -299,7 +313,7 @@
       {:else if !publicRooms.length}
         <div class="rooms-empty"><span>&#x1F30E;</span><p>Aucune room publique pour l&apos;instant.<br>Sois le premier &agrave; en cr&eacute;er une !</p></div>
       {:else}
-        {#if !filterAutoStart && !filterActive && !filterQcm && !pubSearch.trim() && qcmRooms.length > 0}
+        {#if !filterAutoStart && !filterActive && !filterQcm && !filterClassic && !filterOfficial && !pubSearch.trim() && qcmRooms.length > 0}
           <div class="rooms-section-head">
             <span class="rooms-section-badge rooms-section-qcm">🎯 Rooms QCM — Casual</span>
             <span class="rooms-section-hint">Choix multiple · Accessible à tous · Pas d'ELO</span>
@@ -342,7 +356,7 @@
         {/if}
 
         <div class="rooms-grid">
-          {#each ((!filterAutoStart && !filterActive && !filterQcm && !pubSearch.trim()) ? classicRooms : filteredPublic).slice(0, 30) as r (r.id)}
+          {#each ((!filterAutoStart && !filterActive && !filterQcm && !filterClassic && !filterOfficial && !pubSearch.trim()) ? classicRooms : filteredPublic).slice(0, 30) as r (r.id)}
             <div class="room-card {r.is_official ? 'room-card-official' : ''} {r.game_mode === 'qcm' ? 'room-card-qcm' : ''}">
               <div class="room-card-head">
                 <span class="room-card-emoji">{r.emoji}</span>
