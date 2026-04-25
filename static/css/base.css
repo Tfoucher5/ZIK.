@@ -345,6 +345,10 @@ img {
 }
 
 /* ── Boutons partagés ── */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+}
 .btn-accent {
   background: var(--accent);
   color: #000;
