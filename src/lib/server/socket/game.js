@@ -348,6 +348,13 @@ function previewCacheKey(track) {
   return `prev_${(track.cleanArtist + track.cleanTitle).replace(/\W/g, "").slice(0, 32)}`;
 }
 
+function validPreviewUrl(url) {
+  if (!url) return null;
+  const m = url.match(/hdnea=exp=(\d+)/);
+  if (m && parseInt(m[1], 10) * 1000 < Date.now()) return null;
+  return url;
+}
+
 async function getDeezerPreview(artist, title) {
   const q = encodeURIComponent(`${artist} ${title}`);
   const res = await fetch(`https://api.deezer.com/search?q=${q}&limit=5`, {
@@ -408,7 +415,7 @@ async function prefetchNextRound(roomId) {
     if (!ytAudio && !videoId) {
       const artist = nextTrack.mainArtist || nextTrack.artist;
       const previewUrl =
-        nextTrack.preview_url ||
+        validPreviewUrl(nextTrack.preview_url) ||
         (await getDeezerPreview(artist, nextTrack.title).catch(() => null)) ||
         (await getItunesPreview(artist, nextTrack.title).catch(() => null));
       if (previewUrl) {
@@ -529,7 +536,7 @@ async function startNextRound(roomId, io) {
       } else {
         const artist = track.mainArtist || track.artist;
         const previewUrl =
-          track.preview_url ||
+          validPreviewUrl(track.preview_url) ||
           (await getDeezerPreview(artist, track.title).catch(() => null)) ||
           (await getItunesPreview(artist, track.title).catch(() => null));
         if (previewUrl) {
