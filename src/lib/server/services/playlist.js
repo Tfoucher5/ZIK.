@@ -113,7 +113,11 @@ export function buildTrack({
     cleanFeatArtists: effectiveFeats.map(cleanString),
     cleanTitle: cleanString(effectiveTitle),
     cover: cover || "",
-    preview_url: preview_url || null,
+    preview_url: (() => {
+      if (!preview_url) return null;
+      const exp = parseExpFromUrl(preview_url);
+      return exp && exp * 1000 < Date.now() ? null : preview_url;
+    })(),
     extraAnswers: extras,
   };
 }
