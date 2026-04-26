@@ -34,7 +34,31 @@
       "Bash(mkdir -p \"C:/Users/Teamr/Desktop/ZIK/src/routes/\\(site\\)/api/playlists/[id]/enrich\")",
       "Bash(mkdir -p \"C:/Users/Teamr/Desktop/ZIK/src/routes/\\(site\\)/api/admin/playlists/[id]/enrich\")",
       "Bash(sed -i 's/\"version\": \"2.0.1\"/\"version\": \"2.1.0\"/' package.json)",
-      "Bash(sed -i 's/v2\\\\.0\\\\.1/v2.1.0/' src/routes/\\\\\\(site\\\\\\)/+layout.svelte)"
+      "Bash(sed -i 's/v2\\\\.0\\\\.1/v2.1.0/' src/routes/\\\\\\(site\\\\\\)/+layout.svelte)",
+      "Bash(./bin/yt-dlp.exe *)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('url','NO URL'\\)[:80]\\)\")",
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh api *)",
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(d['name'], d['type']\\) for d in data]\")",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "Bash(npm show *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('play-dl', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('yt-dlp-wrap', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('@distube/ytdl-core', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('ytsr', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\" npm show yt-search --json)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('yt-search', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\" npm show @distube/yt-dlp --json)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('@distube/yt-dlp', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('youtube-sr', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\" npm show yt-dlp-exec --json)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('yt-dlp-exec', d.get\\('version'\\), d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; [print\\(k,v\\) for k,v in deps.items\\(\\) if any\\(x in k.lower\\(\\) for x in ['yt','youtube','deezer','itunes','music','audio','stream']\\)]\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('last publish:', d.get\\('time',{}\\).get\\(d.get\\('version',''\\)\\)\\); print\\('description:', d.get\\('description',''\\)[:200]\\); print\\('maintainers:', [m.get\\('name'\\) for m in d.get\\('maintainers',[]\\)]\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps=d.get\\('dependencies',{}\\); print\\('yt-search:', deps.get\\('yt-search','ABSENT'\\)\\); print\\('youtube-sr:', deps.get\\('youtube-sr','ABSENT'\\)\\); print\\('version:', d.get\\('version'\\)\\)\")",
+      "Bash(npm uninstall *)",
+      "Bash(bin/yt-dlp.exe --version)",
+      "Bash(xargs ls *)",
+      "Bash(grep -E \"\\\\.js$|^d\")"
     ]
   }
 }

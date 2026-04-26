@@ -6,3 +6,4 @@ dist/
 static/.well-known/
 static/favicon/
 supabase/
+package-lock.json

@@ -1,6 +1,11 @@
-import { supabase } from "../config.js";
+import { supabase, getAdminClient } from "../config.js";
 import { playlistCache, customRooms, dbRooms } from "../state.js";
-import { fetchDeezerPlaylist } from "./deezer.js";
+import {
+  fetchDeezerPlaylist,
+  fetchDeezerTrackPreview,
+  iTunesPreviewSearch,
+  parseExpFromUrl,
+} from "./deezer.js";
 
 // ─── String helpers ───────────────────────────────────────────────────────────
 
@@ -108,7 +113,11 @@ export function buildTrack({
     cleanFeatArtists: effectiveFeats.map(cleanString),
     cleanTitle: cleanString(effectiveTitle),
     cover: cover || "",
-    preview_url: preview_url || null,
+    preview_url: (() => {
+      if (!preview_url) return null;
+      const exp = parseExpFromUrl(preview_url);
+      return exp && exp * 1000 < Date.now() ? null : preview_url;
+    })(),
     extraAnswers: extras,
   };
 }
@@ -136,6 +145,69 @@ export function makeCache(ttlMs) {
   };
 }
 
+// ─── Deezer preview refresh ───────────────────────────────────────────────────
+
+const PREVIEW_REFRESH_MARGIN_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours de marge
+const PREVIEW_PERMANENT_EXPIRY = "2099-01-01T00:00:00.000Z"; // iTunes & URLs sans token
+const REFRESH_CONCURRENCY = 8;
+
+export async function refreshExpiredPreviews(trackRows) {
+  const now = Date.now();
+
+  const toRefresh = trackRows.filter((t) => {
+    if (!t.preview_url) return false;
+    const expiresAt = t.preview_expires_at
+      ? new Date(t.preview_expires_at).getTime()
+      : (parseExpFromUrl(t.preview_url) ?? 0) * 1000;
+    return expiresAt < now + PREVIEW_REFRESH_MARGIN_MS;
+  });
+
+  if (!toRefresh.length) return;
+
+  console.log(`Refresh preview_url: ${toRefresh.length} tracks expirées...`);
+  let updated = 0;
+
+  for (let i = 0; i < toRefresh.length; i += REFRESH_CONCURRENCY) {
+    const batch = toRefresh.slice(i, i + REFRESH_CONCURRENCY);
+    await Promise.allSettled(
+      batch.map(async (t) => {
+        try {
+          let freshUrl = t.external_id
+            ? await fetchDeezerTrackPreview(t.external_id)
+            : null;
+
+          if (!freshUrl) {
+            const artist = t.custom_artist || t.artist;
+            const title = t.custom_title || t.title;
+            freshUrl = await iTunesPreviewSearch(artist, title);
+          }
+
+          if (!freshUrl) return;
+
+          const exp = parseExpFromUrl(freshUrl);
+          await getAdminClient()
+            .from("custom_playlist_tracks")
+            .update({
+              preview_url: freshUrl,
+              preview_expires_at: exp
+                ? new Date(exp * 1000).toISOString()
+                : PREVIEW_PERMANENT_EXPIRY,
+            })
+            .eq("id", t.id);
+          t.preview_url = freshUrl;
+          updated++;
+        } catch {
+          /* skip */
+        }
+      }),
+    );
+  }
+
+  console.log(
+    `Refresh terminé: ${updated}/${toRefresh.length} tracks mises à jour`,
+  );
+}
+
 // ─── Playlist loading ─────────────────────────────────────────────────────────
 
 export async function loadPlaylist(roomId) {
@@ -160,11 +232,14 @@ export async function loadPlaylist(roomId) {
       const playlistIds = links.map((l) => l.playlist_id);
       const { data: trackRows } = await supabase
         .from("custom_playlist_tracks")
-        .select("artist, title, cover_url, preview_url")
+        .select(
+          "id, artist, title, cover_url, preview_url, external_id, source, preview_expires_at, custom_artist, custom_title",
+        )
         .in("playlist_id", playlistIds)
         .order("position");
 
       if (trackRows?.length >= 3) {
+        await refreshExpiredPreviews(trackRows);
         const tracks = trackRows.map((t) =>
           buildTrack({
             artist: t.artist,
@@ -190,11 +265,12 @@ export async function loadPlaylist(roomId) {
       const { data: trackRows } = await supabase
         .from("custom_playlist_tracks")
         .select(
-          "artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
+          "id, artist, title, cover_url, preview_url, external_id, source, preview_expires_at, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
         )
         .eq("playlist_id", dbRoom.playlist_id)
         .order("position");
       if (trackRows?.length >= 3) {
+        await refreshExpiredPreviews(trackRows);
         const tracks = trackRows.map((t) =>
           buildTrack({
             artist: t.artist,
