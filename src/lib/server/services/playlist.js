@@ -1,4 +1,4 @@
-import { supabase } from "../config.js";
+import { supabase, getAdminClient } from "../config.js";
 import { playlistCache, customRooms, dbRooms } from "../state.js";
 import {
   fetchDeezerPlaylist,
@@ -168,7 +168,7 @@ export async function refreshExpiredPreviews(trackRows) {
           const freshUrl = await fetchDeezerTrackPreview(t.external_id);
           if (!freshUrl) return;
           const exp = parseExpFromUrl(freshUrl);
-          await supabase
+          await getAdminClient()
             .from("custom_playlist_tracks")
             .update({
               preview_url: freshUrl,
