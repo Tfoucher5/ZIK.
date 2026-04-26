@@ -23,6 +23,23 @@ export async function fetchDeezerTrackPreview(trackId) {
   }
 }
 
+export async function iTunesPreviewSearch(artist, title) {
+  if (!artist || !title) return null;
+  const fetchFn = await getFetch();
+  try {
+    const res = await fetchFn(
+      `https://itunes.apple.com/search?term=${encodeURIComponent(`${artist} ${title}`)}&entity=musicTrack&limit=5`,
+      { signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const track = (data.results || []).find((r) => r.previewUrl);
+    return track?.previewUrl || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchDeezerPlaylist(playlistId) {
   const fetchFn = await getFetch();
 

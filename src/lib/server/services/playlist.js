@@ -3,6 +3,7 @@ import { playlistCache, customRooms, dbRooms } from "../state.js";
 import {
   fetchDeezerPlaylist,
   fetchDeezerTrackPreview,
+  iTunesPreviewSearch,
   parseExpFromUrl,
 } from "./deezer.js";
 
@@ -143,13 +144,14 @@ export function makeCache(ttlMs) {
 // ─── Deezer preview refresh ───────────────────────────────────────────────────
 
 const PREVIEW_REFRESH_MARGIN_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours de marge
-const REFRESH_CONCURRENCY = 15;
+const PREVIEW_PERMANENT_EXPIRY = "2099-01-01T00:00:00.000Z"; // iTunes & URLs sans token
+const REFRESH_CONCURRENCY = 8;
 
 export async function refreshExpiredPreviews(trackRows) {
   const now = Date.now();
 
   const toRefresh = trackRows.filter((t) => {
-    if (t.source !== "deezer" || !t.external_id || !t.preview_url) return false;
+    if (!t.preview_url) return false;
     const expiresAt = t.preview_expires_at
       ? new Date(t.preview_expires_at).getTime()
       : (parseExpFromUrl(t.preview_url) ?? 0) * 1000;
@@ -159,14 +161,25 @@ export async function refreshExpiredPreviews(trackRows) {
   if (!toRefresh.length) return;
 
   console.log(`Refresh preview_url: ${toRefresh.length} tracks expirées...`);
+  let updated = 0;
 
   for (let i = 0; i < toRefresh.length; i += REFRESH_CONCURRENCY) {
     const batch = toRefresh.slice(i, i + REFRESH_CONCURRENCY);
     await Promise.allSettled(
       batch.map(async (t) => {
         try {
-          const freshUrl = await fetchDeezerTrackPreview(t.external_id);
+          let freshUrl = t.external_id
+            ? await fetchDeezerTrackPreview(t.external_id)
+            : null;
+
+          if (!freshUrl) {
+            const artist = t.custom_artist || t.artist;
+            const title = t.custom_title || t.title;
+            freshUrl = await iTunesPreviewSearch(artist, title);
+          }
+
           if (!freshUrl) return;
+
           const exp = parseExpFromUrl(freshUrl);
           await getAdminClient()
             .from("custom_playlist_tracks")
@@ -174,10 +187,11 @@ export async function refreshExpiredPreviews(trackRows) {
               preview_url: freshUrl,
               preview_expires_at: exp
                 ? new Date(exp * 1000).toISOString()
-                : null,
+                : PREVIEW_PERMANENT_EXPIRY,
             })
             .eq("id", t.id);
           t.preview_url = freshUrl;
+          updated++;
         } catch {
           /* skip */
         }
@@ -185,7 +199,9 @@ export async function refreshExpiredPreviews(trackRows) {
     );
   }
 
-  console.log(`Refresh terminé: ${toRefresh.length} tracks mises à jour`);
+  console.log(
+    `Refresh terminé: ${updated}/${toRefresh.length} tracks mises à jour`,
+  );
 }
 
 // ─── Playlist loading ─────────────────────────────────────────────────────────
@@ -213,7 +229,7 @@ export async function loadPlaylist(roomId) {
       const { data: trackRows } = await supabase
         .from("custom_playlist_tracks")
         .select(
-          "id, artist, title, cover_url, preview_url, external_id, source, preview_expires_at",
+          "id, artist, title, cover_url, preview_url, external_id, source, preview_expires_at, custom_artist, custom_title",
         )
         .in("playlist_id", playlistIds)
         .order("position");
