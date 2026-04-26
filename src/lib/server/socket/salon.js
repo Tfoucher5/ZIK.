@@ -11,6 +11,7 @@ import {
   calcSpeedBonus,
   cleanString,
   displayString,
+  refreshExpiredPreviews,
 } from "../services/playlist.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -40,11 +41,12 @@ async function loadTracksForPlaylist(playlistId) {
     const { data: rows } = await supabase
       .from("custom_playlist_tracks")
       .select(
-        "artist, title, cover_url, preview_url, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
+        "id, artist, title, cover_url, preview_url, external_id, source, preview_expires_at, custom_artist, custom_title, custom_feats, track_answers(value, answer_types(name))",
       )
       .eq("playlist_id", playlistId)
       .order("position");
     if (rows?.length) {
+      await refreshExpiredPreviews(rows);
       return rows.map((t) =>
         buildTrack({
           artist: t.artist,
