@@ -13,7 +13,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",
     "@sveltejs/adapter-node": "^5.5.4",
-    "@sveltejs/kit": "^2.58.0",
+    "@sveltejs/kit": "^2.59.0",
     "dotenv": "^17.4.1",
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.5",
