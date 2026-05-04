@@ -4,8 +4,9 @@
 // ============================================================
 
 export const GITHUB_URL = "https://github.com/Tfoucher5";
-export const LINKEDIN_URL ="https://www.linkedin.com/in/theo-foucher-3956b52a0/";
-export const VERSION = "v1.1.0"
+export const LINKEDIN_URL =
+  "https://www.linkedin.com/in/theo-foucher-3956b52a0/";
+export const VERSION = "v1.1.0";
 
 // ─── Expériences professionnelles ───────────────────────────
 export const experiences = [
@@ -196,7 +197,13 @@ export const projects = [
       "Librairie JavaScript ultra-légère (0 dépendance) pour comparer et scorer des chaînes : distance de Levenshtein + normalisation configurable, utilisable partout (Node, navigateur, frameworks).",
     longDesc:
       "guess-rater est un moteur de comparaison de chaînes de caractères conçu pour produire un score de similarité robuste dans des cas réels (accents, casse, tirets, espaces, variantes d’écriture…). Il combine une normalisation configurable et un calcul basé sur la distance de Levenshtein afin de fournir un score simple à exploiter. L’API est volontairement minimale et orientée produit : calcul de score (getSimilarityScore) et validation par seuil (isMatch), pratique pour la recherche “tolérante”, la validation de saisie, ou le scoring de réponses utilisateur.",
-    tags: ["JavaScript", "npm", "Open-Source", "String similarity", "Levenshtein"],
+    tags: [
+      "JavaScript",
+      "npm",
+      "Open-Source",
+      "String similarity",
+      "Levenshtein",
+    ],
     stack: [
       { name: "JavaScript (Vanilla)", cat: "Core" },
       { name: "Node.js", cat: "Runtime" },
