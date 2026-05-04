@@ -4,8 +4,8 @@
 // ============================================================
 
 export const GITHUB_URL = "https://github.com/Tfoucher5";
-export const LINKEDIN_URL =
-  "https://www.linkedin.com/in/theo-foucher-3956b52a0/";
+export const LINKEDIN_URL ="https://www.linkedin.com/in/theo-foucher-3956b52a0/";
+export const VERSION = "v1.1.0"
 
 // ─── Expériences professionnelles ───────────────────────────
 export const experiences = [
@@ -184,6 +184,45 @@ export const projects = [
         type: "github",
       },
       { label: "zik-music.fr", url: "https://www.zik-music.fr", type: "live" },
+    ],
+    status: "live",
+    internal: false,
+  },
+  {
+    id: "guess-rater",
+    title: "guess-rater",
+    tagline: "Librairie npm de fuzzy matching & normalisation de chaînes",
+    shortDesc:
+      "Librairie JavaScript ultra-légère (0 dépendance) pour comparer et scorer des chaînes : distance de Levenshtein + normalisation configurable, utilisable partout (Node, navigateur, frameworks).",
+    longDesc:
+      "guess-rater est un moteur de comparaison de chaînes de caractères conçu pour produire un score de similarité robuste dans des cas réels (accents, casse, tirets, espaces, variantes d’écriture…). Il combine une normalisation configurable et un calcul basé sur la distance de Levenshtein afin de fournir un score simple à exploiter. L’API est volontairement minimale et orientée produit : calcul de score (getSimilarityScore) et validation par seuil (isMatch), pratique pour la recherche “tolérante”, la validation de saisie, ou le scoring de réponses utilisateur.",
+    tags: ["JavaScript", "npm", "Open-Source", "String similarity", "Levenshtein"],
+    stack: [
+      { name: "JavaScript (Vanilla)", cat: "Core" },
+      { name: "Node.js", cat: "Runtime" },
+      { name: "npm", cat: "Distribution" },
+      { name: "Levenshtein", cat: "Algorithmie" },
+      { name: "Normalisation de texte", cat: "Traitement" },
+      { name: "GitHub Actions (workflows)", cat: "CI" },
+    ],
+    highlights: [
+      "Ultra-léger : aucune dépendance externe",
+      "Score de similarité basé sur la distance de Levenshtein + normalisation configurable",
+      "API simple : getSimilarityScore() pour scorer, isMatch() pour valider via un seuil",
+      "Agnostique : fonctionne en navigateur comme côté serveur (Node) et dans tous les frameworks",
+      "Conçu pour être extensible (normalisation et règles adaptables)",
+    ],
+    links: [
+      {
+        label: "Voir le code",
+        url: "https://github.com/Tfoucher5/guess-rater",
+        type: "github",
+      },
+      {
+        label: "Package npm",
+        url: "https://www.npmjs.com/package/guess-rater",
+        type: "npm",
+      },
     ],
     status: "live",
     internal: false,

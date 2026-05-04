@@ -984,9 +984,9 @@
     <h2>✨ Auto-enrichissement</h2>
     <p class="mdesc">
       {#if !enrichDone && enrichTotal === 0}
-        Démarrage&hellip;
+        Démarrage...
       {:else if !enrichDone}
-        {enrichCurrent} / {enrichTotal} tracks traités&hellip;
+        {enrichCurrent} / {enrichTotal} tracks traités...
       {:else}
         Terminé ! {enrichLogs.filter(l => l.status === 'enriched').length} tracks enrichis.
       {/if}
@@ -1014,7 +1014,7 @@
 
     <div class="modal-footer">
       <button class="btn-accent" disabled={!enrichDone} onclick={() => { enrichOpen = false; loadEditorTracks(); }}>
-        {enrichDone ? 'Fermer' : 'En cours&hellip;'}
+        {enrichDone ? 'Fermer' : 'En cours...'}
       </button>
     </div>
   </div>

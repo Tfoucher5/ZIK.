@@ -43,7 +43,7 @@
     <title>Théo Foucher | Développeur Web · Application</title>
     <meta
         name="description"
-        content="Portfolio de Théo Foucher — développement web full-stack, data, automatisation industrielle et interfaces modernes."
+        content="Portfolio de Théo Foucher — développement full-stack."
     />
     <meta name="theme-color" content="#030712" />
 </svelte:head>

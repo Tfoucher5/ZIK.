@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { GITHUB_URL, LINKEDIN_URL, metrics } from '../data.js';
+    import { GITHUB_URL, LINKEDIN_URL, VERSION, metrics } from '../data.js';
 
     let countersStarted = false;
     let displayValues = metrics.map(() => 0);
@@ -108,7 +108,7 @@
             Alternant · Licence Générale STS · 2025–2026
         </div>
 
-        <p class="eyebrow">Portfolio · 2026</p>
+        <p class="eyebrow">{VERSION} · mis à jour le 04/05/2026</p>
 
         <h1 class="hero-name">
             Théo<br/>Foucher
@@ -176,7 +176,7 @@
                 <div class="dispo-dot"></div>
                 <div>
                     <div class="dispo-title">En alternance — Licence Générale STS</div>
-                    <div class="dispo-sub">En recherche pour 2026–2027</div>
+                    <div class="dispo-sub">En recherche d'une alternance pour 2026–2027</div>
                 </div>
             </div>
         </div>
