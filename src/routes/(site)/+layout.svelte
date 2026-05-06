@@ -178,11 +178,21 @@
         <button class="footer-contact-btn" onclick={() => contactOpen = true}>Contact</button>
       </div>
     </div>
+
+    <!-- Comparer -->
+    <div class="footer-col">
+      <p class="footer-col-title">Comparer</p>
+      <div class="footer-col-links">
+        <a href="/vs/kahoot">ZIK vs Kahoot</a>
+        <a href="/vs/blinest">ZIK vs Blinest</a>
+        <a href="/vs/blindtest-io">ZIK vs Blindtest.io</a>
+      </div>
+    </div>
   </div>
 
   <div class="footer-bottom">
     <span class="footer-copy">© 2026 ZIK · Fait avec ❤️ et beaucoup de musique · par <a href="/portfolio">Theo Foucher</a></span>
-    <span class="footer-version-tag">v2.3.0</span>
+    <span class="footer-version-tag">v2.4.0</span>
   </div>
 </footer>
 {/if}

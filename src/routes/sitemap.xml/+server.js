@@ -1,63 +1,65 @@
 import { supabase } from "$lib/server/config.js";
 
-const BASE = "https://www.zik-music.fr";
+const SITE = "https://www.zik-music.fr";
 
-// Static high-value pages
-const STATIC_URLS = [
-  { loc: "/", changefreq: "weekly", priority: "1.0" },
-  { loc: "/docs#faq", changefreq: "weekly", priority: "0.9" },
-  { loc: "/docs", changefreq: "weekly", priority: "0.8" },
-  { loc: "/rooms", changefreq: "daily", priority: "0.8" },
-  { loc: "/playlists", changefreq: "daily", priority: "0.7" },
-  { loc: "/portfolio", changefreq: "yearly", priority: "0.6" },
-  { loc: "/cgu", changefreq: "yearly", priority: "0.3" },
-  { loc: "/confidentialite", changefreq: "yearly", priority: "0.3" },
-  { loc: "/mentions-legales", changefreq: "yearly", priority: "0.3" },
+const STATIC_PAGES = [
+  { loc: "/", changefreq: "daily", priority: "1.0" },
+  { loc: "/rooms", changefreq: "hourly", priority: "0.9" },
+  { loc: "/playlists", changefreq: "weekly", priority: "0.7" },
+  { loc: "/salon", changefreq: "monthly", priority: "0.7" },
+  { loc: "/docs", changefreq: "monthly", priority: "0.6" },
+  { loc: "/vs/kahoot", changefreq: "monthly", priority: "0.6" },
+  { loc: "/vs/blinest", changefreq: "monthly", priority: "0.6" },
+  { loc: "/vs/blindtest-io", changefreq: "monthly", priority: "0.6" },
+  { loc: "/cgu", changefreq: "yearly", priority: "0.2" },
+  { loc: "/confidentialite", changefreq: "yearly", priority: "0.2" },
+  { loc: "/mentions-legales", changefreq: "yearly", priority: "0.2" },
 ];
 
-export async function GET() {
-  const today = new Date().toISOString().split("T")[0];
+function escapeXml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
-  // Fetch all public rooms dynamically
+export async function GET() {
+  const urls = [...STATIC_PAGES];
+
   const { data: rooms } = await supabase
     .from("rooms")
-    .select("code, last_active_at, is_official")
+    .select("code, updated_at")
     .eq("is_public", true)
     .order("last_active_at", { ascending: false })
-    .limit(500);
+    .limit(200);
 
-  const staticPart = STATIC_URLS.map(
-    (u) => `  <url>
-    <loc>${BASE}${u.loc}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${u.changefreq}</changefreq>
-    <priority>${u.priority}</priority>
-  </url>`,
-  ).join("\n");
+  if (rooms) {
+    for (const room of rooms) {
+      urls.push({
+        loc: `/room/${room.code}`,
+        changefreq: "daily",
+        priority: "0.5",
+        lastmod: room.updated_at ? room.updated_at.slice(0, 10) : undefined,
+      });
+    }
+  }
 
-  const roomsPart = (rooms || [])
-    .map((r) => {
-      const lastmod = r.last_active_at ? r.last_active_at.split("T")[0] : today;
-      // Official rooms get slightly higher priority
-      const priority = r.is_official ? "0.75" : "0.55";
-      return `  <url>
-    <loc>${BASE}/room/${r.code}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
-  </url>`;
-    })
-    .join("\n");
+  const today = new Date().toISOString().slice(0, 10);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${staticPart}
-${roomsPart}
+${urls
+  .map(
+    (u) => `  <url>
+    <loc>${escapeXml(SITE + u.loc)}</loc>
+    <lastmod>${u.lastmod ?? today}</lastmod>
+    <changefreq>${u.changefreq}</changefreq>
+    <priority>${u.priority}</priority>
+  </url>`,
+  )
+  .join("\n")}
 </urlset>`;
 
   return new Response(xml, {
     headers: {
-      "Content-Type": "application/xml; charset=utf-8",
+      "Content-Type": "application/xml",
       "Cache-Control": "public, max-age=3600",
     },
   });

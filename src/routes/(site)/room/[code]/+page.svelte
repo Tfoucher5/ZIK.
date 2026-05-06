@@ -9,8 +9,12 @@
   let guestError   = $state('');
   let joining      = $state(false);
 
-  const desc = room.description || `Rejoins la room ${room.name} sur ZIK pour un blind test musical multijoueur en ligne.`;
-  const pageTitle = `${room.emoji} ${room.name} — Blind Test ZIK`;
+  const modeLabel = room.game_mode === 'qcm' ? 'Mode QCM (choix multiple)' : 'Mode Classique (saisie libre, classement ELO)';
+  const officialLabel = room.is_official ? ' Room officielle.' : '';
+  const desc = room.description
+    ? `${room.description} ${modeLabel}.${officialLabel} Rejoins sur ZIK, le blind test multijoueur en ligne.`
+    : `Rejoins la room "${room.name}" sur ZIK. ${modeLabel}.${officialLabel} Blind test musical multijoueur en ligne.`;
+  const pageTitle = `${room.emoji} ${room.name} — ${room.game_mode === 'qcm' ? 'Blind Test QCM' : 'Blind Test Classique'} | ZIK`;
   const canonicalUrl = `https://www.zik-music.fr/room/${room.code}`;
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
@@ -21,7 +25,16 @@
     "genre": ["Music", "Quiz", "Trivia"],
     "isAccessibleForFree": true,
     "inLanguage": "fr-FR",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "applicationCategory": "GameApplication",
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://www.zik-music.fr/" },
+        { "@type": "ListItem", "position": 2, "name": "Rooms", "item": "https://www.zik-music.fr/rooms" },
+        { "@type": "ListItem", "position": 3, "name": room.name, "item": canonicalUrl }
+      ]
+    }
   });
 
   onMount(() => {

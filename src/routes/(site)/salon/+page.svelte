@@ -2,6 +2,23 @@
   import { onMount } from 'svelte';
   import { createSupabaseClient } from '$lib/supabase.js';
 
+  const salonJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Mode Salon — Blind Test en Soirée | ZIK",
+    "description": "Organisez un blind test en soirée avec le Mode Salon ZIK. Un hôte diffuse la musique sur grand écran, les joueurs répondent depuis leur smartphone.",
+    "url": "https://www.zik-music.fr/salon",
+    "inLanguage": "fr-FR",
+    "isPartOf": { "@type": "WebSite", "url": "https://www.zik-music.fr/", "name": "ZIK" },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://www.zik-music.fr/" },
+        { "@type": "ListItem", "position": 2, "name": "Mode Salon", "item": "https://www.zik-music.fr/salon" }
+      ]
+    }
+  });
+
   let { data } = $props();
 
   const sb = createSupabaseClient(data.env.supabaseUrl, data.env.supabaseAnonKey);
@@ -115,16 +132,29 @@
 </script>
 
 <svelte:head>
-  <title>ZIK - Mode Salon</title>
-  <meta name="robots" content="index, follow">
-  <meta name="description" content="Créer un salon Kahoot-Like pour jouer en famille ou entre amis !">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Mode Salon — Blind Test en Soirée sur TV &amp; Smartphones | ZIK</title>
+  <meta name="description" content="Organisez un blind test en soirée avec le Mode Salon ZIK. Un hôte diffuse la musique sur grand écran, les joueurs répondent depuis leur smartphone. Style Kahoot, avec vos musiques. Gratuit." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.zik-music.fr/salon" />
+
+  <meta property="og:title" content="Mode Salon — Blind Test en Soirée | ZIK" />
+  <meta property="og:description" content="Blind test en soirée : grand écran sur la TV, smartphones comme manettes. Style Kahoot avec vos playlists Spotify/Deezer. Gratuit, sans inscription." />
+  <meta property="og:url" content="https://www.zik-music.fr/salon" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://www.zik-music.fr/og.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mode Salon — Blind Test en Soirée | ZIK" />
+  <meta name="twitter:description" content="Organisez un blind test sur TV + smartphones. Style Kahoot, avec vos musiques. Gratuit." />
+  <meta name="twitter:image" content="https://www.zik-music.fr/og.png" />
+
+  <script type="application/ld+json">{@html salonJsonLd}</script>
 </svelte:head>
 
 <div class="salon-setup">
   <button class="salon-back" onclick={() => history.back()}>← Retour</button>
 
-  <div class="salon-setup-logo">ZIK <span>Salon</span></div>
+  <h1 class="salon-setup-logo">ZIK <span>Salon</span></h1>
   <p class="salon-setup-sub">Mode soirée — comme Kahoot, depuis la TV</p>
 
   {#if !authReady}
