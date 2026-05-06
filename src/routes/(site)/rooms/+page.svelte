@@ -8,6 +8,16 @@
   const user = $derived(_ctx.user);
   const authReady = $derived(_ctx.authReady);
 
+  const roomsJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Rooms de Blind Test Multijoueur — ZIK",
+    "description": "Parcourez les rooms de blind test multijoueur ZIK. Mode Classique avec classement ELO ou Mode QCM. Créez votre propre room en 30 secondes.",
+    "url": "https://www.zik-music.fr/rooms",
+    "inLanguage": "fr-FR",
+    "isPartOf": { "@type": "WebSite", "url": "https://www.zik-music.fr/", "name": "ZIK" }
+  });
+
   let tab              = $state('public');
   let pubSearch        = $state('');
   let filterAutoStart  = $state(false);
@@ -235,25 +245,29 @@
 </script>
 
 <svelte:head>
-  <title>ZIK — Rooms de Blind Test en Ligne | Rejoins une Partie</title>
-  <meta name="description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live, configure ta playlist Spotify/Deezer et joue gratuitement.">
-  <link rel="canonical" href="https://www.zik-music.fr/rooms">
-  <meta name="robots" content="index, follow">
+  <title>Rooms de Blind Test Multijoueur en Ligne — ZIK</title>
+  <meta name="description" content="Rejoins une room de blind test multijoueur gratuit ou crée la tienne. Mode Classique avec classement ELO ou Mode QCM, playlists Spotify/Deezer. Jusqu'à 20 joueurs en temps réel." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://www.zik-music.fr/rooms" />
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="ZIK — Rooms de Blind Test">
-  <meta property="og:description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live, configure ta playlist Spotify/Deezer et joue gratuitement.">
-  <meta property="og:url" content="https://www.zik-music.fr/rooms">
+  <meta property="og:title" content="Rooms de Blind Test Multijoueur — ZIK" />
+  <meta property="og:description" content="Rejoins une room de blind test en ligne ou crée la tienne. Mode Classique ELO ou QCM casual. Playlists Spotify & Deezer. Gratuit, sans inscription." />
+  <meta property="og:url" content="https://www.zik-music.fr/rooms" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://www.zik-music.fr/og.png" />
 
-  <!-- Twitter Card -->
-  <meta name="twitter:title" content="ZIK — Rooms de Blind Test">
-  <meta name="twitter:description" content="Browse les rooms de blind test multijoueur en ligne ou crée la tienne. Rejoins des joueurs en live.">
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Rooms de Blind Test Multijoueur — ZIK" />
+  <meta name="twitter:description" content="Rejoins ou crée une room de blind test en ligne. Mode Classique ELO ou QCM. Gratuit, sans inscription." />
+  <meta name="twitter:image" content="https://www.zik-music.fr/og.png" />
+
+  <script type="application/ld+json">{@html roomsJsonLd}</script>
 </svelte:head>
 
 <HeroSection
-  title="Toutes les"
-  titleAccent="rooms."
-  subtitle="Rejoins une partie en cours ou crée la tienne en 30 secondes."
+  title="Rooms de blind test"
+  titleAccent="multijoueur."
+  subtitle="Rejoins une partie en cours ou crée la tienne en 30 secondes. Mode Classique ELO ou QCM casual."
 />
 
 <div class="rooms-main">
