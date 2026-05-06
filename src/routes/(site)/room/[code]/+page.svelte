@@ -12,8 +12,8 @@
   const modeLabel = room.game_mode === 'qcm' ? 'Mode QCM (choix multiple)' : 'Mode Classique (saisie libre, classement ELO)';
   const officialLabel = room.is_official ? ' Room officielle.' : '';
   const desc = room.description
-    ? `${room.description} ${modeLabel}.${officialLabel} Rejoins sur ZIK, le blind test multijoueur gratuit.`
-    : `Rejoins la room "${room.name}" sur ZIK. ${modeLabel}.${officialLabel} Blind test musical multijoueur gratuit en ligne.`;
+    ? `${room.description} ${modeLabel}.${officialLabel} Rejoins sur ZIK, le blind test multijoueur en ligne.`
+    : `Rejoins la room "${room.name}" sur ZIK. ${modeLabel}.${officialLabel} Blind test musical multijoueur en ligne.`;
   const pageTitle = `${room.emoji} ${room.name} — ${room.game_mode === 'qcm' ? 'Blind Test QCM' : 'Blind Test Classique'} | ZIK`;
   const canonicalUrl = `https://www.zik-music.fr/room/${room.code}`;
   const jsonLd = JSON.stringify({

@@ -136,7 +136,6 @@
   <meta name="description" content="Organisez un blind test en soirée avec le Mode Salon ZIK. Un hôte diffuse la musique sur grand écran, les joueurs répondent depuis leur smartphone. Style Kahoot, avec vos musiques. Gratuit." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://www.zik-music.fr/salon" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
   <meta property="og:title" content="Mode Salon — Blind Test en Soirée | ZIK" />
   <meta property="og:description" content="Blind test en soirée : grand écran sur la TV, smartphones comme manettes. Style Kahoot avec vos playlists Spotify/Deezer. Gratuit, sans inscription." />
