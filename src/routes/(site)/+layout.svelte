@@ -178,6 +178,16 @@
         <button class="footer-contact-btn" onclick={() => contactOpen = true}>Contact</button>
       </div>
     </div>
+
+    <!-- Comparer -->
+    <div class="footer-col">
+      <p class="footer-col-title">Comparer</p>
+      <div class="footer-col-links">
+        <a href="/vs/kahoot">ZIK vs Kahoot</a>
+        <a href="/vs/blinest">ZIK vs Blinest</a>
+        <a href="/vs/blindtest-io">ZIK vs Blindtest.io</a>
+      </div>
+    </div>
   </div>
 
   <div class="footer-bottom">
