@@ -256,6 +256,53 @@
     }
   ]);
 
+  const faqJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "C'est quoi ZIK ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "ZIK est un jeu de blind test musical multijoueur gratuit, accessible dans le navigateur. Les joueurs écoutent des extraits musicaux et doivent identifier le titre et l'artiste le plus rapidement possible." }
+      },
+      {
+        "@type": "Question",
+        "name": "ZIK est-il gratuit ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Oui, ZIK est entièrement gratuit. Aucun abonnement, aucun achat dans l'application." }
+      },
+      {
+        "@type": "Question",
+        "name": "Faut-il créer un compte pour jouer ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Non. Le mode invité permet de rejoindre une partie immédiatement avec un pseudo. La création de compte est optionnelle et permet de sauvegarder ses scores et son classement ELO." }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment fonctionne le classement ELO sur ZIK ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Le système ELO de ZIK attribue des points en fonction des adversaires battus. Battre un joueur mieux classé rapporte plus de points. Ce classement évolue uniquement en Mode Classique." }
+      },
+      {
+        "@type": "Question",
+        "name": "Quelle est la différence entre le Mode Classique et le Mode QCM ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "En Mode Classique, les joueurs saisissent librement le titre et l'artiste — c'est le mode compétitif avec classement ELO. En Mode QCM, quatre propositions sont affichées et il faut choisir la bonne — plus accessible, sans ELO." }
+      },
+      {
+        "@type": "Question",
+        "name": "Comment fonctionne le Mode Salon ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "En Mode Salon, un hôte lance une session depuis son ordinateur ou sa TV. Les invités rejoignent depuis leur smartphone en entrant un code ou en scannant un QR code. La musique est diffusée uniquement depuis l'écran de l'hôte." }
+      },
+      {
+        "@type": "Question",
+        "name": "Puis-je importer mes playlists Spotify ou Deezer ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Oui. ZIK permet l'import direct de playlists publiques Spotify et Deezer en quelques clics." }
+      },
+      {
+        "@type": "Question",
+        "name": "ZIK fonctionne-t-il sur mobile ?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Oui. ZIK est conçu mobile-first. Le Mode Salon est particulièrement adapté aux smartphones pour les joueurs invités." }
+      }
+    ]
+  });
+
   async function loadGlobalStats() {
     try {
       const res = await fetch("/api/stats/global");
@@ -289,6 +336,7 @@
   <meta name="twitter:title" content="ZIK — Blind Test Musical Multijoueur | Gratuit" />
   <meta name="twitter:description" content="Blind test musical multijoueur gratuit en ligne. Playlists Spotify/Deezer, Mode Salon Kahoot-like, classement ELO. Sans inscription requise." />
   <script type="application/ld+json">{@html jsonLd}</script>
+  <script type="application/ld+json">{@html faqJsonLd}</script>
 </svelte:head>
 
 <!-- ══════════════════════════════ HERO ══════════════════════════════ -->
@@ -369,6 +417,51 @@
       <div class="feat-body">
         <h3>Rooms privées</h3>
         <p>Crée ta room, partage un code à 6 lettres. Que tes amis, pas d'inconnus si tu veux.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ QU'EST-CE QUE ZIK ══════════════════════════════ -->
+<section class="section section-about" use:reveal id="a-propos">
+  <div class="about-inner">
+    <div class="about-text">
+      <h2>Qu'est-ce que <span class="text-gradient">ZIK</span>&nbsp;?</h2>
+      <p>
+        ZIK est un jeu de blind test musical multijoueur gratuit, accessible directement dans le navigateur.
+        Les joueurs s'affrontent en temps réel pour identifier les titres et artistes d'extraits musicaux.
+        Aucune installation, aucune inscription obligatoire.
+      </p>
+      <p>
+        ZIK se distingue des autres blind tests en ligne par trois modes de jeu complémentaires :
+      </p>
+      <ul class="about-list">
+        <li><strong>Mode Classique</strong> — saisie libre du titre et de l'artiste, avec classement ELO compétitif. Idéal pour tester ses connaissances musicales sérieusement.</li>
+        <li><strong>Mode QCM</strong> — quatre propositions à choix multiple, style Kahoot. Accessible à tous, sans pression.</li>
+        <li><strong>Mode Salon</strong> — un hôte diffuse la musique depuis son grand écran (TV ou PC), les invités répondent depuis leur smartphone avec un code ou QR code. Parfait pour les soirées entre amis.</li>
+      </ul>
+      <p>
+        ZIK prend en charge l'import de playlists complètes depuis <strong>Spotify</strong> et <strong>Deezer</strong>,
+        ainsi que la création de playlists personnalisées directement sur le site.
+        Chaque partie peut accueillir jusqu'à 20 joueurs simultanément.
+      </p>
+    </div>
+    <div class="about-aside">
+      <div class="about-stat-card">
+        <span class="about-stat-icon">🎵</span>
+        <span class="about-stat-label">Import Spotify &amp; Deezer</span>
+      </div>
+      <div class="about-stat-card">
+        <span class="about-stat-icon">🏆</span>
+        <span class="about-stat-label">Classement ELO compétitif</span>
+      </div>
+      <div class="about-stat-card">
+        <span class="about-stat-icon">📺</span>
+        <span class="about-stat-label">Mode Salon — TV + smartphones</span>
+      </div>
+      <div class="about-stat-card">
+        <span class="about-stat-icon">⚡</span>
+        <span class="about-stat-label">Gratuit, sans inscription</span>
       </div>
     </div>
   </div>
@@ -828,6 +921,48 @@
         {/if}
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ FAQ ══════════════════════════════ -->
+<section class="section section-faq" use:reveal id="faq">
+  <div class="section-head">
+    <h2>Questions fréquentes</h2>
+    <p class="section-sub">Tout ce que tu dois savoir sur ZIK.</p>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary class="faq-q">C'est quoi ZIK ?</summary>
+      <p class="faq-a">ZIK est un jeu de blind test musical multijoueur gratuit, accessible dans le navigateur. Les joueurs écoutent des extraits musicaux et doivent identifier le titre et l'artiste le plus rapidement possible.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">ZIK est-il gratuit ?</summary>
+      <p class="faq-a">Oui, ZIK est entièrement gratuit. Aucun abonnement, aucun achat dans l'application.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">Faut-il créer un compte pour jouer ?</summary>
+      <p class="faq-a">Non. Le mode invité permet de rejoindre une partie immédiatement avec un pseudo. La création de compte est optionnelle et permet de sauvegarder ses scores et son classement ELO.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">Comment fonctionne le classement ELO sur ZIK ?</summary>
+      <p class="faq-a">Le système ELO de ZIK attribue des points en fonction des adversaires battus. Battre un joueur mieux classé rapporte plus de points. Ce classement évolue uniquement en Mode Classique.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">Quelle est la différence entre le Mode Classique et le Mode QCM ?</summary>
+      <p class="faq-a">En Mode Classique, les joueurs saisissent librement le titre et l'artiste — c'est le mode compétitif avec classement ELO. En Mode QCM, quatre propositions sont affichées et il faut choisir la bonne — plus accessible, sans ELO.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">Comment fonctionne le Mode Salon ?</summary>
+      <p class="faq-a">En Mode Salon, un hôte lance une session depuis son ordinateur ou sa TV. Les invités rejoignent depuis leur smartphone en entrant un code ou en scannant un QR code. La musique est diffusée uniquement depuis l'écran de l'hôte.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">Puis-je importer mes playlists Spotify ou Deezer ?</summary>
+      <p class="faq-a">Oui. ZIK permet l'import direct de playlists publiques Spotify et Deezer en quelques clics. Il est aussi possible de créer des playlists manuellement sur le site.</p>
+    </details>
+    <details class="faq-item">
+      <summary class="faq-q">ZIK fonctionne-t-il sur mobile ?</summary>
+      <p class="faq-a">Oui. ZIK est conçu mobile-first. Le Mode Salon est particulièrement adapté aux smartphones pour les joueurs invités.</p>
+    </details>
   </div>
 </section>
 
@@ -1620,5 +1755,114 @@
     /* Stats strip : réduire le texte pour éviter le débordement */
     .stat-num { font-size: 1.6rem; }
     .stat-label { font-size: 0.58rem; }
+  }
+
+  /* ════════════════════════════ SECTION ABOUT ════════════════════════════ */
+  .about-inner {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 48px;
+    align-items: start;
+  }
+  .about-text h2 {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+  }
+  .about-text p {
+    font-size: 0.9rem;
+    color: var(--mid);
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+  .about-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .about-list li {
+    font-size: 0.88rem;
+    color: var(--mid);
+    line-height: 1.6;
+    padding-left: 18px;
+    position: relative;
+  }
+  .about-list li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .about-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .about-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .about-stat-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .about-stat-label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+
+  /* ════════════════════════════ FAQ ════════════════════════════ */
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 800px;
+  }
+  .faq-item {
+    background: rgb(var(--c-glass) / 0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .faq-item[open] { border-color: var(--border2); }
+  .faq-q {
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 16px 20px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .faq-q::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .faq-item[open] .faq-q::after { content: "−"; }
+  .faq-a {
+    font-size: 0.84rem;
+    color: var(--mid);
+    line-height: 1.65;
+    padding: 0 20px 16px;
+    margin: 0;
+  }
+
+  @media (max-width: 900px) {
+    .about-inner { grid-template-columns: 1fr; }
+    .about-aside { display: grid; grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .about-aside { grid-template-columns: 1fr; }
   }
 </style>
